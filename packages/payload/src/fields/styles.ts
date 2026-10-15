@@ -90,6 +90,42 @@ export const styles = {
 		borderRadius: 'var(--style-radius-m)',
 		background: 'var(--theme-elevation-0)'
 	},
+	cards: {
+		display: 'grid',
+		gridTemplateColumns: 'repeat(auto-fill, minmax(9rem, 1fr))',
+		gap: 'calc(var(--base) * 0.5)'
+	},
+	card: {
+		display: 'grid',
+		justifyItems: 'center',
+		gap: 'calc(var(--base) * 0.25)',
+		padding: 'calc(var(--base) * 0.5)',
+		border: '1px solid var(--theme-elevation-150)',
+		borderRadius: 'var(--style-radius-m)',
+		background: 'var(--theme-elevation-50)',
+		color: 'var(--theme-text)',
+		font: 'inherit',
+		textAlign: 'center',
+		cursor: 'pointer'
+	},
+	cardActive: { borderColor: 'var(--theme-elevation-800)', borderWidth: '2px' },
+	thumb: {
+		position: 'relative',
+		display: 'grid',
+		placeItems: 'center',
+		width: '4rem',
+		height: '4rem',
+		borderRadius: 'var(--style-radius-m)',
+		background: 'var(--theme-elevation-100)',
+		color: 'var(--theme-elevation-500)',
+		fontWeight: 600
+	},
+	thumbImage: {
+		position: 'absolute',
+		inset: 0,
+		backgroundRepeat: 'no-repeat',
+		imageRendering: 'pixelated'
+	},
 	textarea: {
 		width: '100%',
 		minHeight: '28rem',

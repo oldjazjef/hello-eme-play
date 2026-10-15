@@ -39,6 +39,8 @@ const en = {
 	modified: 'changed',
 	preview: 'Live preview',
 	previewHint: 'Changes start a fresh round here after a moment. Unsaved changes are shown too.',
+	health: 'HP',
+	speed: 'Speed',
 	groupGame: 'Game',
 	groupCharacters: 'Characters',
 	groupItems: 'Items & upgrades',
@@ -87,6 +89,8 @@ const de: Labels = {
 	preview: 'Live-Vorschau',
 	previewHint:
 		'Änderungen starten hier nach einem Moment eine neue Runde. Auch ungespeicherte Änderungen werden gezeigt.',
+	health: 'Leben',
+	speed: 'Tempo',
 	groupGame: 'Spiel',
 	groupCharacters: 'Figuren',
 	groupItems: 'Gegenstände & Upgrades',
