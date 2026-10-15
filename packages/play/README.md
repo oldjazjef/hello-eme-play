@@ -9,7 +9,7 @@ const play = createPlay({ config: await (await fetch('/play.json')).json() });
 play.start();
 ```
 
-Without a bundler:
+Without a bundler (`dist/play.iife.js`, also attached to releases as `play.js`):
 
 ```html
 <script src="play.js" data-config-url="/play.json" defer></script>

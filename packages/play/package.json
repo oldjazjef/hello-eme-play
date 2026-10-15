@@ -19,7 +19,7 @@
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
 		},
-		"./play.js": "./dist/play.js"
+		"./play.js": "./dist/play.iife.js"
 	},
 	"files": [
 		"dist",
@@ -27,13 +27,14 @@
 		"LICENSE"
 	],
 	"sideEffects": [
-		"./dist/play.js"
+		"./dist/auto.js",
+		"./dist/play.iife.js"
 	],
 	"publishConfig": {
 		"access": "public"
 	},
 	"scripts": {
-		"build": "tsc -p tsconfig.build.json && esbuild src/auto.ts --bundle --minify --format=iife --target=es2022 --outfile=dist/play.js --log-level=warning",
+		"build": "tsc -p tsconfig.build.json && esbuild src/auto.ts --bundle --minify --format=iife --target=es2022 --outfile=dist/play.iife.js --log-level=warning",
 		"check": "tsc --noEmit",
 		"lint": "eslint .",
 		"test": "vitest run --passWithNoTests"

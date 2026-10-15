@@ -58,5 +58,5 @@ for (const [index, folder] of folders.entries()) {
 }
 
 // The drop-in script for plain websites.
-cpSync(join(root, 'packages/play/dist/play.js'), join(out, 'play.js'));
+cpSync(join(root, 'packages/play/dist/play.iife.js'), join(out, 'play.js'));
 console.log(`Packed ${folders.length} packages into ${out}`);
