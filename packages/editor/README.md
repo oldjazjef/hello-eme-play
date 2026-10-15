@@ -22,7 +22,7 @@ around it). The host only passes the JSON in and takes it out again.
   The same content as [docs/REFERENCE.md](../../docs/REFERENCE.md).
 - **Undo and redo** (also Ctrl/Cmd+Z), reset per tab, download, load and copy the JSON, raw JSON.
 
-## Without a CMS
+## On any page (no framework)
 
 ```html
 <div id="editor"></div>
@@ -31,43 +31,45 @@ around it). The host only passes the JSON in and takes it out again.
 	const editor = PlayEditor.mount(document.getElementById('editor'), {
 		value: await (await fetch('/play.json')).json(), // or storageKey: 'my-draft'
 		lang: 'en', // 'de' or 'en'; default: the browser's language
-		previewUrl: '/play-preview.html',
 		onChange: (json) => save(json)
 	});
 	// editor.getValue(), editor.setValue(json), editor.destroy()
 </script>
 ```
 
-`editor.js` is attached to every release (React included). See [examples/editor](../../examples/editor).
+`editor.js` is attached to every release. It carries everything (React is inside, hidden; the game too, for the
+preview), so there is nothing to install or set up. As a module: `import { mount } from '@hello-eme/play-editor'`.
 
-The **preview page** is any page of your site that loads the game with `data-preview="<origin of the editor page>"`
-(see the [play README](../play)); the editor shows it in an iframe and sends it every change.
+Options: `value`, `onChange`, `lang`, `storageKey` (keeps a draft in `localStorage`), `defaultMode`
+(`simple`/`expert`), `media`, `onUpload`, `previewUrl`, `previewHtml`, `preview: false`, `referenceUrl`.
 
-Without an `onUpload`, dropped pictures are embedded in the JSON as `data:` URLs. Pass `onUpload(file) => url`
-to store them somewhere (Payload's media collection, S3 …).
+**Live preview.** Out of the box the editor shows the game on a small sample page and restarts it on every
+change. For the real thing give it a page of your own: `previewUrl: '/play-preview.html'`, a page that loads the
+game with `data-preview="<origin of the editor page>"` (see the [play README](../play)); the editor shows it in an
+iframe and sends it every change. `previewHtml` takes a complete HTML document instead.
+
+**Pictures.** Without an `onUpload`, dropped pictures are embedded in the JSON as `data:` URLs. Pass
+`onUpload(file) => url` to store them somewhere (Payload's media collection, S3 …).
+
+`PlayEditor.mountGuide(element, { lang })` mounts only the guide, for a reference page.
+
+A demo with the guide, the editor and the live preview is built from [site/](../../site) (GitHub Pages);
+[examples/editor](../../examples/editor) is the smallest page.
 
 ## In React
 
 ```tsx
-import { PlayEditor } from '@hello-eme/play-editor';
+import { PlayEditor } from '@hello-eme/play-editor/react';
 
 <PlayEditor value={json} onChange={setJson} lang="en" previewUrl="/play-preview.html" />;
 ```
 
-| Prop              | What                                                               |
-| ----------------- | ------------------------------------------------------------------ |
-| `value`           | The JSON as stored (any shape; sparse is fine)                     |
-| `onChange`        | Gets the new JSON after every edit, undo, preset or import         |
-| `lang`            | `de` or `en` (default `en`)                                        |
-| `defaultMode`     | `simple` (default) or `expert`; the visitor's choice is remembered |
-| `media`           | `{ url, label }[]` the picture picker offers                       |
-| `onUpload`        | `(file) => Promise<url>`; without it pictures are embedded         |
-| `mediaUploadHref` | Link to a page where images are uploaded by hand                   |
-| `previewUrl`      | Preview page (see above)                                           |
-| `referenceUrl`    | Link to the reference page, shown in the guide                     |
+Same options as above (`value` and `onChange` are required). It needs `react` >= 19 and, unlike the vanilla build,
+uses your React and has no built-in preview unless you pass `previewHtml` (`previewDocument(playSource, origin)`
+builds one from the game's script). The pieces (`NodeEditor`, `GuideView`, `runBalance`, `analyzeFlow`,
+`applyQuick`, `guessSprite`) are exported for hosts that want their own layout.
 
-It needs `react` >= 19. The pieces (`NodeEditor`, `runBalance`, `analyzeFlow`, `applyQuick`, `guessSprite`) are
-exported for hosts that want their own layout.
+[`@hello-eme/play-payload`](../payload) is this component wired to Payload.
 
 ## Theming
 

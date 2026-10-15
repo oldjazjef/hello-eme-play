@@ -23,8 +23,14 @@ export function originOf(url: string | undefined): string | undefined {
  * The game running next to the form. The preview page (`previewUrl`) loads the game with
  * `data-preview`; it says it is ready and then plays every configuration sent here.
  */
-export function Preview(props: { url: string; config: unknown; labels: Labels }) {
-	const origin = originOf(props.url);
+export function Preview(props: { url?: string; html?: string; config: unknown; labels: Labels }) {
+	// A page of your own is shown from its address; built-in HTML is a same-origin `srcdoc`.
+	const origin =
+		props.html !== undefined
+			? typeof location === 'undefined'
+				? undefined
+				: location.origin
+			: originOf(props.url);
 	const frame = useRef<HTMLIFrameElement>(null);
 	// Counts the "ready" messages: the page says it again every time it reloads.
 	const [ready, setReady] = useState(0);
@@ -63,7 +69,12 @@ export function Preview(props: { url: string; config: unknown; labels: Labels })
 		<details open style={styles.section}>
 			<summary style={styles.summary}>{props.labels.preview}</summary>
 			<div style={styles.sectionBody}>
-				<iframe ref={frame} src={props.url} title={props.labels.preview} style={styles.preview} />
+				<iframe
+					ref={frame}
+					{...(props.html !== undefined ? { srcDoc: props.html } : { src: props.url })}
+					title={props.labels.preview}
+					style={styles.preview}
+				/>
 				<p style={styles.muted}>{props.labels.previewHint}</p>
 			</div>
 		</details>

@@ -1,6 +1,6 @@
 'use client';
 
-import { PlayEditor, toLang, type MediaOption } from '@hello-eme/play-editor';
+import { PlayEditor, toLang, type MediaOption } from '@hello-eme/play-editor/react';
 import { useConfig, useField, useTranslation } from '@payloadcms/ui';
 import type { JSONFieldClientProps } from 'payload';
 import { useEffect, useState } from 'react';

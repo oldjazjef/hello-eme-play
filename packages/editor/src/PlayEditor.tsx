@@ -19,12 +19,13 @@ import {
 import { BalancePanel } from './BalancePanel.js';
 import { merge } from './fields/controls.js';
 import { styles } from './fields/styles.js';
-import type { EditorContext, MediaOption } from './fields/types.js';
+import type { EditorContext } from './fields/types.js';
 import { FlowView } from './FlowView.js';
 import { groupNodes, groupOf, resetGroup, type GroupId } from './groups.js';
 import { GuideView } from './GuideView.js';
 import { useBalance, useHistory } from './hooks.js';
-import { LABELS, type Lang } from './labels.js';
+import { LABELS } from './labels.js';
+import type { EditorMode, EditorOptions } from './options.js';
 import { NodeEditor } from './NodeEditor.js';
 import { PresetGallery } from './PresetGallery.js';
 import { problemMap, topKey } from './problems.js';
@@ -35,30 +36,13 @@ import { RawJson } from './RawJson.js';
 import { countEntries } from './state.js';
 import { themeVars } from './theme.js';
 
-export type EditorMode = 'simple' | 'expert';
+export type { EditorMode } from './options.js';
 
-export interface PlayEditorProps {
+export interface PlayEditorProps extends EditorOptions {
 	/** The configuration JSON as stored (any shape; `undefined` is an empty one). */
 	value: unknown;
 	/** Called with the new JSON after every edit, undo, preset or import. */
 	onChange: (value: Record<string, unknown>) => void;
-	/** The language of the form (the game's labels come from the schema in both). Default `en`. */
-	lang?: Lang;
-	/** Which mode to start in when the visitor has not chosen one yet. Default `simple`. */
-	defaultMode?: EditorMode;
-	/** Images the picture picker offers. */
-	media?: readonly MediaOption[];
-	/** Where new images are uploaded by hand (a page address), if you have one. */
-	mediaUploadHref?: string;
-	/** Stores an image and returns its address. Without it, pictures are embedded in the JSON. */
-	onUpload?: (file: File) => Promise<string>;
-	/**
-	 * A page that loads the game with `data-preview="<this page's origin>"` (see the play README).
-	 * The editor shows it next to the form and plays every change, saved or not.
-	 */
-	previewUrl?: string;
-	/** A page with the complete reference; linked from the guide. */
-	referenceUrl?: string;
 }
 
 type Tab = 'quick' | GroupId | 'flow' | 'guide' | 'raw';
@@ -117,6 +101,7 @@ export function PlayEditor(props: PlayEditorProps): ReactNode {
 	);
 	const set = (next: unknown) => history.set(isObject(next) ? next : {});
 
+	const hasPreview = props.previewUrl !== undefined || props.previewHtml !== undefined;
 	const groups = useMemo(() => groupNodes(PLAY_SCHEMA), []);
 	const [tab, setTab] = useState<Tab>('quick');
 	const [trying, setTrying] = useState<string | undefined>();
@@ -304,7 +289,7 @@ export function PlayEditor(props: PlayEditorProps): ReactNode {
 				{status || summary}
 			</p>
 
-			{props.previewUrl && (
+			{hasPreview && (
 				<>
 					{trying !== undefined && PRESETS[trying] && (
 						<div style={styles.banner} role="status">
@@ -321,7 +306,11 @@ export function PlayEditor(props: PlayEditorProps): ReactNode {
 							</button>
 						</div>
 					)}
-					<Preview url={props.previewUrl} config={tryConfig ?? props.value ?? {}} labels={labels} />
+					<Preview
+						{...(props.previewUrl ? { url: props.previewUrl } : { html: props.previewHtml ?? '' })}
+						config={tryConfig ?? props.value ?? {}}
+						labels={labels}
+					/>
 				</>
 			)}
 
@@ -334,7 +323,7 @@ export function PlayEditor(props: PlayEditorProps): ReactNode {
 						lang={lang}
 						labels={labels}
 						trying={trying}
-						canTry={props.previewUrl !== undefined}
+						canTry={hasPreview}
 						onTry={setTrying}
 						onUse={usePreset}
 					/>

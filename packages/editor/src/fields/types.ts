@@ -2,10 +2,8 @@ import type { Node } from '@hello-eme/play-schema';
 import type { ComponentType } from 'react';
 import type { Labels, Lang } from '../labels.js';
 
-export interface MediaOption {
-	label: string;
-	url: string;
-}
+export type { MediaOption } from '../options.js';
+import type { MediaOption } from '../options.js';
 
 /** What every field needs to know about its surroundings. */
 export interface EditorContext {

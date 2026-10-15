@@ -43,8 +43,8 @@
 			const output = document.getElementById('json');
 			window.editor = PlayEditor.mount(document.getElementById('editor'), {
 				lang: 'en',
-				// The preview page plays every change (it loads the game with data-preview).
-				previewUrl: new URL('preview.html', location.href).href,
+				// No previewUrl: the editor shows the game on a built-in sample page. With
+				// previewUrl: 'https://my.site/play-preview' it shows a page of your own instead.
 				referenceUrl: 'https://github.com/oldjazjef/hello-eme-play/blob/main/docs/REFERENCE.md',
 				onChange: (json) => {
 					output.textContent = JSON.stringify(json, null, 2);
