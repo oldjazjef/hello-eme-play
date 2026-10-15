@@ -1,0 +1,35 @@
+{
+	"name": "@hello-eme/play-schema",
+	"version": "0.0.0",
+	"description": "The JSON configuration of @hello-eme/play: types, validation, defaults and migrations. No DOM.",
+	"license": "MIT",
+	"type": "module",
+	"keywords": [
+		"game",
+		"engine"
+	],
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./play.schema.json": "./dist/play.schema.json"
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"sideEffects": false,
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json && node scripts/emit-schema.mjs",
+		"check": "tsc --noEmit",
+		"lint": "eslint .",
+		"test": "vitest run --passWithNoTests"
+	}
+}

@@ -1,0 +1,48 @@
+{
+	"name": "@hello-eme/play",
+	"version": "0.0.0",
+	"description": "Turns any website into a game, configured by one JSON: top-down or side-scroller, stats, enemies, vehicles, items, upgrades and triggers.",
+	"license": "MIT",
+	"type": "module",
+	"keywords": [
+		"game",
+		"easter-egg",
+		"canvas",
+		"website",
+		"pixel-art",
+		"engine"
+	],
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./play.js": "./dist/play.js"
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"sideEffects": [
+		"./dist/play.js"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json && esbuild src/auto.ts --bundle --minify --format=iife --target=es2022 --outfile=dist/play.js --log-level=warning",
+		"check": "tsc --noEmit",
+		"lint": "eslint .",
+		"test": "vitest run --passWithNoTests"
+	},
+	"dependencies": {
+		"@hello-eme/play-core": "^0.0.0",
+		"@hello-eme/play-schema": "^0.0.0"
+	},
+	"devDependencies": {
+		"esbuild": "^0.25.12"
+	}
+}

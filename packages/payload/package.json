@@ -1,0 +1,56 @@
+{
+	"name": "@hello-eme/play-payload",
+	"version": "0.0.0",
+	"description": "Payload CMS plugin: edit the JSON configuration of @hello-eme/play in the admin panel.",
+	"license": "MIT",
+	"type": "module",
+	"keywords": [
+		"payload",
+		"payload-plugin",
+		"payloadcms",
+		"game"
+	],
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./client": {
+			"types": "./dist/exports/client.d.ts",
+			"import": "./dist/exports/client.js"
+		}
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"sideEffects": false,
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"check": "tsc --noEmit",
+		"lint": "eslint .",
+		"test": "vitest run --passWithNoTests"
+	},
+	"dependencies": {
+		"@hello-eme/play-schema": "^0.0.0"
+	},
+	"peerDependencies": {
+		"@payloadcms/ui": "^3.60.0",
+		"payload": "^3.60.0",
+		"react": ">=19"
+	},
+	"devDependencies": {
+		"@payloadcms/ui": "^3.90.2",
+		"@types/react": "^19.2.14",
+		"@types/react-dom": "^19.3.0",
+		"payload": "3.90.2",
+		"react": "^19.2.6",
+		"react-dom": "^19.2.6"
+	}
+}

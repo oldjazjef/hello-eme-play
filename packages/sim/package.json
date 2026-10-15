@@ -1,0 +1,43 @@
+{
+	"name": "@hello-eme/play-sim",
+	"version": "0.0.0",
+	"description": "Headless simulation of @hello-eme/play for balancing: bots play many seeded rounds of a configuration and report how it went.",
+	"license": "MIT",
+	"type": "module",
+	"keywords": [
+		"game",
+		"engine",
+		"balancing",
+		"simulation"
+	],
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"sideEffects": false,
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"check": "tsc --noEmit",
+		"lint": "eslint .",
+		"test": "vitest run --passWithNoTests"
+	},
+	"dependencies": {
+		"@hello-eme/play-core": "^0.0.0",
+		"@hello-eme/play-schema": "^0.0.0"
+	},
+	"bin": {
+		"play-sim": "./dist/cli.js"
+	}
+}

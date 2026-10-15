@@ -1,0 +1,37 @@
+{
+	"name": "@hello-eme/play-core",
+	"version": "0.0.0",
+	"description": "The game logic of @hello-eme/play without a DOM: entities, stats, systems, triggers, seeded randomness.",
+	"license": "MIT",
+	"type": "module",
+	"keywords": [
+		"game",
+		"engine"
+	],
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"sideEffects": false,
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"check": "tsc --noEmit",
+		"lint": "eslint .",
+		"test": "vitest run --passWithNoTests"
+	},
+	"dependencies": {
+		"@hello-eme/play-schema": "^0.0.0"
+	}
+}

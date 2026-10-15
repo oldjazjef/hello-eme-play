@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+.nx
+*.tsbuildinfo
+.env
+*.db
+.idea
+.vscode/*
+!.vscode/settings.json
+test-results
+playwright-report
