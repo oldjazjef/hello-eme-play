@@ -37,6 +37,8 @@ const en = {
 	triggers: 'triggers',
 	entries: 'entries',
 	modified: 'changed',
+	preview: 'Live preview',
+	previewHint: 'Changes start a fresh round here after a moment. Unsaved changes are shown too.',
 	groupGame: 'Game',
 	groupCharacters: 'Characters',
 	groupItems: 'Items & upgrades',
@@ -82,6 +84,9 @@ const de: Labels = {
 	triggers: 'Auslöser',
 	entries: 'Einträge',
 	modified: 'geändert',
+	preview: 'Live-Vorschau',
+	previewHint:
+		'Änderungen starten hier nach einem Moment eine neue Runde. Auch ungespeicherte Änderungen werden gezeigt.',
 	groupGame: 'Spiel',
 	groupCharacters: 'Figuren',
 	groupItems: 'Gegenstände & Upgrades',

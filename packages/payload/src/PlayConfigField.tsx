@@ -16,11 +16,14 @@ import { styles } from './fields/styles.js';
 import type { EditorContext, MediaOption } from './fields/types.js';
 import { LABELS, toLang, type Labels } from './labels.js';
 import { NodeEditor } from './NodeEditor.js';
+import { Preview } from './Preview.js';
 import { countEntries, pick } from './state.js';
 
 export type PlayConfigFieldProps = JSONFieldClientProps & {
 	/** Slug of the upload collection the pictures come from (default `media`). */
 	mediaCollection?: string;
+	/** A page that plays the configuration sent by the admin (the game's `data-preview` mode). */
+	previewUrl?: string;
 };
 
 type Tab = GroupId | 'raw';
@@ -98,7 +101,11 @@ function RawJson(props: { value: unknown; labels: Labels; onApply: (value: unkno
  * Edits the game's JSON with a form generated from `PLAY_SCHEMA` (or as raw JSON). Only what an
  * editor changes is written, so the stored JSON stays small and new defaults reach old sites.
  */
-export function PlayConfigField({ path, mediaCollection = 'media' }: PlayConfigFieldProps) {
+export function PlayConfigField({
+	path,
+	mediaCollection = 'media',
+	previewUrl
+}: PlayConfigFieldProps) {
 	const { value, setValue } = useField<unknown>({ path });
 	const { i18n } = useTranslation();
 	const { config: payloadConfig } = useConfig();
@@ -139,6 +146,8 @@ export function PlayConfigField({ path, mediaCollection = 'media' }: PlayConfigF
 			<p style={styles.muted} aria-label={labels.summary}>
 				{summary}
 			</p>
+
+			{previewUrl && <Preview url={previewUrl} config={value ?? {}} labels={labels} />}
 
 			<div style={styles.toolbar}>
 				<label htmlFor={presetId}>{labels.preset}</label>

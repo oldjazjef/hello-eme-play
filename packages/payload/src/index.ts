@@ -10,6 +10,11 @@ export interface PlayPluginOptions {
 	access?: { read?: Access; update?: Access };
 	/** Slug of the upload collection the picture picker lists (default `media`). */
 	mediaCollection?: string;
+	/**
+	 * A page that loads the game with `data-preview="<admin origin>"` (see the play README). The editor
+	 * then shows it next to the form and plays every change, saved or not.
+	 */
+	previewUrl?: string;
 	/** Turns the plugin off but keeps the global, so the database schema stays the same. */
 	disabled?: boolean;
 }
@@ -48,7 +53,10 @@ export function playGlobal(options: PlayPluginOptions = {}): GlobalConfig {
 					components: {
 						Field: {
 							path: '@hello-eme/play-payload/client#PlayConfigField',
-							clientProps: { mediaCollection: options.mediaCollection ?? 'media' }
+							clientProps: {
+								mediaCollection: options.mediaCollection ?? 'media',
+								...(options.previewUrl ? { previewUrl: options.previewUrl } : {})
+							}
 						}
 					}
 				}
