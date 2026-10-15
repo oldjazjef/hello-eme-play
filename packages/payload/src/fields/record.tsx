@@ -10,6 +10,7 @@ import {
 	setKey,
 	uniqueKey
 } from '../state.js';
+import { CARD_PATHS, EntryCards } from './cards.js';
 import { Button, merge, Section } from './controls.js';
 import { styles } from './styles.js';
 import type { EditorContext, FieldProps } from './types.js';
@@ -59,6 +60,14 @@ export function RecordField({
 	const entries = isObject(value) ? value : (defaultOf(node) as Record<string, unknown>);
 	const idLabel = pick(node.idLabel ?? node.label, ctx.lang);
 	const ids = Object.keys(entries);
+	const cards = CARD_PATHS.has(path);
+	const [chosen, setChosen] = useState<string | undefined>();
+	const current = chosen !== undefined && ids.includes(chosen) ? chosen : ids[0];
+	const addEntry = () => {
+		const id = uniqueKey(entries, 'new');
+		onChange({ ...entries, [id]: newItem(node.of) });
+		setChosen(id);
+	};
 	return (
 		<Section
 			node={node}
@@ -66,7 +75,19 @@ export function RecordField({
 			badge={String(ids.length)}
 			onReset={resettable && value !== undefined ? () => onChange(undefined) : undefined}
 		>
-			{ids.map((id) => {
+			{cards && (
+				<EntryCards
+					path={path}
+					node={node}
+					entries={entries}
+					selected={current}
+					onSelect={setChosen}
+					onAdd={addEntry}
+					canAdd={ids.length < node.maxItems}
+					ctx={ctx}
+				/>
+			)}
+			{(cards ? ids.filter((id) => id === current) : ids).map((id) => {
 				const entry = entries[id];
 				const title = itemTitle(node.of, entry, id, ctx.lang);
 				return (
@@ -76,13 +97,17 @@ export function RecordField({
 						ctx={ctx}
 						title={title}
 						badge={title === id ? undefined : id}
+						open={cards ? true : undefined}
 					>
 						<div style={styles.toolbar}>
 							<IdInput
 								value={id}
 								label={`${idLabel} ${ctx.labels.id}`}
 								ctx={ctx}
-								onRename={(next) => onChange(renameKey(entries, id, next))}
+								onRename={(next) => {
+									onChange(renameKey(entries, id, next));
+									if (id === current) setChosen(next.trim());
+								}}
 							/>
 							<Button
 								onClick={() => onChange(duplicateKey(entries, id))}
@@ -110,16 +135,18 @@ export function RecordField({
 					</Section>
 				);
 			})}
-			<div style={styles.toolbar}>
-				<Button
-					primary
-					disabled={ids.length >= node.maxItems}
-					onClick={() => onChange({ ...entries, [uniqueKey(entries, 'new')]: newItem(node.of) })}
-					label={`${ctx.labels.add}: ${idLabel}`}
-				>
-					{ctx.labels.add}
-				</Button>
-			</div>
+			{!cards && (
+				<div style={styles.toolbar}>
+					<Button
+						primary
+						disabled={ids.length >= node.maxItems}
+						onClick={addEntry}
+						label={`${ctx.labels.add}: ${idLabel}`}
+					>
+						{ctx.labels.add}
+					</Button>
+				</div>
+			)}
 		</Section>
 	);
 }
