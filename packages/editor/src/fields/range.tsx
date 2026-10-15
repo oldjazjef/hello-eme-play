@@ -10,6 +10,7 @@ export function RangeField({
 	value,
 	onChange,
 	ctx,
+	path,
 	resettable = true
 }: FieldProps<RangeNode>) {
 	const id = useId();
@@ -24,6 +25,7 @@ export function RangeField({
 			id={id}
 			node={node}
 			ctx={ctx}
+			path={path}
 			modified={value !== undefined}
 			{...(resettable ? { onReset: () => onChange(undefined) } : {})}
 		>

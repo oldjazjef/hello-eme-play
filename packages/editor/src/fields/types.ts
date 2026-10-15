@@ -17,6 +17,12 @@ export interface EditorContext {
 	media?: readonly MediaOption[];
 	/** Where new images are uploaded (admin URL), if the editor can offer it. */
 	mediaUploadHref?: string;
+	/** Stores an image and returns its address; without it the sprite tools embed the image. */
+	onUpload?: (file: File) => Promise<string>;
+	/** What `configProblems` found, by normalised field path (see `problems.ts`). */
+	problems?: Readonly<Record<string, readonly string[]>>;
+	/** The field to bring into view (set by "go to field" in the problem list). */
+	focus?: { path: string; nonce: number };
 }
 
 export interface NodeEditorProps<N extends Node = Node> {

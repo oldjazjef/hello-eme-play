@@ -8,6 +8,7 @@ export function BooleanField({
 	value,
 	onChange,
 	ctx,
+	path,
 	resettable = true
 }: FieldProps<BooleanNode>) {
 	const id = useId();
@@ -16,6 +17,7 @@ export function BooleanField({
 			id={id}
 			node={node}
 			ctx={ctx}
+			path={path}
 			modified={value !== undefined}
 			{...(resettable ? { onReset: () => onChange(undefined) } : {})}
 		>

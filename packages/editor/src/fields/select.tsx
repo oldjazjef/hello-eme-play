@@ -10,6 +10,7 @@ export function SelectField({
 	value,
 	onChange,
 	ctx,
+	path,
 	resettable = true
 }: FieldProps<SelectNode>) {
 	const id = useId();
@@ -20,6 +21,7 @@ export function SelectField({
 			id={id}
 			node={node}
 			ctx={ctx}
+			path={path}
 			modified={value !== undefined}
 			{...(resettable ? { onReset: () => onChange(undefined) } : {})}
 		>

@@ -21,6 +21,7 @@ export function ListField({
 		<Section
 			node={node}
 			ctx={ctx}
+			path={path}
 			badge={String(items.length)}
 			onReset={resettable && value !== undefined ? () => onChange(undefined) : undefined}
 		>
@@ -32,7 +33,13 @@ export function ListField({
 						: itemTitle(node.of, item, `${own} ${index + 1}`, ctx.lang);
 				return (
 					// Items have no identity of their own, so the position is the key.
-					<Section key={index} node={node.of} ctx={ctx} title={`${index + 1}. ${title}`}>
+					<Section
+						key={index}
+						node={node.of}
+						ctx={ctx}
+						path={`${path}.${index}`}
+						title={`${index + 1}. ${title}`}
+					>
 						<div style={styles.toolbar}>
 							<Button
 								disabled={index === 0}

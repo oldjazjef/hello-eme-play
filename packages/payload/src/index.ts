@@ -1,4 +1,4 @@
-import { objectProblem } from './state.js';
+import { objectProblem } from '@hello-eme/play-editor';
 import type { Access, GlobalConfig, Plugin } from 'payload';
 
 export interface PlayPluginOptions {

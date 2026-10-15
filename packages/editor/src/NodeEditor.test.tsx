@@ -109,3 +109,23 @@ describe('NodeEditor', () => {
 		expect(html).not.toContain('value="Blobby"');
 	});
 });
+
+describe('problems at the field', () => {
+	it('shows a problem under its field and a count on the section', () => {
+		const html = renderToString(
+			<NodeEditor
+				node={PLAY_SCHEMA}
+				value={{ game: { lives: 500 } }}
+				path=""
+				onChange={noop}
+				ctx={{
+					...ctx('en'),
+					problems: { 'game.lives': ['"game.lives" must be between 1 and 99.'] }
+				}}
+			/>
+		);
+		expect(html).toContain('must be between 1 and 99');
+		expect(html).toContain('data-pe-path="game.lives"');
+		expect(html).toMatch(/⚠ (<!-- -->)?1/);
+	});
+});

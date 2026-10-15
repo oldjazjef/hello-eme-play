@@ -1,5 +1,5 @@
 import { defaultOf, isObject, type RecordNode } from '@hello-eme/play-schema';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
 	duplicateKey,
 	itemTitle,
@@ -12,6 +12,7 @@ import {
 } from '../state.js';
 import { CARD_PATHS, EntryCards } from './cards.js';
 import { Button, merge, Section } from './controls.js';
+import { SpriteDrop } from './spriteDrop.js';
 import { styles } from './styles.js';
 import type { EditorContext, FieldProps } from './types.js';
 
@@ -63,6 +64,16 @@ export function RecordField({
 	const cards = CARD_PATHS.has(path);
 	const [chosen, setChosen] = useState<string | undefined>();
 	const current = chosen !== undefined && ids.includes(chosen) ? chosen : ids[0];
+	// "Go to field" in the problem list: show the entry the field belongs to.
+	const focusPath = ctx.focus?.path;
+	useEffect(() => {
+		if (!cards || focusPath === undefined) return;
+		const target = ids.find(
+			(id) => focusPath === `${path}.${id}` || focusPath.startsWith(`${path}.${id}.`)
+		);
+		if (target !== undefined) setChosen(target);
+		// Only a new request counts, not every render.
+	}, [ctx.focus?.nonce]);
 	const addEntry = () => {
 		const id = uniqueKey(entries, 'new');
 		onChange({ ...entries, [id]: newItem(node.of) });
@@ -72,9 +83,11 @@ export function RecordField({
 		<Section
 			node={node}
 			ctx={ctx}
+			path={path}
 			badge={String(ids.length)}
 			onReset={resettable && value !== undefined ? () => onChange(undefined) : undefined}
 		>
+			{path === 'sprites' && <SpriteDrop entries={entries} ctx={ctx} onChange={onChange} />}
 			{cards && (
 				<EntryCards
 					path={path}
@@ -95,6 +108,7 @@ export function RecordField({
 						key={id}
 						node={node.of}
 						ctx={ctx}
+						path={`${path}.${id}`}
 						title={title}
 						badge={title === id ? undefined : id}
 						open={cards ? true : undefined}

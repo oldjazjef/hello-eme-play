@@ -9,6 +9,7 @@ export function NumberField({
 	value,
 	onChange,
 	ctx,
+	path,
 	resettable = true
 }: FieldProps<NumberNode>) {
 	const id = useId();
@@ -18,6 +19,7 @@ export function NumberField({
 			id={id}
 			node={node}
 			ctx={ctx}
+			path={path}
 			modified={value !== undefined}
 			{...(resettable ? { onReset: () => onChange(undefined) } : {})}
 		>

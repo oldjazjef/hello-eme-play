@@ -26,6 +26,7 @@ export function UnionField({
 				id={id}
 				node={node}
 				ctx={ctx}
+				path={path}
 				modified={value !== undefined}
 				{...(resettable ? { onReset: () => onChange(undefined) } : {})}
 			>

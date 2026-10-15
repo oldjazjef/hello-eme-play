@@ -35,6 +35,7 @@ export function ObjectField({
 		<Section
 			node={node}
 			ctx={ctx}
+			path={path}
 			onReset={resettable && value !== undefined ? () => onChange(undefined) : undefined}
 		>
 			{fields}

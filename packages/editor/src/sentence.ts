@@ -39,36 +39,65 @@ function describeVariant(node: UnionNode, entry: unknown, root: unknown, lang: L
 	return values.length > 0 ? `${variant.label[lang]} (${values.join(', ')})` : variant.label[lang];
 }
 
+/** The parts of a trigger in words; `describeTrigger` and the flow view both build on them. */
+export interface TriggerParts {
+	/** "a monster is beaten" / "every 30 seconds" */
+	event: string;
+	/** The `only` filter (an entity, item or upgrade id), shown as written. */
+	only: string;
+	conditions: string[];
+	actions: string[];
+	once: boolean;
+}
+
+function listText(field: Node | undefined, value: unknown, root: unknown, lang: Lang): string[] {
+	return field?.type === 'list' && field.of.type === 'union' && Array.isArray(value)
+		? value.map((entry) => describeVariant(field.of as UnionNode, entry, root, lang))
+		: [];
+}
+
+/** The actions of a list node (`do`) as short texts, one per action. */
+export const describeActions = listText;
+
+/** `node` is the trigger's object node, `root` the resolved config. Undefined for anything else. */
+export function triggerParts(
+	node: Node,
+	item: unknown,
+	root: unknown,
+	lang: Lang
+): TriggerParts | undefined {
+	if (node.type !== 'object' || !isObject(item)) return undefined;
+	const defaults = defaultOf(node);
+	const trigger: Record<string, unknown> = { ...(isObject(defaults) ? defaults : {}), ...item };
+	const on = node.fields.on;
+	if (on?.type !== 'select') return undefined;
+	const event =
+		trigger.on === 'interval'
+			? WORDS[lang].every.replace('{n}', String(trigger.every))
+			: show(on, trigger.on, root, lang);
+	return {
+		event,
+		only: typeof trigger.only === 'string' ? trigger.only : '',
+		conditions: listText(node.fields.conditions, trigger.conditions, root, lang),
+		actions: listText(node.fields.do, trigger.do, root, lang),
+		once: trigger.once === true
+	};
+}
+
 /**
  * A trigger as one sentence: "When a monster is beaten, only if Score (100), then spawn
  * monsters (Blob, 3, At the edge)". `node` is the trigger's object node, `root` the resolved config.
  */
 export function describeTrigger(node: Node, item: unknown, root: unknown, lang: Lang): string {
-	if (node.type !== 'object' || !isObject(item)) return '';
-	const defaults = defaultOf(node);
-	const trigger: Record<string, unknown> = { ...(isObject(defaults) ? defaults : {}), ...item };
+	const parts = triggerParts(node, item, root, lang);
+	if (!parts) return '';
 	const words = WORDS[lang];
-	const on = node.fields.on;
-	const conditions = node.fields.conditions;
-	const actions = node.fields.do;
-	if (on?.type !== 'select') return '';
-
-	const event =
-		trigger.on === 'interval'
-			? words.every.replace('{n}', String(trigger.every))
-			: show(on, trigger.on, root, lang);
-	const only = typeof trigger.only === 'string' && trigger.only !== '' ? ` (${trigger.only})` : '';
-	const list = (field: Node | undefined, value: unknown): string[] =>
-		field?.type === 'list' && field.of.type === 'union' && Array.isArray(value)
-			? value.map((entry) => describeVariant(field.of as UnionNode, entry, root, lang))
-			: [];
-	const conditionText = list(conditions, trigger.conditions);
-	const actionText = list(actions, trigger.do);
+	const only = parts.only !== '' ? ` (${parts.only})` : '';
 	return [
-		`${words.when} ${event}${only}`,
-		conditionText.length > 0 ? `${words.onlyIf} ${conditionText.join(' + ')}` : '',
-		trigger.once === true ? words.once : '',
-		`${words.then} ${actionText.length > 0 ? actionText.join(', ') : '…'}`
+		`${words.when} ${parts.event}${only}`,
+		parts.conditions.length > 0 ? `${words.onlyIf} ${parts.conditions.join(' + ')}` : '',
+		parts.once ? words.once : '',
+		`${words.then} ${parts.actions.length > 0 ? parts.actions.join(', ') : '…'}`
 	]
 		.filter(Boolean)
 		.join(', ');

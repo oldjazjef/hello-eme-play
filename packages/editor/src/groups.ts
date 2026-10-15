@@ -39,3 +39,13 @@ export function groupNodes(root: ObjectNode): Group[] {
 		return { id: group.id, node: { ...root, fields } };
 	}).filter((group) => Object.keys(group.node.fields).length > 0);
 }
+
+/** The tab a top-level setting is on. */
+export function groupOf(groups: readonly Group[], key: string): GroupId | undefined {
+	return groups.find((group) => key in group.node.fields)?.id;
+}
+
+/** The stored JSON without the settings of one tab: back to the defaults, nothing else touched. */
+export function resetGroup(stored: Record<string, unknown>, group: Group): Record<string, unknown> {
+	return Object.fromEntries(Object.entries(stored).filter(([key]) => !(key in group.node.fields)));
+}

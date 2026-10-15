@@ -1,0 +1,54 @@
+{
+	"name": "@hello-eme/play-editor",
+	"version": "0.0.0",
+	"description": "The editor for the JSON configuration of @hello-eme/play: a React component and a drop-in script, with or without a CMS.",
+	"license": "MIT",
+	"type": "module",
+	"keywords": [
+		"game",
+		"editor",
+		"configuration",
+		"react"
+	],
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./editor.js": "./dist/editor.iife.js"
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"sideEffects": [
+		"./dist/standalone.js",
+		"./dist/editor.iife.js"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json && esbuild src/standalone.tsx --bundle --minify --format=iife --target=es2022 --jsx=automatic --define:process.env.NODE_ENV=\\\"production\\\" --outfile=dist/editor.iife.js --log-level=warning",
+		"check": "tsc --noEmit",
+		"lint": "eslint .",
+		"test": "vitest run --passWithNoTests"
+	},
+	"dependencies": {
+		"@hello-eme/play-schema": "^0.0.0",
+		"@hello-eme/play-sim": "^0.0.0"
+	},
+	"peerDependencies": {
+		"react": ">=19"
+	},
+	"devDependencies": {
+		"@types/react": "^19.2.14",
+		"@types/react-dom": "^19.3.0",
+		"esbuild": "^0.25.12",
+		"react": "^19.2.6",
+		"react-dom": "^19.2.6"
+	}
+}

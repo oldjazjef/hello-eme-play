@@ -5,7 +5,14 @@ import { Button, helpId, merge, Row } from './controls.js';
 import { styles } from './styles.js';
 import type { FieldProps } from './types.js';
 
-export function KeysField({ node, value, onChange, ctx, resettable = true }: FieldProps<KeysNode>) {
+export function KeysField({
+	node,
+	value,
+	onChange,
+	ctx,
+	path,
+	resettable = true
+}: FieldProps<KeysNode>) {
 	const id = useId();
 	const keys = keyList(value, node.default);
 	const [draft, setDraft] = useState<string | undefined>();
@@ -31,6 +38,7 @@ export function KeysField({ node, value, onChange, ctx, resettable = true }: Fie
 			id={id}
 			node={node}
 			ctx={ctx}
+			path={path}
 			modified={value !== undefined}
 			{...(resettable ? { onReset: () => onChange(undefined) } : {})}
 		>

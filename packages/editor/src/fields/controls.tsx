@@ -1,5 +1,6 @@
 import type { Node } from '@hello-eme/play-schema';
 import { useState, type CSSProperties, type ReactNode } from 'react';
+import { problemsAt, problemsUnder } from '../problems.js';
 import { pick } from '../state.js';
 import { styles } from './styles.js';
 import type { EditorContext } from './types.js';
@@ -46,13 +47,16 @@ export function Row(props: {
 	node: Node;
 	ctx: EditorContext;
 	modified: boolean;
+	/** The field's path in the configuration: problems found there are shown under it. */
+	path?: string;
 	onReset?: () => void;
 	children: ReactNode;
 }) {
 	const { id, node, ctx } = props;
 	const label = pick(node.label, ctx.lang);
+	const found = props.path === undefined ? [] : problemsAt(ctx.problems, props.path);
 	return (
-		<div style={styles.row}>
+		<div style={styles.row} {...(props.path === undefined ? {} : { 'data-pe-path': props.path })}>
 			<label htmlFor={id} style={styles.label}>
 				{label}
 			</label>
@@ -67,6 +71,11 @@ export function Row(props: {
 					{pick(node.help, ctx.lang)}
 				</p>
 			)}
+			{found.map((message) => (
+				<p key={message} style={merge(styles.help, styles.warning)}>
+					⚠ {message}
+				</p>
+			))}
 		</div>
 	);
 }
@@ -78,16 +87,28 @@ export function Section(props: {
 	badge?: string;
 	ctx: EditorContext;
 	open?: boolean;
+	/** The section's path in the configuration: it shows how many problems sit below it. */
+	path?: string;
 	onReset?: (() => void) | undefined;
 	children: ReactNode;
 }) {
 	const { node, ctx } = props;
 	const title = props.title ?? pick(node.label, ctx.lang);
+	const count = props.path === undefined ? 0 : problemsUnder(ctx.problems, props.path).length;
 	return (
-		<details open={props.open} style={styles.section}>
+		<details
+			open={props.open}
+			style={styles.section}
+			{...(props.path === undefined ? {} : { 'data-pe-path': props.path })}
+		>
 			<summary style={styles.summary}>
 				{title}
 				{props.badge && <span style={styles.badge}>{props.badge}</span>}
+				{count > 0 && (
+					<span style={merge(styles.badge, styles.warning)} title={ctx.labels.problemsBelow}>
+						⚠ {count}
+					</span>
+				)}
 			</summary>
 			<div style={styles.sectionBody}>
 				{node.help && (
