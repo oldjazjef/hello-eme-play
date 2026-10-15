@@ -1,0 +1,23 @@
+{
+	"view": { "mode": "topdown" },
+	"triggers": [
+		{
+			"on": "interval",
+			"every": 30,
+			"conditions": [{ "if": "view", "mode": "topdown" }],
+			"do": [
+				{ "do": "message", "text": "Sidescroller!" },
+				{ "do": "setView", "mode": "side" }
+			]
+		},
+		{
+			"on": "interval",
+			"every": 37,
+			"conditions": [{ "if": "view", "mode": "side" }],
+			"do": [
+				{ "do": "message", "text": "Vogelperspektive!" },
+				{ "do": "setView", "mode": "topdown" }
+			]
+		}
+	]
+}
