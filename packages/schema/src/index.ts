@@ -3,7 +3,14 @@
  * validation, defaults, presets and migrations). No DOM.
  */
 export * from './dsl.js';
-export { configProblems, DEFAULT_CONFIG, playJsonSchema, resolveConfig } from './config.js';
+export {
+	configProblems,
+	DEFAULT_CONFIG,
+	playJsonSchema,
+	resolveConfig,
+	resolveConfigFor
+} from './config.js';
+export { matchPath, mergeConfig, pageConfigFor } from './pages.js';
 export { fromPageGame, isLegacy, migrate } from './migrate.js';
 export { PRESETS, type Preset } from './presets.js';
 export { ACTION, CONDITION, PLAY_SCHEMA } from './schema.js';

@@ -353,7 +353,29 @@ const ENTITY = object(t('Figur, Monster oder Fahrzeug', 'Figure, monster or vehi
 			})
 		}
 	}),
-	boss: bool(t('Boss', 'Boss'), false)
+	boss: bool(t('Boss', 'Boss'), false),
+	phases: {
+		type: 'list',
+		label: t('Boss-Phasen', 'Boss phases'),
+		help: t(
+			'Nur für Bosse: läuft einmal, wenn das Leben unter den Wert fällt.',
+			'Bosses only: runs once when health drops below the value.'
+		),
+		maxItems: 10,
+		of: object(t('Phase', 'Phase'), {
+			below: num(t('Wenn Leben unter (%)', 'When health below (%)'), 50, 0, 100),
+			label: str(t('Meldung', 'Message')),
+			stats: {
+				type: 'record',
+				label: t('Werte ändern (dauerhaft)', 'Change stats (for good)'),
+				idLabel: t('Wert', 'Stat'),
+				of: num(t('Menge', 'Amount'), 0, -100_000, 100_000),
+				default: {},
+				maxItems: 30
+			},
+			do: ACTIONS(t('Dann', 'Then'))
+		})
+	}
 });
 
 const MOVE = object(t('Angriff', 'Move'), {
@@ -435,6 +457,32 @@ const ITEM_SPAWN = object(t('Gegenstand-Regel', 'Item rule'), {
 	...level(1)
 });
 
+const WAVE_STEP = object(t('Schritt', 'Step'), {
+	at: num(t('Nach (Sekunden ab Wellenstart)', 'At (seconds after the wave starts)'), 10, 0, 3600),
+	every: num(t('Wiederholung alle (Sekunden)', 'Repeat every (seconds)'), 10, 0.5, 3600),
+	repeat: int(t('Wie oft wiederholen (0 = einmal)', 'Repeats (0 = once)'), 0, 0, 1000),
+	do: ACTIONS(t('Dann', 'Then'))
+});
+
+const WAVE = object(
+	t('Welle', 'Wave'),
+	{
+		label: str(t('Name', 'Name')),
+		...level(1),
+		after: num(
+			t('Start nach Levelbeginn (Sekunden)', 'Starts after the level began (seconds)'),
+			0,
+			0,
+			3600
+		),
+		steps: { type: 'list', label: t('Schritte', 'Steps'), of: WAVE_STEP, maxItems: 30 }
+	},
+	t(
+		'Ein kleines Drehbuch: jeder Schritt läuft zu seiner Zeit, in jedem Level des Bereichs von vorn.',
+		'A small script: every step runs at its time, restarted in each level of the range.'
+	)
+);
+
 const LEVEL = object(t('Level', 'Level'), {
 	label: str(t('Name', 'Name')),
 	view: select(t('Ansicht (beim Start)', 'View (at start)'), ['', ...VIEW_MODES], '', {
@@ -504,7 +552,7 @@ const car = {
 	moves: []
 };
 
-export const PLAY_SCHEMA: ObjectNode = object(t('Spiel', 'Game'), {
+const FIELDS: Record<string, Node> = {
 	version: int(t('Version', 'Version'), 1, 1, 1000),
 	enabled: bool(t('Spiel aktiv', 'Game enabled'), true),
 	locale: select(t('Sprache', 'Language'), ['de', 'en'], 'de'),
@@ -672,6 +720,12 @@ export const PLAY_SCHEMA: ObjectNode = object(t('Spiel', 'Game'), {
 			}
 		)
 	}),
+	waves: {
+		type: 'list',
+		label: t('Wellen (Drehbücher)', 'Waves (scripts)'),
+		of: WAVE,
+		maxItems: 50
+	},
 	triggers: { type: 'list', label: t('Auslöser', 'Triggers'), of: TRIGGER, maxItems: 100 },
 	levels: { type: 'list', label: t('Level', 'Levels'), of: LEVEL, maxItems: 100 },
 	keys: object(t('Tasten', 'Keys'), {
@@ -723,6 +777,36 @@ export const PLAY_SCHEMA: ObjectNode = object(t('Spiel', 'Game'), {
 		textFields,
 		t('Leer lassen für den Standardtext.', 'Leave empty for the default text.')
 	)
+};
+
+/** What a page may change: everything except `pages` itself (no nesting). */
+export const PAGE_CONFIG: ObjectNode = object(
+	t('Einstellungen dieser Seite', 'Settings of this page'),
+	FIELDS,
+	t(
+		'Nur eintragen, was anders ist: Objekte werden zusammengeführt, Listen ersetzt.',
+		'Only enter what differs: objects are merged, lists are replaced.'
+	)
+);
+
+const PAGE = object(t('Seite', 'Page'), {
+	match: str(t('Adresse (Muster)', 'Path (pattern)'), '*', {
+		help: t(
+			'Zum Beispiel /blog/*, /projekte oder * für alle. Passt mehr als ein Eintrag, werden sie der Reihe nach angewendet.',
+			'For example /blog/*, /projects or * for all. When several entries match, they apply in order.'
+		)
+	}),
+	config: PAGE_CONFIG
+});
+
+export const PLAY_SCHEMA: ObjectNode = object(t('Spiel', 'Game'), {
+	...FIELDS,
+	pages: {
+		type: 'list',
+		label: t('Pro Seite anders', 'Per page'),
+		of: PAGE,
+		maxItems: 50
+	}
 });
 
 /** The classic game's pieces, for presets that start from it. */
