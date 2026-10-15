@@ -82,4 +82,30 @@ describe('NodeEditor', () => {
 		expect(html).toContain('Walk');
 		expect(html).toContain('value="6"');
 	});
+
+	it('shows entities and items as cards and edits only the chosen one', () => {
+		const value = {
+			sprites: { hero: { url: '/media/a.png', columns: 2 } },
+			entities: {
+				hero: { kind: 'figure', label: 'Hero', sprite: 'hero', stats: { hp: 80, speed: 150 } },
+				blob: { label: 'Blobby' }
+			}
+		};
+		const html = renderToString(
+			<NodeEditor
+				node={PLAY_SCHEMA}
+				value={value}
+				path=""
+				ctx={{ ...ctx('en'), root: resolveConfig(value) }}
+				onChange={noop}
+			/>
+		);
+		expect(html).toContain('aria-pressed="true"');
+		expect(html).toContain('Figure · HP 80 · Speed 150');
+		expect(html).toContain('background-size:200% 100%');
+		expect(html).toContain('Blobby');
+		// Only the chosen card (the first) has its form open; the other's fields are not rendered.
+		expect(html.match(/value="Hero"/g)?.length).toBe(1);
+		expect(html).not.toContain('value="Blobby"');
+	});
 });
