@@ -1,15 +1,23 @@
+# Actions → Release → Run workflow (on main, also from GitHub Mobile): creates the next release vX.Y.Z for
+# the newest commit of main (next patch/minor/major, or an exact version), builds the packages and attaches
+# them as tarballs, so they install without npm: see docs/INSTALL.md.
+# A tag pushed by hand (v1.2.3) does the same for that tag.
 name: Release
 
-# Pushing a tag like v0.1.0 (or running this by hand with a version) attaches the packages to a GitHub
-# release as tarballs, so they install without npm: see docs/INSTALL.md.
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
     inputs:
+      bump:
+        description: Version part to increase
+        type: choice
+        options: [patch, minor, major]
+        default: patch
       version:
-        description: 'Version without the v (e.g. 0.1.0); the tag v<version> is created on the current commit'
-        required: true
+        description: Exact version instead (e.g. v1.2.3), optional
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -17,25 +25,56 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Version
+        id: version
+        env:
+          EVENT: ${{ github.event_name }}
+          PUSHED_TAG: ${{ github.ref_name }}
+          BUMP: ${{ inputs.bump }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [ "$EVENT" = push ]; then
+            tag="$PUSHED_TAG"
+          elif [ "$GITHUB_REF" != refs/heads/main ]; then
+            echo "::error::Run this workflow on main (got $GITHUB_REF)."
+            exit 1
+          elif [ -n "$VERSION" ]; then
+            tag="v${VERSION#v}"
+          else
+            latest="$(git tag --list 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)"
+            IFS=. read -r major minor patch <<<"${latest:-v0.0.0}"
+            major="${major#v}"
+            case "$BUMP" in
+              major) tag="v$((major + 1)).0.0" ;;
+              minor) tag="v$major.$((minor + 1)).0" ;;
+              *) tag="v$major.$minor.$((patch + 1))" ;;
+            esac
+            echo "Latest release: ${latest:-none}, next: $tag"
+          fi
+          if ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Release tag must look like v1.2.3 (got $tag)"
+            exit 1
+          fi
+          if [ "$EVENT" != push ] && git rev-parse --quiet --verify "refs/tags/$tag" > /dev/null; then
+            echo "::error::$tag already exists."
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: Version
-        id: version
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
-        run: |
-          version="${INPUT_VERSION:-${GITHUB_REF_NAME#v}}"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
       - run: node scripts/pack-release.mjs "${{ steps.version.outputs.version }}" release
       - name: Publish the release
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v${{ steps.version.outputs.version }}" release/* \
-            --target "$GITHUB_SHA" --generate-notes
+          gh release create "${{ steps.version.outputs.tag }}" release/* \
+            --target "$GITHUB_SHA" --title "${{ steps.version.outputs.tag }}" --generate-notes
