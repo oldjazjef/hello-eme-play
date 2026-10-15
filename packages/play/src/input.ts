@@ -62,6 +62,14 @@ export class Input {
 		this.#pressed.add(action);
 	}
 
+	/** Lets go of everything the on-screen pad holds (its buttons were replaced, no release will come). */
+	releasePad(): void {
+		for (const source of [...this.#held.keys()])
+			if (source.startsWith('pad-')) this.#held.delete(source);
+		for (const sources of this.#moves.values()) sources.delete('pad');
+		this.handbrake.pad = false;
+	}
+
 	clear(): void {
 		this.#held.clear();
 		this.#moves.clear();

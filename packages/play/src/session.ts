@@ -126,6 +126,7 @@ export class Session {
 			toggleShop: () => this.#toggleShop()
 		});
 		this.#ui = new GameUi(textsFor(hooks.config), {
+			releasePad: () => this.#input.releasePad(),
 			press: (direction) => this.#input.press(`pad-${direction}`, direction),
 			release: (direction) => this.#input.release(`pad-${direction}`),
 			use: () => this.#input.request('use'),

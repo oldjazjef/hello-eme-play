@@ -111,6 +111,20 @@ describe('Input', () => {
 		expect(controls.axis.x).toBe(0);
 	});
 
+	it('lets go of the pad buttons when the pad is rebuilt, but not of the keys', () => {
+		const { input, controls } = setup();
+		input.press('pad-right', 'right');
+		input.holdMove('pad', 'punch', true);
+		input.handbrake.pad = true;
+		input.keydown(key('ArrowUp'));
+		input.releasePad();
+		input.apply(controls, true);
+		input.apply(controls, true);
+		expect(controls.axis).toEqual({ x: 0, y: -1 });
+		expect(controls.held.size).toBe(0);
+		expect(controls.drift).toBe(false);
+	});
+
 	it('holds the moves of the figure while their keys are down', () => {
 		const { input, controls } = setup();
 		input.keydown(key('Space'));
