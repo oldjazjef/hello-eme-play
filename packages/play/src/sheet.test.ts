@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createWorld } from '@hello-eme/play-core';
-import { animationOf, frameAt, type Sheet } from './sprite.js';
+import { createWorld, type Body } from '@hello-eme/play-core';
+import { animationOf, frameAt, sideRows, type Sheet } from './sprite.js';
 
 const sheet = (animations: Partial<Sheet['animations']>): Sheet => ({
 	columns: 4,
@@ -54,5 +54,32 @@ describe('animationOf', () => {
 		expect(animationOf(hero, false)).toBe('hurt');
 		hero.pose = { pose: 'kick', left: 0.1 };
 		expect(animationOf(hero, false)).toBe('kick');
+	});
+});
+
+describe('side view pictures', () => {
+	const body = (extra: Partial<Body> = {}) =>
+		({ moving: false, distance: 0, grounded: true, pose: undefined, ...extra }) as Body;
+
+	it('shows the figure in profile: the face is on the right', () => {
+		const rows = sideRows(body(), 'figure');
+		const skin = rows.flatMap((row) => [...row].flatMap((char, x) => (char === 's' ? [x] : [])));
+		expect(Math.min(...skin)).toBeGreaterThan(4);
+	});
+
+	it('has a profile for every pose, all the same size', () => {
+		const poses = [
+			body(),
+			body({ moving: true, distance: 5 }),
+			body({ grounded: false }),
+			body({ pose: { pose: 'punch' } as Body['pose'] }),
+			body({ pose: { pose: 'kick' } as Body['pose'] })
+		];
+		for (const look of ['figure', 'enemy'] as const)
+			for (const pose of poses) {
+				const rows = sideRows(pose, look);
+				expect(rows).toHaveLength(10);
+				expect(rows.every((row) => row.length === 10)).toBe(true);
+			}
 	});
 });

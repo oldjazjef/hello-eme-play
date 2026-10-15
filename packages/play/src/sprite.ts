@@ -17,8 +17,8 @@ import type { Shard } from './wreck.js';
 
 /**
  * The figure, seen from above and facing down: hair, a peek of the face, shoulders, arms, feet.
- * One character per pixel; `.` is transparent. Other directions are drawn rotated. In the side view
- * the same picture is the figure seen from the front.
+ * One character per pixel; `.` is transparent. Other directions are drawn rotated. The side view has
+ * its own pictures (`SIDE_*`): the figure and monsters in profile, looking right (mirrored to look left).
  */
 const STANDING = [
 	'...hhhh...',
@@ -78,6 +78,75 @@ const KICKING = [
 const mirror = (rows: readonly string[]) => rows.map((row) => [...row].reverse().join(''));
 
 const WALKING = [STEP, mirror(STEP)] as const;
+
+/** The figure in profile, looking right: face in front, one arm, legs side by side. */
+const SIDE_STANDING = [
+	'...hhhh...',
+	'..hhhhhh..',
+	'..hhhhhss.',
+	'..hhhhsss.',
+	'...bbbb...',
+	'..bbbbbb..',
+	'..bbbbbs..',
+	'..bbbbbb..',
+	'...bbbb...',
+	'...fffff..'
+];
+
+/** Striding: legs apart, the arm swinging. */
+const SIDE_STEP = [
+	...SIDE_STANDING.slice(0, 6),
+	'..bbbbbbs.',
+	'..bbbbbb..',
+	'..bb..bb..',
+	'.ff...fff.'
+];
+
+/** Passing: one leg under the body. */
+const SIDE_PASS = [
+	...SIDE_STANDING.slice(0, 6),
+	'.sbbbbbb..',
+	'..bbbbbb..',
+	'...bbbb...',
+	'...ffff...'
+];
+
+const SIDE_WALKING = [SIDE_STEP, SIDE_PASS] as const;
+
+/** Punching: the arm stretched forward, fist first. */
+const SIDE_PUNCHING = [...SIDE_STANDING.slice(0, 6), '..bbbbbbss', ...SIDE_STANDING.slice(7)];
+
+/** Kicking: one leg stretched forward. */
+const SIDE_KICKING = [
+	...SIDE_STANDING.slice(0, 6),
+	'..bbbbbbs.',
+	'..bbbbbbb.',
+	'...bb.bbbb',
+	'...ff...ff'
+];
+
+/** A monster in profile, looking right: horn, big eye, two feet. */
+const SIDE_ENEMY_STANDING = [
+	'..e.......',
+	'..ee..e...',
+	'..eeeeee..',
+	'.eeeeeeeee',
+	'.eeeeeexxe',
+	'.eeeeeexwe',
+	'.eeeeeeeee',
+	'..eeeeee..',
+	'..ee..ee..',
+	'..ff..ff..'
+];
+
+const SIDE_ENEMY_STEP = [
+	...SIDE_ENEMY_STANDING.slice(0, 7),
+	'..eeeeee..',
+	'..ee..ee..',
+	'.ff....ff.'
+];
+
+const SIDE_ENEMY_WALKING = [SIDE_ENEMY_STEP, SIDE_ENEMY_STANDING] as const;
 
 /** A monster from above, facing down: a horned blob with big eyes. */
 const ENEMY_STANDING = [
@@ -313,6 +382,19 @@ function humanoidRows(body: Body, look: Look): readonly string[] {
 	return body.moving ? (WALKING[walkFrame(body)] ?? STANDING) : STANDING;
 }
 
+/** The pictures of the side view: like `humanoidRows`, but in profile. */
+export function sideRows(body: Body, look: Look): readonly string[] {
+	if (look === 'enemy') {
+		return body.distance > 0 && body.moving
+			? (SIDE_ENEMY_WALKING[walkFrame(body)] ?? SIDE_ENEMY_STANDING)
+			: SIDE_ENEMY_STANDING;
+	}
+	if (body.pose?.pose === 'kick') return SIDE_KICKING;
+	if (body.pose?.pose === 'punch' || body.pose?.pose === 'bite') return SIDE_PUNCHING;
+	if (!body.grounded) return SIDE_STEP;
+	return body.moving ? (SIDE_WALKING[walkFrame(body)] ?? SIDE_STANDING) : SIDE_STANDING;
+}
+
 function frameOf(body: Body, picture: Picture, scene: Scene): number {
 	// Each body starts at another point of the loop.
 	const time = scene.time + body.id * 0.37;
@@ -422,7 +504,7 @@ function drawSide(
 		ctx.restore();
 		return;
 	}
-	const rows = humanoidRows(body, definition.look);
+	const rows = sideRows(body, definition.look);
 	const full = rows.length * PIXEL * scale;
 	shadow(ctx, x, feet, (10 * PIXEL * scale) / 2, colors, body.grounded ? 0 : 1);
 	const centerY = feet - full / 2 + PIXEL * scale * 2;

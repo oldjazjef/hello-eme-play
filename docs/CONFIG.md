@@ -62,6 +62,10 @@ A star item that switches to the side view for good:
 }
 ```
 
+Switch between top-down and side-scroller every half minute ([view-switch.json](examples/view-switch.json)):
+two `interval` triggers with a `view` condition each. The second one uses another period (37 s), so both never
+fire in the same moment and flip the view straight back.
+
 A swarm when the visitor reaches 1000 points, once:
 
 ```json
