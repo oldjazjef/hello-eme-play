@@ -83,6 +83,8 @@ export interface Body {
 	runOver: number;
 	/** Parked and waiting (vehicles). */
 	parked: boolean;
+	/** Boss phases already started. */
+	phase: number;
 }
 
 export interface Pickup {
@@ -143,6 +145,10 @@ export interface WorldEvents extends Record<string, unknown> {
 	message: { text: string };
 	sound: { id: string };
 	over: { won: boolean };
+	/** A step of a wave script ran (`index` into `config.waves`, `step` into its steps). */
+	wave: { index: number; label: string; step: number };
+	/** A boss phase started (`index` into the entity's `phases`). */
+	phase: { body: Body; index: number; label: string };
 }
 
 export interface Stats {

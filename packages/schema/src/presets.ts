@@ -88,7 +88,15 @@ export const PRESETS: Record<string, Preset> = {
 					boss: true,
 					stats: { hp: 120, attack: 25, defense: 4, speed: 80 },
 					moves: ['bite'],
-					reward: { points: 2000, drops: [{ item: 'portal', chance: 100 }] }
+					reward: { points: 2000, drops: [{ item: 'portal', chance: 100 }] },
+					phases: [
+						{ below: 50, label: 'The King is furious!', stats: { attack: 10, speed: 30 } },
+						{
+							below: 25,
+							label: 'The King calls his guards!',
+							do: [{ do: 'spawn', entity: 'blob', count: 4, where: 'edge' }]
+						}
+					]
 				},
 				car: CLASSIC.car
 			},
@@ -143,6 +151,19 @@ export const PRESETS: Record<string, Preset> = {
 			itemSpawns: [
 				{ item: 'star', every: { min: 20, max: 40 }, max: 2 },
 				{ item: 'heart', every: { min: 30, max: 50 }, max: 1, fromLevel: 2 }
+			],
+			waves: [
+				{
+					label: 'Ambush',
+					fromLevel: 2,
+					toLevel: 2,
+					after: 5,
+					steps: [
+						{ at: 0, do: [{ do: 'message', text: 'Ambush!' }] },
+						{ at: 5, do: [{ do: 'spawn', entity: 'brute', count: 2, where: 'edge' }] },
+						{ at: 20, do: [{ do: 'spawn', entity: 'blob', count: 8, where: 'edge' }] }
+					]
+				}
 			],
 			levels: [
 				{ label: 'Warm-up', goal: { type: 'score', amount: 500 } },

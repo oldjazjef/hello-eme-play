@@ -44,7 +44,8 @@ export function createBody(
 		wander: { angle: 0, left: 0 },
 		pilot: undefined,
 		runOver: 0,
-		parked: false
+		parked: false,
+		phase: 0
 	};
 }
 
