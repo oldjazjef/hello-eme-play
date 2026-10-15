@@ -2,10 +2,15 @@ import type { CSSProperties } from 'react';
 
 /** Only `--pe-*` variables (see `theme.ts`), so the form follows the host's theme: Payload's admin or its own. */
 export const styles = {
-	stack: { display: 'grid', gap: 'calc(var(--pe-base) * 0.5)' },
+	// `minmax(0, 1fr)`: a grid's one column otherwise grows to its widest content and pushes past a phone's screen.
+	stack: {
+		display: 'grid',
+		gridTemplateColumns: 'minmax(0, 1fr)',
+		gap: 'calc(var(--pe-base) * 0.5)'
+	},
 	row: {
 		display: 'grid',
-		gridTemplateColumns: 'minmax(10rem, 16rem) 1fr auto',
+		gridTemplateColumns: 'minmax(10rem, 16rem) minmax(0, 1fr) auto',
 		alignItems: 'center',
 		gap: 'calc(var(--pe-base) * 0.5)'
 	},
@@ -31,7 +36,7 @@ export const styles = {
 		font: 'inherit'
 	},
 	number: { width: '8rem' },
-	wide: { flex: 1, minWidth: '12rem' },
+	wide: { flex: 1, minWidth: 'min(12rem, 100%)' },
 	button: {
 		padding: 'calc(var(--pe-base) * 0.25) calc(var(--pe-base) * 0.6)',
 		borderWidth: '1px',
@@ -56,6 +61,7 @@ export const styles = {
 	summary: { cursor: 'pointer', fontWeight: 600 },
 	sectionBody: {
 		display: 'grid',
+		gridTemplateColumns: 'minmax(0, 1fr)',
 		gap: 'calc(var(--pe-base) * 0.5)',
 		paddingTop: 'calc(var(--pe-base) * 0.5)'
 	},
@@ -72,10 +78,14 @@ export const styles = {
 	},
 	tabs: {
 		display: 'flex',
+		flexWrap: 'nowrap',
+		overflowX: 'auto',
 		gap: 'calc(var(--pe-base) * 0.25)',
 		borderBottom: '1px solid var(--pe-border)'
 	},
 	tab: {
+		whiteSpace: 'nowrap',
+		flexShrink: 0,
 		padding: 'calc(var(--pe-base) * 0.4) calc(var(--pe-base) * 0.8)',
 		borderStyle: 'solid',
 		borderWidth: '0 0 2px',
@@ -86,20 +96,51 @@ export const styles = {
 		cursor: 'pointer'
 	},
 	tabActive: { borderColor: 'transparent transparent var(--pe-accent)', fontWeight: 600 },
+	previewBox: {
+		display: 'grid',
+		gridTemplateColumns: 'minmax(0, 1fr)',
+		gap: 'calc(var(--pe-base) * 0.4)'
+	},
+	previewFull: {
+		position: 'fixed',
+		inset: 0,
+		zIndex: 2147483000,
+		display: 'grid',
+		gridTemplateColumns: 'minmax(0, 1fr)',
+		gridTemplateRows: 'auto minmax(0, 1fr)',
+		gap: 'calc(var(--pe-base) * 0.4)',
+		padding:
+			'max(env(safe-area-inset-top, 0px), calc(var(--pe-base) * 0.5)) max(env(safe-area-inset-right, 0px), calc(var(--pe-base) * 0.5)) max(env(safe-area-inset-bottom, 0px), calc(var(--pe-base) * 0.5)) max(env(safe-area-inset-left, 0px), calc(var(--pe-base) * 0.5))',
+		background: 'var(--pe-bg)',
+		color: 'var(--pe-text)'
+	},
+	previewFrameFull: {
+		width: '100%',
+		height: '100%',
+		borderWidth: '1px',
+		borderStyle: 'solid',
+		borderColor: 'var(--pe-border)',
+		background: 'var(--pe-bg)'
+	},
 	preview: {
 		width: '100%',
-		height: '28rem',
-		border: '1px solid var(--pe-border)',
+		height: 'min(28rem, 70vh)',
+		borderWidth: '1px',
+		borderStyle: 'solid',
+		borderColor: 'var(--pe-border)',
 		borderRadius: 'var(--pe-radius)',
 		background: 'var(--pe-bg)'
 	},
 	cards: {
 		display: 'grid',
-		gridTemplateColumns: 'repeat(auto-fill, minmax(9rem, 1fr))',
+		gridTemplateColumns: 'repeat(auto-fill, minmax(min(9rem, 100%), 1fr))',
 		gap: 'calc(var(--pe-base) * 0.5)'
 	},
 	card: {
 		display: 'grid',
+		gridTemplateColumns: 'minmax(0, 1fr)',
+		minWidth: 0,
+		overflowWrap: 'anywhere',
 		justifyItems: 'center',
 		gap: 'calc(var(--pe-base) * 0.25)',
 		padding: 'calc(var(--pe-base) * 0.5)',
@@ -143,6 +184,7 @@ export const styles = {
 	muted: { color: 'var(--pe-muted)' },
 	root: {
 		display: 'grid',
+		gridTemplateColumns: 'minmax(0, 1fr)',
 		gap: 'calc(var(--pe-base) * 0.75)',
 		color: 'var(--pe-text)',
 		font: 'inherit'
@@ -154,7 +196,8 @@ export const styles = {
 		borderRadius: '999px',
 		fontSize: '0.85em',
 		fontWeight: 600,
-		whiteSpace: 'nowrap'
+		maxWidth: '100%',
+		textAlign: 'center'
 	},
 	ok: { color: 'var(--pe-ok)' },
 	banner: {
@@ -167,7 +210,7 @@ export const styles = {
 		borderRadius: 'var(--pe-radius)',
 		background: 'var(--pe-surface)'
 	},
-	table: { width: '100%', borderCollapse: 'collapse', fontSize: '0.9em' },
+	table: { width: '100%', minWidth: '32rem', borderCollapse: 'collapse', fontSize: '0.9em' },
 	th: {
 		textAlign: 'left',
 		padding: 'calc(var(--pe-base) * 0.2) calc(var(--pe-base) * 0.4)',

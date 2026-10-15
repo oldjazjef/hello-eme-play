@@ -38,6 +38,8 @@ const en = {
 	entries: 'entries',
 	modified: 'changed',
 	preview: 'Live preview',
+	previewFull: 'Full screen',
+	previewExit: 'Exit full screen',
 	previewHint: 'Changes start a fresh round here after a moment. Unsaved changes are shown too.',
 	health: 'HP',
 	speed: 'Speed',
@@ -174,6 +176,8 @@ const de: Labels = {
 	entries: 'Einträge',
 	modified: 'geändert',
 	preview: 'Live-Vorschau',
+	previewFull: 'Vollbild',
+	previewExit: 'Vollbild beenden',
 	previewHint:
 		'Änderungen starten hier nach einem Moment eine neue Runde. Auch ungespeicherte Änderungen werden gezeigt.',
 	health: 'Leben',

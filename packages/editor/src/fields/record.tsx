@@ -29,11 +29,11 @@ function IdInput(props: {
 		setDraft(undefined);
 	};
 	return (
-		<label style={styles.toolbar}>
+		<label style={merge(styles.toolbar, { flex: '1 1 14rem', minWidth: 0 })}>
 			<span style={styles.label}>{props.label}</span>
 			<input
 				type="text"
-				style={merge(styles.input, styles.wide)}
+				style={merge(styles.input, { flex: '1 1 8rem', minWidth: 0 })}
 				value={draft ?? props.value}
 				onChange={(event) => setDraft(event.target.value)}
 				onBlur={commit}

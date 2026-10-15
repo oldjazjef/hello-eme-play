@@ -99,3 +99,22 @@ test('the built-in preview plays every change', async ({ page }) => {
 	await page.getByRole('combobox', { name: 'View' }).selectOption('side');
 	await expect(canvas).toHaveAttribute('data-view', 'side');
 });
+
+test('the live preview can be shown full screen and back', async ({ page }) => {
+	await page.goto(url);
+	const frame = page.locator('iframe');
+	await expect(frame).toBeVisible();
+	const small = await frame.boundingBox();
+	const viewport = page.viewportSize();
+	await page.getByRole('button', { name: /Full screen/ }).click();
+	await expect
+		.poll(async () => (await frame.boundingBox())?.width ?? 0)
+		.toBeGreaterThan((viewport?.width ?? 0) - 40);
+	expect((await frame.boundingBox())?.height ?? 0).toBeGreaterThan((viewport?.height ?? 0) - 120);
+	// Still the same running game, not a fresh frame.
+	await expect(page.frameLocator('iframe').locator('.play-canvas')).toBeAttached();
+	await page.getByRole('button', { name: /Exit full screen/ }).click();
+	await expect
+		.poll(async () => (await frame.boundingBox())?.height ?? 0)
+		.toBeLessThanOrEqual((small?.height ?? 0) + 2);
+});

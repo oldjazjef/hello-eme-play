@@ -9,37 +9,39 @@ import type { Labels, Lang } from './labels.js';
 function RowsTable(props: { rows: readonly RefRow[]; lang: Lang; labels: Labels }) {
 	const { labels, lang } = props;
 	return (
-		<table style={styles.table}>
-			<thead>
-				<tr>
-					{[
-						labels.guideSetting,
-						labels.guideType,
-						labels.guideDefault,
-						labels.guideAllowed,
-						labels.guideMeaning
-					].map((heading) => (
-						<th key={heading} scope="col" style={styles.th}>
-							{heading}
-						</th>
-					))}
-				</tr>
-			</thead>
-			<tbody>
-				{props.rows.map((row) => (
-					<tr key={row.path}>
-						<td style={merge(styles.td, styles.code)}>{row.path}</td>
-						<td style={styles.td}>{row.type}</td>
-						<td style={merge(styles.td, styles.code)}>{row.default ?? ''}</td>
-						<td style={styles.td}>{row.limits ?? ''}</td>
-						<td style={styles.td}>
-							{row.label[lang]}
-							{row.help && <div style={styles.muted}>{row.help[lang]}</div>}
-						</td>
+		<div className="pe-scroll">
+			<table style={styles.table}>
+				<thead>
+					<tr>
+						{[
+							labels.guideSetting,
+							labels.guideType,
+							labels.guideDefault,
+							labels.guideAllowed,
+							labels.guideMeaning
+						].map((heading) => (
+							<th key={heading} scope="col" style={styles.th}>
+								{heading}
+							</th>
+						))}
 					</tr>
-				))}
-			</tbody>
-		</table>
+				</thead>
+				<tbody>
+					{props.rows.map((row) => (
+						<tr key={row.path}>
+							<td style={merge(styles.td, styles.code)}>{row.path}</td>
+							<td style={styles.td}>{row.type}</td>
+							<td style={merge(styles.td, styles.code)}>{row.default ?? ''}</td>
+							<td style={styles.td}>{row.limits ?? ''}</td>
+							<td style={styles.td}>
+								{row.label[lang]}
+								{row.help && <div style={styles.muted}>{row.help[lang]}</div>}
+							</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</div>
 	);
 }
 
@@ -141,16 +143,18 @@ export function GuideView(props: {
 			{events.length > 0 && (
 				<details open={query !== ''} style={styles.section}>
 					<summary style={styles.summary}>{labels.guideEvents}</summary>
-					<table style={merge(styles.table, { marginTop: 'calc(var(--pe-base) * 0.5)' })}>
-						<tbody>
-							{events.map((event) => (
-								<tr key={event.id}>
-									<td style={merge(styles.td, styles.code)}>{event.id}</td>
-									<td style={styles.td}>{event.label[lang]}</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
+					<div className="pe-scroll">
+						<table style={merge(styles.table, { marginTop: 'calc(var(--pe-base) * 0.5)' })}>
+							<tbody>
+								{events.map((event) => (
+									<tr key={event.id}>
+										<td style={merge(styles.td, styles.code)}>{event.id}</td>
+										<td style={styles.td}>{event.label[lang]}</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
 				</details>
 			)}
 
@@ -182,30 +186,32 @@ export function GuideView(props: {
 					<summary style={styles.summary}>{labels.guideKeys}</summary>
 					<div style={styles.sectionBody}>
 						<p style={styles.muted}>{labels.guideKeysIntro}</p>
-						<table style={styles.table}>
-							<thead>
-								<tr>
-									<th scope="col" style={styles.th}>
-										{labels.guideKeyAction}
-									</th>
-									<th scope="col" style={styles.th}>
-										{labels.guideSetting}
-									</th>
-									<th scope="col" style={styles.th}>
-										{labels.guideKeyDefault}
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								{keys.map((key) => (
-									<tr key={key.path}>
-										<td style={styles.td}>{key.label[lang]}</td>
-										<td style={merge(styles.td, styles.code)}>{key.path}</td>
-										<td style={merge(styles.td, styles.code)}>{key.keys.join(', ') || '—'}</td>
+						<div className="pe-scroll">
+							<table style={styles.table}>
+								<thead>
+									<tr>
+										<th scope="col" style={styles.th}>
+											{labels.guideKeyAction}
+										</th>
+										<th scope="col" style={styles.th}>
+											{labels.guideSetting}
+										</th>
+										<th scope="col" style={styles.th}>
+											{labels.guideKeyDefault}
+										</th>
 									</tr>
-								))}
-							</tbody>
-						</table>
+								</thead>
+								<tbody>
+									{keys.map((key) => (
+										<tr key={key.path}>
+											<td style={styles.td}>{key.label[lang]}</td>
+											<td style={merge(styles.td, styles.code)}>{key.path}</td>
+											<td style={merge(styles.td, styles.code)}>{key.keys.join(', ') || '—'}</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
 					</div>
 				</details>
 			)}

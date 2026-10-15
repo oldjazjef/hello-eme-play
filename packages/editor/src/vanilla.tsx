@@ -20,6 +20,7 @@ import { GuideView } from './GuideView.js';
 import { LABELS, toLang } from './labels.js';
 import type { EditorOptions } from './options.js';
 import { PlayEditor } from './PlayEditor.js';
+import { ResponsiveStyle } from './responsive.js';
 import { BUILTIN_PLAY, previewDocument } from './previewPage.js';
 import { themeVars } from './theme.js';
 
@@ -139,7 +140,8 @@ export function mountGuide(
 	const lang = options.lang ?? toLang(navigator.language);
 	const root = createRoot(element);
 	root.render(
-		<div style={{ ...themeVars, color: 'var(--pe-text)' }}>
+		<div className="pe-root pe-body" style={{ ...themeVars, color: 'var(--pe-text)' }}>
+			<ResponsiveStyle />
 			<GuideView
 				lang={lang}
 				labels={LABELS[lang]}

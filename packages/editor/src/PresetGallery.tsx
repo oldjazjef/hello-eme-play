@@ -42,7 +42,7 @@ export function PresetGallery(props: {
 	}, []);
 
 	return (
-		<div style={styles.cards}>
+		<div className="pe-cards" style={styles.cards}>
 			{Object.entries(PRESETS).map(([id, preset]) => {
 				const config = resolveConfig(preset.config);
 				const verdict = found[id];

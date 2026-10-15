@@ -32,6 +32,7 @@ import { problemMap, topKey } from './problems.js';
 import { ProblemList } from './ProblemList.js';
 import { Preview } from './Preview.js';
 import { QuickPanel } from './QuickPanel.js';
+import { ResponsiveStyle } from './responsive.js';
 import { RawJson } from './RawJson.js';
 import { countEntries } from './state.js';
 import { themeVars } from './theme.js';
@@ -231,11 +232,13 @@ export function PlayEditor(props: PlayEditorProps): ReactNode {
 	return (
 		<div
 			ref={root}
+			className="pe-root"
 			style={merge(themeVars, styles.root)}
 			role="group"
 			aria-label={labels.editorLabel}
 			onKeyDown={onKeyDown}
 		>
+			<ResponsiveStyle />
 			<div style={styles.toolbar}>
 				<button
 					type="button"
@@ -321,81 +324,92 @@ export function PlayEditor(props: PlayEditorProps): ReactNode {
 				</>
 			)}
 
-			<details style={styles.section} open={presetsOpen} aria-labelledby={presetsId}>
-				<summary id={presetsId} style={styles.summary}>
-					{labels.presetsTitle}
-				</summary>
-				<div style={styles.sectionBody}>
-					<PresetGallery
-						lang={lang}
-						labels={labels}
-						trying={trying}
-						canTry={hasPreview}
-						onTry={setTrying}
-						onUse={usePreset}
-					/>
-				</div>
-			</details>
-
-			<details style={styles.section} open>
-				<summary style={styles.summary}>{labels.balanceTitle}</summary>
-				<div style={styles.sectionBody}>
-					<BalancePanel balance={balance} running={running} labels={labels} />
-				</div>
-			</details>
-
-			<div role="tablist" style={styles.tabs}>
-				{tabs.map((id) => (
-					<button
-						key={id}
-						type="button"
-						role="tab"
-						aria-selected={active === id}
-						style={merge(styles.tab, active === id ? styles.tabActive : {})}
-						onClick={() => setTab(id)}
-					>
-						{tabLabel(id)}
-					</button>
-				))}
-			</div>
-
-			<div role="tabpanel">
-				{active === 'quick' && (
-					<QuickPanel value={stored} lang={lang} labels={labels} onChange={set} />
-				)}
-				{group && (
-					<div style={styles.stack}>
-						<NodeEditor
-							node={group.node}
-							value={stored}
-							path=""
-							ctx={ctx}
-							onChange={(next) => set(next ?? {})}
+			{/* The container the narrow-screen rules look at. The preview sits outside it: a container would trap
+			    its full-screen overlay inside the editor. */}
+			<div className="pe-body" style={styles.root}>
+				<details style={styles.section} open={presetsOpen} aria-labelledby={presetsId}>
+					<summary id={presetsId} style={styles.summary}>
+						{labels.presetsTitle}
+					</summary>
+					<div style={styles.sectionBody}>
+						<PresetGallery
+							lang={lang}
+							labels={labels}
+							trying={trying}
+							canTry={hasPreview}
+							onTry={setTrying}
+							onUse={usePreset}
 						/>
-						<div style={styles.toolbar}>
-							<button
-								type="button"
-								style={styles.button}
-								onClick={() => {
-									set(resetGroup(stored, group), true);
-									setStatus(labels.tabWasReset);
-								}}
-							>
-								{labels.resetTab}
-							</button>
-						</div>
 					</div>
-				)}
-				{active === 'flow' && <FlowView value={stored} lang={lang} labels={labels} onEdit={jump} />}
-				{active === 'guide' && (
-					<GuideView lang={lang} labels={labels} onShow={jump} referenceUrl={props.referenceUrl} />
-				)}
-				{active === 'raw' && (
-					<RawJson key={JSON.stringify(stored)} value={stored} labels={labels} onApply={set} />
-				)}
-			</div>
+				</details>
 
-			<ProblemList problems={problemList} labels={labels} onGo={jump} />
+				<details style={styles.section} open>
+					<summary style={styles.summary}>{labels.balanceTitle}</summary>
+					<div style={styles.sectionBody}>
+						<BalancePanel balance={balance} running={running} labels={labels} />
+					</div>
+				</details>
+
+				<div role="tablist" className="pe-tabs" style={styles.tabs}>
+					{tabs.map((id) => (
+						<button
+							key={id}
+							type="button"
+							role="tab"
+							aria-selected={active === id}
+							style={merge(styles.tab, active === id ? styles.tabActive : {})}
+							onClick={() => setTab(id)}
+						>
+							{tabLabel(id)}
+						</button>
+					))}
+				</div>
+
+				<div role="tabpanel">
+					{active === 'quick' && (
+						<QuickPanel value={stored} lang={lang} labels={labels} onChange={set} />
+					)}
+					{group && (
+						<div style={styles.stack}>
+							<NodeEditor
+								node={group.node}
+								value={stored}
+								path=""
+								ctx={ctx}
+								onChange={(next) => set(next ?? {})}
+							/>
+							<div style={styles.toolbar}>
+								<button
+									type="button"
+									style={styles.button}
+									onClick={() => {
+										set(resetGroup(stored, group), true);
+										setStatus(labels.tabWasReset);
+									}}
+								>
+									{labels.resetTab}
+								</button>
+							</div>
+						</div>
+					)}
+					{active === 'flow' && (
+						<FlowView value={stored} lang={lang} labels={labels} onEdit={jump} />
+					)}
+					{active === 'guide' && (
+						<GuideView
+							lang={lang}
+							labels={labels}
+							onShow={jump}
+							referenceUrl={props.referenceUrl}
+						/>
+					)}
+					{active === 'raw' && (
+						<RawJson key={JSON.stringify(stored)} value={stored} labels={labels} onApply={set} />
+					)}
+				</div>
+
+				<ProblemList problems={problemList} labels={labels} onGo={jump} />
+			</div>
 		</div>
 	);
 }

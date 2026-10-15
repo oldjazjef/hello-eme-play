@@ -65,6 +65,8 @@ main {
 	max-width: 62rem;
 	margin: 0 auto;
 	display: grid;
+	/* One column that may shrink below its widest content (code blocks scroll instead of widening the page). */
+	grid-template-columns: minmax(0, 1fr);
 	gap: 28px;
 	padding: 24px max(16px, env(safe-area-inset-left, 0px)) 64px;
 }

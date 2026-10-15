@@ -149,8 +149,9 @@ and a page that plays what you made.
 
 - **Quick settings and a simple mode:** sliders and switches for difficulty, speed and how many monsters; Expert
   mode shows every setting.
-- **Live preview:** the game next to the form, restarting on every change. Built in on a sample page, or point
-  `previewUrl` at a page of your own.
+- **Live preview:** the game next to the form, restarting on every change, and full screen at one tap. Built in on a
+  sample page, or point `previewUrl` at a page of your own.
+- **Responsive:** tested from a 320 px phone to a desktop, in both languages.
 - **Presets as cards:** try one in the preview before you use it; each shows how hard it plays.
 - **Balance check:** a practice bot plays a few rounds right in the editor and says easy, balanced or hard.
 - **The full form,** generated from the schema, with cards that show what figures, monsters, vehicles, items and
