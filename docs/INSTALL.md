@@ -34,8 +34,9 @@ Also attached: `hello-eme-play-schema` (types, validation, presets), `hello-eme-
 
 ## Make a release
 
-Push a tag (`git tag v0.1.0 && git push origin v0.1.0`) or run the **Release** workflow on GitHub with the
-version. It builds, packs with `scripts/pack-release.mjs` and creates the release.
+On GitHub: **Actions → Release → Run workflow** on `main`. Pick `patch`, `minor` or `major` (or type an exact
+version): the workflow creates the next tag `vX.Y.Z` itself, builds, packs with `scripts/pack-release.mjs` and
+publishes the release. Pushing a tag by hand (`git tag v0.2.0 && git push origin v0.2.0`) works too.
 
 ## Why not GitHub Packages?
 
