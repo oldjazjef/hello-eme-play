@@ -14,6 +14,8 @@ export interface InputHooks {
 	/** Esc: get out of the vehicle, close the shop, or end the game. */
 	escape(): void;
 	toggleShop(): void;
+	/** Any other key press (once per press, not for held-down repeats): `key` triggers listen. */
+	key(code: string): void;
 }
 
 /** Whether the event happened on a button of the game itself (restart, repair …). */
@@ -111,6 +113,8 @@ export class Input {
 			return;
 		}
 		if (event.ctrlKey || event.metaKey || event.altKey || isEditable(event.target)) return;
+		// Reported on top of what the game does with the key, so a trigger can hook onto any key.
+		if (!event.repeat && !inGameUi(event)) hooks.key(event.code);
 		const config = hooks.config();
 		const keys = config.keys;
 		const riding = hooks.riding();

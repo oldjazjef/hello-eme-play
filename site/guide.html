@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>hello-eme-play guide</title>
+		<meta
+			name="description"
+			content="Every setting, event, action, condition and key of the hello-eme-play game configuration."
+		/>
+		<link rel="stylesheet" href="site.css" />
+	</head>
+	<body>
+		<nav class="bar" aria-label="Demo">
+			<strong>hello-eme-play</strong>
+			<a href="index.html">Editor</a>
+			<a href="guide.html" aria-current="page">Guide</a>
+			<a href="game.html">Play your config</a>
+			<a href="https://github.com/oldjazjef/hello-eme-play">GitHub</a>
+		</nav>
+		<main>
+			<header>
+				<h1>Guide: every setting, event, action and key</h1>
+				<p class="lede">
+					Generated from the schema, so it is always the current one. Every setting is optional:
+					what you leave out takes its default. The same guide is a tab in the editor.
+				</p>
+			</header>
+			<div class="langs" role="group" aria-label="Language">
+				<button type="button" data-lang="en" aria-pressed="true">English</button>
+				<button type="button" data-lang="de" aria-pressed="false">Deutsch</button>
+			</div>
+			<div id="guide"></div>
+			<p>
+				As Markdown:
+				<a href="https://github.com/oldjazjef/hello-eme-play/blob/main/docs/REFERENCE.md">English</a
+				>,
+				<a href="https://github.com/oldjazjef/hello-eme-play/blob/main/docs/REFERENCE.de.md"
+					>Deutsch</a
+				>.
+			</p>
+		</main>
+		<script src="editor.js"></script>
+		<script>
+			var lang = /^de/.test(navigator.language) ? 'de' : 'en';
+			var guide;
+			function show() {
+				if (guide) guide.destroy();
+				guide = PlayEditor.mountGuide(document.getElementById('guide'), {
+					lang: lang,
+					onShow: function () {
+						location.href = 'index.html';
+					}
+				});
+			}
+			document.querySelectorAll('[data-lang]').forEach(function (button) {
+				button.setAttribute('aria-pressed', String(button.dataset.lang === lang));
+				button.addEventListener('click', function () {
+					lang = button.dataset.lang;
+					document.documentElement.lang = lang;
+					document.querySelectorAll('[data-lang]').forEach(function (other) {
+						other.setAttribute('aria-pressed', String(other === button));
+					});
+					show();
+				});
+			});
+			show();
+		</script>
+	</body>
+</html>

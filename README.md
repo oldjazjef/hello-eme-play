@@ -140,10 +140,25 @@ To update, install the URL of a newer release.
 
    An old `@hello-eme/page-game` JSON is migrated automatically.
 
-### Edit the game without a CMS
+### The editor: configure the game without writing JSON
 
-The same editor that runs in Payload also runs on any page: quick settings, presets with a live preview,
-a balance check, the full form, a flow of what triggers what, a guide, undo and redo.
+`@hello-eme/play-editor` edits the JSON in a form. It is one call on any page (no framework to set up, no CMS),
+and the same editor runs inside the Payload admin ([`@hello-eme/play-payload`](packages/payload) is a thin wrapper
+around it). [Try it in the live demo](https://oldjazjef.github.io/hello-eme-play/): editor with live preview, guide
+and a page that plays what you made.
+
+- **Quick settings and a simple mode:** sliders and switches for difficulty, speed and how many monsters; Expert
+  mode shows every setting.
+- **Live preview:** the game next to the form, restarting on every change. Built in on a sample page, or point
+  `previewUrl` at a page of your own.
+- **Presets as cards:** try one in the preview before you use it; each shows how hard it plays.
+- **Balance check:** a practice bot plays a few rounds right in the editor and says easy, balanced or hard.
+- **The full form,** generated from the schema, with cards that show what figures, monsters, vehicles, items and
+  pictures look like, picture drag-and-drop (sizes and sprite sheets are detected) and key capture ("press a key").
+- **Problems at the field:** what is wrong is shown where it is, with a jump to it. A **flow view** shows what
+  triggers what and warns about loops and triggers that can never fire.
+- **Undo and redo,** reset per tab, load, copy and download the JSON, and a searchable **guide** of every setting,
+  event, action, condition and key.
 
 ```html
 <div id="editor"></div>
@@ -156,10 +171,12 @@ a balance check, the full form, a flow of what triggers what, a guide, undo and 
 </script>
 ```
 
-Details and options: [packages/editor](packages/editor). A live demo (guide, editor, live preview) is built from [site/](site) and published with GitHub Pages. Every setting, key, event and action is listed in
-the [configuration reference](docs/REFERENCE.md) ([Deutsch](docs/REFERENCE.de.md)), which is generated from the schema.
+`editor.js` and `play.js` are attached to every release. Options, the React component and theming:
+[packages/editor](packages/editor). Every setting, key, event and action is listed in the
+[configuration reference](docs/REFERENCE.md) ([Deutsch](docs/REFERENCE.de.md)), generated from the schema. The demo
+site is built from [site/](site) and published by GitHub Pages.
 
-### Waves, bosses and other pages
+### Waves, bosses, keys and other pages
 
 ```json
 {
@@ -195,6 +212,19 @@ the [configuration reference](docs/REFERENCE.md) ([Deutsch](docs/REFERENCE.de.md
 }
 ```
 
+Keys can run actions too: a trigger with `"on": "key"` and `"keys": ["KeyB"]` runs its actions when that key is
+pressed during a round (`Escape` always leaves the game). Rebind the game's own keys under `keys` and `moves`;
+the [reference](docs/REFERENCE.md) lists every default.
+
+```json
+{
+	"triggers": [
+		{ "on": "key", "keys": ["KeyB"], "do": [{ "do": "spawn", "entity": "blob", "where": "near" }] },
+		{ "on": "key", "keys": ["KeyV"], "do": [{ "do": "setView", "mode": "side" }] }
+	]
+}
+```
+
 A wave runs actions on a timeline (`at` seconds after it starts, `every` and `repeat` for repeats). A boss
 phase fires once when its health falls below `below` percent. `pages` entries are merged over the base
 configuration in order for the visitor's path; the game follows navigation, and `play.setPath(path)` is there for
@@ -208,8 +238,10 @@ npx play-sim preset:arcade --rounds 20 --bot brawler
 
 Bots play your JSON headless and report win and death rates, scores and hints such as "nobody survives" or "too easy" ([package](packages/sim)).
 
-Presets (`PRESETS` in the schema package): `classic`, `arcade` (levels, items, upgrades, a boss),
-`platformer` (side view) and `view-switch` (an item changes the view). A JSON that switches between the
+Presets (`PRESETS` in the schema package; the editor offers them as cards you can try in the preview):
+`classic`, `arcade` (levels, items, upgrades, a boss), `platformer` (side view), `view-switch` (an item changes
+the view) and three calm ones without monsters: `explore` (just walk over the page, nothing breaks), `navigate`
+(side view: jump onto links and buttons to click them) and `tour` (a car waits; drive over the page). A JSON that switches between the
 views on a timer: [docs/examples/view-switch.json](docs/examples/view-switch.json).
 
 ## Develop

@@ -90,6 +90,16 @@ function semanticProblems(json: Json, resolved: PlayConfig, at: string): string[
 			found.push(`"${prefix}entities.${id}.phases" only work for monsters with "boss": true.`);
 		}
 	}
+	if (given('triggers')) {
+		for (const [index, trigger] of resolved.triggers.entries()) {
+			if (trigger.on !== 'key') continue;
+			const path = `"${prefix}triggers[${index}].keys"`;
+			if (trigger.keys.length === 0) found.push(`${path} is empty: the trigger never fires.`);
+			if (trigger.keys.includes('Escape')) {
+				found.push(`${path} can't contain "Escape": it always leaves the game.`);
+			}
+		}
+	}
 	return found;
 }
 

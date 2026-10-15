@@ -1,0 +1,20 @@
+{
+	"triggers": [
+		{
+			"on": "key",
+			"keys": ["KeyB"],
+			"do": [{ "do": "spawn", "entity": "blob", "count": 1, "where": "near" }]
+		},
+		{
+			"on": "key",
+			"keys": ["KeyV"],
+			"do": [{ "do": "setView", "mode": "side" }]
+		},
+		{
+			"on": "key",
+			"keys": ["KeyH"],
+			"conditions": [{ "if": "score", "min": 50 }],
+			"do": [{ "do": "heal", "amount": 20 }]
+		}
+	]
+}

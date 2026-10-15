@@ -112,7 +112,10 @@ export function installTriggers(world: World): void {
 			world.config.triggers.forEach((trigger, index) => {
 				if (trigger.on !== name) return;
 				if (trigger.once && state.fired.has(index)) return;
-				if (trigger.only !== '' && trigger.only !== subject(name, data)) return;
+				// `key` triggers pick by their keys; `only` doesn't apply to them.
+				if (name === 'key') {
+					if (!trigger.keys.includes((data as { code: string }).code)) return;
+				} else if (trigger.only !== '' && trigger.only !== subject(name, data)) return;
 				if (!trigger.conditions.every((condition) => holds(world, condition))) return;
 				state.fired.add(index);
 				runActions(world, trigger.do);

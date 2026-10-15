@@ -1,0 +1,66 @@
+{
+	"name": "@hello-eme/play-editor",
+	"version": "0.0.0",
+	"description": "The editor for the JSON configuration of @hello-eme/play: one call on any page, no framework needed (React component and Payload wrapper available).",
+	"license": "MIT",
+	"type": "module",
+	"keywords": [
+		"game",
+		"editor",
+		"configuration",
+		"vanilla",
+		"react"
+	],
+	"main": "./dist/editor.mjs",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/editor.mjs"
+		},
+		"./react": {
+			"types": "./dist/react.d.ts",
+			"import": "./dist/react.js"
+		},
+		"./editor.js": "./dist/editor.iife.js"
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"sideEffects": [
+		"./dist/vanilla.js",
+		"./dist/editor.iife.js",
+		"./dist/editor.mjs"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json && node scripts/build.mjs",
+		"check": "tsc --noEmit",
+		"lint": "eslint .",
+		"test": "vitest run --passWithNoTests"
+	},
+	"dependencies": {
+		"@hello-eme/play": "^0.0.0",
+		"@hello-eme/play-schema": "^0.0.0",
+		"@hello-eme/play-sim": "^0.0.0"
+	},
+	"peerDependencies": {
+		"react": ">=19"
+	},
+	"devDependencies": {
+		"@types/react": "^19.2.14",
+		"@types/react-dom": "^19.3.0",
+		"esbuild": "^0.25.12",
+		"react": "^19.2.6",
+		"react-dom": "^19.2.6"
+	},
+	"peerDependenciesMeta": {
+		"react": {
+			"optional": true
+		}
+	}
+}

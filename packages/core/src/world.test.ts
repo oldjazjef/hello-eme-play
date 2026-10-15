@@ -246,6 +246,72 @@ describe('items, upgrades and triggers', () => {
 		expect(world.score).toBeGreaterThanOrEqual(7);
 	});
 
+	describe('key triggers', () => {
+		const blobs = (world: ReturnType<typeof quiet>) =>
+			world.bodies.filter((body) => body.def === 'blob').length;
+
+		it('fire for their own keys only, and several triggers can share a key', () => {
+			const world = quiet({
+				triggers: [
+					{
+						on: 'key',
+						keys: ['KeyB'],
+						do: [{ do: 'spawn', entity: 'blob', count: 1, where: 'edge' }]
+					},
+					{ on: 'key', keys: ['KeyB', 'KeyV'], do: [{ do: 'points', amount: 5 }] },
+					{ on: 'key', keys: ['KeyV'], do: [{ do: 'setView', mode: 'side' }] }
+				]
+			});
+			world.press('KeyX');
+			expect([blobs(world), world.score, world.view]).toEqual([0, 0, 'topdown']);
+			world.press('KeyB');
+			expect([blobs(world), world.score, world.view]).toEqual([1, 5, 'topdown']);
+			world.press('KeyV');
+			expect([blobs(world), world.score, world.view]).toEqual([1, 10, 'side']);
+		});
+
+		it('honour once, conditions and ignore only', () => {
+			const world = quiet({
+				triggers: [
+					{ on: 'key', keys: ['KeyH'], once: true, do: [{ do: 'points', amount: 1 }] },
+					{
+						on: 'key',
+						keys: ['KeyJ'],
+						only: 'nothing',
+						conditions: [{ if: 'view', mode: 'side' }],
+						do: [{ do: 'points', amount: 10 }]
+					}
+				]
+			});
+			world.press('KeyH');
+			world.press('KeyH');
+			expect(world.score).toBe(1);
+			world.press('KeyJ');
+			expect(world.score).toBe(1);
+			world.setView('side');
+			world.press('KeyJ');
+			expect(world.score).toBe(11);
+		});
+
+		it('do nothing while no round is playing', () => {
+			const lobby = createWorld(
+				{
+					spawns: [],
+					triggers: [{ on: 'key', keys: ['KeyB'], do: [{ do: 'points', amount: 5 }] }]
+				},
+				{ seed: 1, lobby: true }
+			);
+			lobby.press('KeyB');
+			expect(lobby.score).toBe(0);
+			const over = quiet({
+				triggers: [{ on: 'key', keys: ['KeyB'], do: [{ do: 'points', amount: 5 }] }]
+			});
+			over.end(false);
+			over.press('KeyB');
+			expect(over.score).toBe(0);
+		});
+	});
+
 	it('does not loop forever when triggers trigger each other', () => {
 		const world = quiet({
 			triggers: [

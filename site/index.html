@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>hello-eme-play editor demo</title>
+		<meta
+			name="description"
+			content="Configure the hello-eme-play game with one JSON: guide, editor and live preview, no CMS and no framework."
+		/>
+		<link rel="stylesheet" href="site.css" />
+	</head>
+	<body>
+		<nav class="bar" aria-label="Demo">
+			<strong>hello-eme-play</strong>
+			<a href="index.html" aria-current="page">Editor</a>
+			<a href="guide.html">Guide</a>
+			<a href="game.html">Play your config</a>
+			<a href="https://github.com/oldjazjef/hello-eme-play">GitHub</a>
+		</nav>
+		<main>
+			<header>
+				<h1>Configure the game with one JSON</h1>
+				<p class="lede">
+					The editor below is one script and one call, with no framework and no CMS. Change a
+					setting and the game next to it restarts with your configuration.
+				</p>
+			</header>
+
+			<section class="steps" aria-label="How to try it">
+				<div>
+					<b>1. Change something</b>Drag a quick setting or pick a preset. The balance check answers
+					in a moment.
+				</div>
+				<div>
+					<b>2. Watch the preview</b>The game in the preview plays every change. Walk with
+					<kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd>, punch with <kbd>Space</kbd>.
+				</div>
+				<div>
+					<b>3. Take the JSON</b>Copy it below, or <a href="game.html">play it on a full page</a>.
+					Expert mode shows every setting; the <a href="guide.html">guide</a> explains them.
+				</div>
+			</section>
+
+			<div class="langs" role="group" aria-label="Language">
+				<button type="button" data-lang="en" aria-pressed="true">English</button>
+				<button type="button" data-lang="de" aria-pressed="false">Deutsch</button>
+			</div>
+
+			<div id="editor"></div>
+
+			<section>
+				<h2>The JSON</h2>
+				<pre id="json" tabindex="0">{}</pre>
+			</section>
+
+			<section>
+				<h2>Use the game on your own page</h2>
+				<p>
+					The game is one script, <code>play.js</code> (attached to every
+					<a href="https://github.com/oldjazjef/hello-eme-play/releases">release</a>). The page it
+					runs on is the playing field, and the JSON this editor makes is its configuration.
+				</p>
+				<pre tabindex="0" style="margin-top: 8px">
+&lt;!-- the configuration: a file, or inline with data-config='{...}' --&gt;
+&lt;script src="/play.js" data-config-url="/play.json" defer&gt;&lt;/script&gt;
+
+&lt;!-- optional: your own start button (the script adds a floating one by itself) --&gt;
+&lt;button type="button" data-play-toggle&gt;Play&lt;/button&gt;</pre>
+				<p style="margin-top: 8px">
+					Paste the JSON from above into <code>play.json</code>, or let your CMS serve it.
+					<code>{}</code> is already a complete game with all defaults. Elements with
+					<code>data-play-ui</code> are left alone by the game;
+					<code>data-toggle="off"</code> removes the floating button.
+				</p>
+				<pre tabindex="0" style="margin-top: 8px">
+// window.Play controls it from your own code
+Play.start();               Play.stop();            Play.toggle();
+Play.configure(json);       // new settings, applied at once where possible
+Play.setPath('/projects');  // single-page apps: pick the per-page settings
+
+// with a bundler instead of the script tag
+import { createPlay } from '@hello-eme/play';
+createPlay({ config }).start();</pre>
+				<p style="margin-top: 8px">
+					Every setting is in the <a href="guide.html">guide</a>. The
+					<a href="game.html">game page</a> of this demo is exactly this: <code>play.js</code> plus
+					the configuration from the editor.
+				</p>
+			</section>
+
+			<section>
+				<h2>Use the editor on your own page</h2>
+				<pre tabindex="0">
+&lt;div id="editor"&gt;&lt;/div&gt;
+&lt;script src="editor.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  PlayEditor.mount(document.getElementById('editor'), {
+    value: await (await fetch('/play.json')).json(),
+    onChange: (json) =&gt; save(json)   // e.g. PUT it to where play.json comes from
+  });
+&lt;/script&gt;</pre>
+				<p style="margin-top: 8px">
+					<code>editor.js</code> is attached to every release too. The editor shows the game in its
+					preview by itself; give it <code>previewUrl</code> to preview a page of your own instead.
+					With Payload CMS the plugin <code>@hello-eme/play-payload</code> puts this editor into the
+					admin.
+				</p>
+			</section>
+		</main>
+		<script src="editor.js"></script>
+		<script>
+			var KEY = 'hello-eme-play-demo';
+			var out = document.getElementById('json');
+			var lang = /^de/.test(navigator.language) ? 'de' : 'en';
+			var editor;
+
+			function start(value) {
+				if (editor) editor.destroy();
+				editor = PlayEditor.mount(document.getElementById('editor'), {
+					lang: lang,
+					value: value,
+					storageKey: KEY,
+					referenceUrl: 'guide.html',
+					onChange: function (json) {
+						out.textContent = JSON.stringify(json, null, 2);
+					}
+				});
+				out.textContent = JSON.stringify(editor.getValue(), null, 2);
+			}
+
+			document.querySelectorAll('[data-lang]').forEach(function (button) {
+				button.setAttribute('aria-pressed', String(button.dataset.lang === lang));
+				button.addEventListener('click', function () {
+					lang = button.dataset.lang;
+					document.documentElement.lang = lang;
+					document.querySelectorAll('[data-lang]').forEach(function (other) {
+						other.setAttribute('aria-pressed', String(other === button));
+					});
+					start(editor ? editor.getValue() : undefined);
+				});
+			});
+			start(undefined);
+		</script>
+	</body>
+</html>

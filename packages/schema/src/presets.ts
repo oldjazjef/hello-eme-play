@@ -222,5 +222,48 @@ export const PRESETS: Record<string, Preset> = {
 				}
 			]
 		}
+	},
+	explore: {
+		label: t('Seite erkunden', 'Explore the page'),
+		description: t(
+			'Nur anschauen: Die Figur läuft über die Seite. Keine Monster, nichts geht kaputt.',
+			'Just look around: the figure walks over the page. No monsters, nothing breaks.'
+		),
+		config: {
+			entities: { hero: { ...CLASSIC.hero, moves: [] } },
+			spawns: [],
+			visits: { enabled: false, whilePlaying: false }
+		}
+	},
+	navigate: {
+		label: t('Navigieren', 'Navigate'),
+		description: t(
+			'Von der Seite: Springe auf Links und Buttons, um sie anzuklicken. Keine Monster.',
+			'From the side: jump onto links and buttons to click them. No monsters.'
+		),
+		config: {
+			view: { mode: 'side' },
+			entities: { hero: { ...CLASSIC.hero, moves: [] } },
+			spawns: [],
+			visits: { enabled: false, whilePlaying: false }
+		}
+	},
+	tour: {
+		label: t('Spritztour', 'Car tour'),
+		description: t(
+			'Ein Auto wartet: einsteigen und über die Seite fahren. Nichts wird überfahren.',
+			'A car waits: get in and drive over the page. Nothing is run over.'
+		),
+		config: {
+			game: { overrunSpeed: 5000 },
+			entities: { hero: { ...CLASSIC.hero, moves: [] }, car: CLASSIC.car },
+			spawns: [],
+			visits: {
+				enabled: true,
+				whilePlaying: true,
+				delay: { min: 2, max: 4 },
+				playDelay: { min: 2, max: 4 }
+			}
+		}
 	}
 };

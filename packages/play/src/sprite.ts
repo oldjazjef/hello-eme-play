@@ -9,6 +9,7 @@ import type {
 	EntityDefinition,
 	Facing,
 	ItemDefinition,
+	ItemLook,
 	Look,
 	PlayConfig
 } from '@hello-eme/play-schema';
@@ -205,6 +206,29 @@ export const SPRITE_COLORS: Record<SpritePart | 'shadow' | 'outline' | 'item' | 
 	};
 
 export type SpriteColors = Record<keyof typeof SPRITE_COLORS, string>;
+
+/** The picture of each built-in look (figure and monster seen from above, the car from the side). */
+export const LOOK_ROWS: Record<Look, readonly string[]> = {
+	figure: STANDING,
+	enemy: ENEMY_STANDING,
+	car: CAR_ROWS
+};
+
+/**
+ * The outline of each built-in item look as an SVG path around (0, 0), 100 wide and high: the same
+ * shapes `drawPickup` draws, for previews (an editor shows what an item will look like).
+ */
+export const ITEM_LOOK_PATHS: Record<ItemLook, string> = {
+	heart: 'M0 40 C-70 -5 -30 -55 0 -20 C30 -55 70 -5 0 40 Z',
+	star:
+		Array.from({ length: 10 }, (_, i) => {
+			const radius = i % 2 === 0 ? 50 : 22.5;
+			const angle = (Math.PI / 5) * i - Math.PI / 2;
+			return `${i === 0 ? 'M' : 'L'}${(Math.cos(angle) * radius).toFixed(1)} ${(Math.sin(angle) * radius).toFixed(1)}`;
+		}).join(' ') + ' Z',
+	gem: 'M0 -50 L40 -10 L0 50 L-40 -10 Z',
+	bolt: 'M10 -50 L-30 5 L-2.5 5 L-10 50 L30 -10 L2.5 -10 Z'
+};
 
 const isPart = (char: string): char is SpritePart =>
 	['h', 's', 'b', 'f', 'c', 'w', 'l', 'e', 'x'].includes(char);

@@ -1,6 +1,6 @@
 # Configuration
 
-One JSON, every key optional. Missing values get defaults, invalid ones are corrected
+One JSON, every key optional. [REFERENCE.md](REFERENCE.md) lists every setting, event, action, condition and key (generated from the schema; also in the editor's Guide tab). Missing values get defaults, invalid ones are corrected
 (`resolveConfig`), `configProblems` explains what would be corrected. Editors can use
 `@hello-eme/play-schema/play.schema.json` for autocompletion. The settings below are the top-level keys;
 the Payload form or the JSON Schema list every field with bounds.
@@ -17,7 +17,7 @@ the Payload form or the JSON Schema list every field with bounds.
 | `upgrades`            | shop entries: cost, levels, stats added, optional actions                                |
 | `spawns`              | which monster, how often (`every`), how many (`count`), `max`, level range, scaling      |
 | `waves`               | timed scripts: level range, `after`, `steps` (`at`, `every`, `repeat`, `do` actions)     |
-| `triggers`            | `on` event, `only`, `conditions`, `do` actions                                           |
+| `triggers`            | `on` event, `only`, `keys` (for `key`), `conditions`, `do` actions                       |
 | `pages`               | `{ match, config }`: other settings for some pages (path pattern, partial JSON)          |
 | `levels`              | label, view, goal (`score`, `kills`, `survive`, `boss`)                                  |
 | `visits`              | a vehicle that drives in by itself                                                       |
@@ -68,6 +68,24 @@ A star item that switches to the side view for good:
 Switch between top-down and side-scroller every half minute ([view-switch.json](examples/view-switch.json)):
 two `interval` triggers with a `view` condition each. The second one uses another period (37 s), so both never
 fire in the same moment and flip the view straight back.
+
+Bind keys to actions ([key-bindings.json](examples/key-bindings.json)): press B to spawn a blob, V to switch the
+view, H to heal 20 (once the score is 50). A `key` trigger lists `KeyboardEvent.code` values in `keys` (the
+editor has a "Press a key" button) and only fires while a round is playing, not for held-down repeats and not
+while the visitor types in a form field. The game's own keys keep working, so a trigger can also hook onto one
+of them; `Escape` always leaves the game and can't be bound. Touch screens have no keyboard.
+
+```json
+{
+	"triggers": [
+		{
+			"on": "key",
+			"keys": ["KeyB"],
+			"do": [{ "do": "spawn", "entity": "blob", "count": 1, "where": "near" }]
+		}
+	]
+}
+```
 
 A swarm when the visitor reaches 1000 points, once:
 

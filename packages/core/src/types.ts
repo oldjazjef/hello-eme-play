@@ -130,6 +130,8 @@ export interface WorldEvents extends Record<string, unknown> {
 	enterVehicle: { vehicle: Body };
 	exitVehicle: { vehicle: Body };
 	viewChange: { mode: ViewMode };
+	/** A key was pressed (`code` like `KeyB`) while playing. */
+	key: { code: string };
 	/** A move landed at `at`: the page layer breaks elements there. */
 	strike: {
 		at: { x: number; y: number };
@@ -212,6 +214,8 @@ export interface World {
 	maxHp(body: Body): number;
 	/** Gets in or out of the vehicle nearby. */
 	use(): void;
+	/** A key was pressed (its `KeyboardEvent.code`): sets off the triggers bound to it. */
+	press(code: string): void;
 	canBuy(id: string): boolean;
 	buy(id: string): boolean;
 	/** The page layer broke an element. */

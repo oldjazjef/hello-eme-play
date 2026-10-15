@@ -123,7 +123,8 @@ export class Session {
 			active: () => hooks.state === 'playing' && this.#world.phase === 'playing',
 			riding: () => this.#world.riding !== undefined,
 			escape: () => this.#escape(),
-			toggleShop: () => this.#toggleShop()
+			toggleShop: () => this.#toggleShop(),
+			key: (code) => this.#world.press(code)
 		});
 		this.#ui = new GameUi(textsFor(hooks.config), {
 			releasePad: () => this.#input.releasePad(),
