@@ -4,6 +4,7 @@ import { stateOf } from './state.js';
 import { between, countIn } from './stats.js';
 import { runActions } from './triggers.js';
 import type { World } from './types.js';
+import { startWaves } from './waves.js';
 
 /** Monsters appear in waves, by the spawn rules of the current level. */
 export function spawnMonsters(world: World): void {
@@ -42,6 +43,7 @@ export function vehicleVisit(world: World): void {
 export function startLevel(world: World): void {
 	const state = stateOf(world);
 	state.level = { time: world.time, earned: world.stats.earned, kills: 0, boss: false };
+	startWaves(world);
 	const level = world.config.levels[world.level - 1];
 	if (level?.view) world.setView(level.view);
 	if (level?.label) world.events.emit('message', { text: level.label });

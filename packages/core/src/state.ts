@@ -1,3 +1,4 @@
+import type { ActiveWave } from './waves.js';
 import type { World } from './types.js';
 
 /** Bookkeeping the world keeps for its systems (timers, counters); not part of the public API. */
@@ -9,6 +10,8 @@ export interface State {
 	intervalDue: number[];
 	/** Triggers that already ran (`once`). */
 	fired: Set<number>;
+	/** The wave scripts of the current level (replaced whenever a level starts). */
+	waves: ActiveWave[];
 	/** Beaten monsters by entity id. */
 	kills: Record<string, number>;
 	/** Counters since the current level began. */

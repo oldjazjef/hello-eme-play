@@ -6,6 +6,7 @@ import { addPoints, damage as applyDamage, overrun, targetOf, useMove } from './
 import { createEventBus } from './events.js';
 import { createPickup, spawnItems, updatePickups, usePickup } from './items.js';
 import { buy, canBuy, checkGoal, spawnMonsters, startLevel, vehicleVisit } from './progress.js';
+import { checkPhases } from './phases.js';
 import { createRandom } from './random.js';
 import { setState, stateOf, type State } from './state.js';
 import { advance, createStaticHost, edgePoint, floorY, follow, HARD_EDGE } from './space.js';
@@ -13,6 +14,7 @@ import { between, distance, statOf } from './stats.js';
 import { installTriggers, runActions, tickIntervals } from './triggers.js';
 import type { Body, Controls, Host, Stats, World, WorldEvents } from './types.js';
 import { autopilot, CAR, doorSide, drive } from './vehicle.js';
+import { tickWaves } from './waves.js';
 import { startJump, walk } from './walk.js';
 
 export interface WorldOptions {
@@ -57,6 +59,7 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 	const state: State = {
 		nextId: 1,
 		spawnDue: [],
+		waves: [],
 		itemDue: [],
 		intervalDue: [],
 		fired: new Set(),
@@ -127,6 +130,7 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 			spawnItems(world);
 			vehicleVisit(world);
 			tickIntervals(world);
+			tickWaves(world);
 			checkGoal(world);
 		},
 
@@ -256,7 +260,10 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 			events.emit('break', { points: config.game.breakPoints });
 		},
 
-		damage: (target, amount, from, source) => applyDamage(world, target, amount, from, source),
+		damage(target, amount, from, source) {
+			applyDamage(world, target, amount, from, source);
+			checkPhases(world, target);
+		},
 
 		end(won) {
 			if (world.phase !== 'playing') return;

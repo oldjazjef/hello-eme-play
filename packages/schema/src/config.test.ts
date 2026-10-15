@@ -122,6 +122,92 @@ describe('playJsonSchema', () => {
 	});
 });
 
+describe('waves', () => {
+	it('are empty by default and get defaults for every field', () => {
+		expect(DEFAULT_CONFIG.waves).toEqual([]);
+		const config = resolveConfig({
+			waves: [{ steps: [{ do: [{ do: 'spawn', entity: 'blob' }] }] }]
+		});
+		expect(config.waves).toEqual([
+			{
+				label: '',
+				fromLevel: 1,
+				toLevel: 100,
+				after: 0,
+				steps: [
+					{
+						at: 10,
+						every: 10,
+						repeat: 0,
+						do: [{ do: 'spawn', entity: 'blob', count: 3, where: 'edge' }]
+					}
+				]
+			}
+		]);
+	});
+
+	it('correct nonsense', () => {
+		const wave = resolveConfig({
+			waves: [{ after: -5, steps: [{ at: 99999, every: 0, repeat: 2.4 }] }]
+		}).waves[0];
+		expect(wave?.after).toBe(0);
+		expect(wave?.steps[0]).toMatchObject({ at: 3600, every: 0.5, repeat: 2, do: [] });
+	});
+
+	it('are checked: unknown entities, unknown actions, out of range numbers', () => {
+		const found = configProblems({
+			waves: [
+				{
+					steps: [
+						{ at: -1, do: [{ do: 'spawn', entity: 'nobody' }, { do: 'dance' }] },
+						{ at: 5, repeat: 5000 }
+					]
+				}
+			]
+		});
+		expect(found.some((m) => m.includes('"waves[0].steps[0].do[0].entity"'))).toBe(true);
+		expect(found.some((m) => m.includes('"waves[0].steps[0].do[1].do"'))).toBe(true);
+		expect(found).toContain('"waves[0].steps[0].at" must be between 0 and 3600.');
+		expect(found).toContain('"waves[0].steps[1].repeat" must be between 0 and 1000.');
+	});
+});
+
+describe('boss phases', () => {
+	it('are empty by default and resolved with defaults', () => {
+		expect(DEFAULT_CONFIG.entities.blob?.phases).toEqual([]);
+		const config = resolveConfig({
+			entities: { king: { boss: true, phases: [{ below: 50, stats: { attack: 5 } }] } }
+		});
+		expect(config.entities.king?.phases).toEqual([
+			{ below: 50, label: '', stats: { attack: 5 }, do: [] }
+		]);
+	});
+
+	it('are checked: out of range, unknown entity in an action, not a boss', () => {
+		const found = configProblems({
+			entities: {
+				king: {
+					boss: true,
+					phases: [{ below: 150, do: [{ do: 'spawn', entity: 'nobody' }] }, { below: -1 }]
+				},
+				imp: { kind: 'monster', phases: [{ below: 50 }] }
+			}
+		});
+		expect(found).toContain('"entities.king.phases[0].below" must be between 0 and 100.');
+		expect(found).toContain('"entities.king.phases[1].below" must be between 0 and 100.');
+		expect(found.some((m) => m.includes('"entities.king.phases[0].do[0].entity"'))).toBe(true);
+		expect(found).toContain('"entities.imp.phases" only work for monsters with "boss": true.');
+		expect(found.filter((m) => m.includes('entities.king.phases" only'))).toEqual([]);
+	});
+
+	it('clamp below into 0..100 when resolved', () => {
+		const phases = resolveConfig({
+			entities: { king: { boss: true, phases: [{ below: 150 }, { below: -3 }] } }
+		}).entities.king?.phases;
+		expect(phases?.map((phase) => phase.below)).toEqual([100, 0]);
+	});
+});
+
 describe('sprite sheets', () => {
 	it('defaults to a single picture without animations', () => {
 		const config = resolveConfig({ sprites: { hero: { url: '/hero.png' } } });

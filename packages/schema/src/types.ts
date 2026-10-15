@@ -87,6 +87,18 @@ export interface EntityDefinition {
 	reward: { points: number; drops: { item: string; chance: number }[] };
 	/** Shows a health bar at the top and counts for the `boss` goal. */
 	boss: boolean;
+	/** Bosses: run once each when health drops below `below` percent (any order of listing). */
+	phases: BossPhase[];
+}
+
+export interface BossPhase {
+	/** Percent of maximum health. */
+	below: number;
+	/** Shown as a message when the phase starts (empty: none). */
+	label: string;
+	/** Added to the boss' stats for good (`hp` heals by the same amount). */
+	stats: Record<string, number>;
+	do: Action[];
 }
 
 export interface MoveDefinition {
@@ -195,6 +207,33 @@ export interface Trigger {
 	do: Action[];
 }
 
+export interface WaveStep {
+	/** Seconds after the wave started. */
+	at: number;
+	/** Seconds between repeats (used when `repeat` is above 0). */
+	every: number;
+	/** How many more times it runs after the first (0: once). */
+	repeat: number;
+	do: Action[];
+}
+
+/** A timed script: starts `after` seconds into each level of its range, then runs its steps. */
+export interface Wave {
+	label: string;
+	fromLevel: number;
+	toLevel: number;
+	after: number;
+	steps: WaveStep[];
+}
+
+/** A configuration for some pages: the partial JSON is merged over the base. */
+export interface PageRule {
+	/** Glob on the page's path: `*` matches any characters (`/blog/*`, `/projects`, `*`). */
+	match: string;
+	/** Partial configuration JSON (never contains `pages`). */
+	config: Record<string, unknown>;
+}
+
 export interface Goal {
 	type: GoalType;
 	amount: number;
@@ -258,6 +297,7 @@ export interface PlayConfig {
 		whilePlaying: boolean;
 		playDelay: Range;
 	};
+	waves: Wave[];
 	triggers: Trigger[];
 	levels: LevelDefinition[];
 	keys: {
@@ -281,4 +321,6 @@ export interface PlayConfig {
 	progress: { save: boolean; key: string };
 	/** Empty: the default text of `locale`. */
 	texts: GameTexts;
+	/** Different settings per page; see `resolveConfigFor`. */
+	pages: PageRule[];
 }
