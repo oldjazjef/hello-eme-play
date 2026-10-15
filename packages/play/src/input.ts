@@ -27,6 +27,8 @@ const inGameUi = (event: KeyboardEvent) =>
 export class Input {
 	readonly #held = new Map<string, Direction>();
 	readonly #moves = new Map<string, Set<string>>();
+	/** Moves pressed since the last frame, so a tap that ends within one frame still counts. */
+	readonly #tapped = new Set<string>();
 	readonly #pressed = new Set<'jump' | 'honk' | 'use'>();
 	readonly #hooks: InputHooks;
 	/** Touch driving controls: the wheel (-1..1) and the pedals (-1 gas, 1 brake). */
@@ -49,8 +51,10 @@ export class Input {
 	/** A move button held (touch) or released. */
 	holdMove(source: string, move: string, held: boolean): void {
 		const sources = this.#moves.get(move) ?? new Set<string>();
-		if (held) sources.add(source);
-		else sources.delete(source);
+		if (held) {
+			sources.add(source);
+			this.#tapped.add(move);
+		} else sources.delete(source);
 		this.#moves.set(move, sources);
 	}
 
@@ -61,6 +65,7 @@ export class Input {
 	clear(): void {
 		this.#held.clear();
 		this.#moves.clear();
+		this.#tapped.clear();
 		this.#pressed.clear();
 		this.handbrake.key = this.handbrake.pad = false;
 		this.wheel = this.pedal = 0;
@@ -83,6 +88,8 @@ export class Input {
 		controls.drift = riding && (this.handbrake.key || this.handbrake.pad);
 		controls.held.clear();
 		for (const [move, sources] of this.#moves) if (sources.size > 0) controls.held.add(move);
+		for (const move of this.#tapped) controls.held.add(move);
+		this.#tapped.clear();
 		for (const action of this.#pressed) controls.pressed.add(action);
 		this.#pressed.clear();
 	}
