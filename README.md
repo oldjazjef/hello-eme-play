@@ -23,7 +23,7 @@ It works with plain HTML, any framework and any CMS. A Payload plugin edits the 
 | [`@hello-eme/play`](packages/play)            | Browser runtime and drop-in script                                   |
 | [`@hello-eme/play-core`](packages/core)       | Game logic without a DOM (entities, events, RNG)                     |
 | [`@hello-eme/play-schema`](packages/schema)   | The JSON as data: defaults, validation, migrations, JSON Schema      |
-| [`@hello-eme/play-editor`](packages/editor)   | The configuration editor: React component and drop-in script         |
+| [`@hello-eme/play-editor`](packages/editor)   | The configuration editor for any page (one script), React export too |
 | [`@hello-eme/play-payload`](packages/payload) | Payload CMS plugin: the same editor inside the Payload admin         |
 | [`@hello-eme/play-sim`](packages/sim)         | Headless bots for balancing (`play-sim`)                             |
 | [`examples/static`](examples/static)          | A plain HTML page with the game and Playwright tests (not published) |
@@ -152,7 +152,7 @@ a balance check, the full form, a flow of what triggers what, a guide, undo and 
 </script>
 ```
 
-Details and options: [packages/editor](packages/editor). Every setting, key, event and action is listed in
+Details and options: [packages/editor](packages/editor). A live demo (guide, editor, live preview) is built from [site/](site) and published with GitHub Pages. Every setting, key, event and action is listed in
 the [configuration reference](docs/REFERENCE.md) ([Deutsch](docs/REFERENCE.de.md)), which is generated from the schema.
 
 ### Balance without a browser

@@ -63,17 +63,11 @@ test('the guide lists every setting and filters', async ({ page }) => {
 	await expect(page.getByText('Nothing matches.')).toBeVisible();
 });
 
-test('the preview page plays inside the editor', async ({ page }) => {
+test('the built-in preview plays every change', async ({ page }) => {
 	await page.goto(url);
-	const frame = page.frameLocator('iframe');
-	await expect(frame.locator('h1')).toHaveText('Preview');
-	await expect
-		.poll(
-			() =>
-				page
-					.frames()
-					.find((f) => f.url().includes('preview.html'))
-					?.evaluate(() => typeof window.Play) ?? ''
-		)
-		.toBe('object');
+	const canvas = page.frameLocator('iframe').locator('.play-canvas');
+	await expect(canvas).toBeAttached();
+	await expect(canvas).toHaveAttribute('data-view', 'topdown');
+	await page.getByRole('combobox', { name: 'View' }).selectOption('side');
+	await expect(canvas).toHaveAttribute('data-view', 'side');
 });

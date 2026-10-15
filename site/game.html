@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Play your hello-eme-play configuration</title>
+		<link rel="stylesheet" href="site.css" />
+		<script src="play.js" defer></script>
+	</head>
+	<body>
+		<nav class="bar" aria-label="Demo" data-play-ui>
+			<strong>hello-eme-play</strong>
+			<a href="index.html">Editor</a>
+			<a href="guide.html">Guide</a>
+			<a href="game.html" aria-current="page">Play your config</a>
+			<a href="https://github.com/oldjazjef/hello-eme-play">GitHub</a>
+		</nav>
+		<main>
+			<header data-play-ui>
+				<h1>This page is the game</h1>
+				<p class="lede">
+					It plays the configuration from the <a href="index.html">editor</a> (kept in this
+					browser). Press the game button at the bottom right. In the side view the page elements
+					below are platforms.
+				</p>
+				<p id="state" class="lede"></p>
+			</header>
+			<section>
+				<h2>Things to break</h2>
+				<div class="field">
+					<p class="thing">A paragraph that cracks after two punches.</p>
+					<p class="thing">Another one, to jump onto in the side view.</p>
+					<button type="button">A button</button>
+					<p class="thing">Some more text, so the page has a length to run along.</p>
+				</div>
+			</section>
+			<section>
+				<h2>More page</h2>
+				<p class="thing">Enough content to scroll the page.</p>
+				<p class="thing">And a last card at the bottom.</p>
+			</section>
+		</main>
+		<script>
+			window.addEventListener('load', function () {
+				var saved;
+				try {
+					saved = JSON.parse(localStorage.getItem('hello-eme-play-demo') || 'null');
+				} catch (error) {
+					saved = null;
+				}
+				var state = document.getElementById('state');
+				if (saved && typeof saved === 'object' && window.Play) {
+					window.Play.configure(saved);
+					state.textContent =
+						'Using your configuration (' + Object.keys(saved).length + ' settings changed).';
+				} else {
+					state.textContent = 'No configuration saved yet: this is the default game.';
+				}
+			});
+		</script>
+	</body>
+</html>

@@ -5,7 +5,13 @@ import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(fileURLToPath(new URL('../..', import.meta.url)));
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json' };
+const types = {
+	'.html': 'text/html',
+	'.css': 'text/css',
+	'.js': 'text/javascript',
+	'.json': 'application/json',
+	'.md': 'text/markdown'
+};
 const port = Number(process.env.PORT ?? 4173);
 
 createServer(async (request, response) => {
