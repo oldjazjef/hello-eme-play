@@ -223,3 +223,29 @@ describe('sprite sheets', () => {
 		expect(config.sprites.hero?.animations.walk).toEqual([1, 2, 4095]);
 	});
 });
+
+describe('key triggers', () => {
+	it('have no keys by default and keep the ones given', () => {
+		const [plain, bound] = resolveConfig({
+			triggers: [{ on: 'key' }, { on: 'key', keys: ['KeyB'], do: [{ do: 'heal', amount: 20 }] }]
+		}).triggers;
+		expect(plain?.keys).toEqual([]);
+		expect(bound).toMatchObject({ on: 'key', keys: ['KeyB'] });
+	});
+
+	it('are checked: no keys never fires, Escape is reserved', () => {
+		expect(configProblems({ triggers: [{ on: 'key', keys: ['KeyB'] }] })).toEqual([]);
+		expect(configProblems({ triggers: [{ on: 'kill' }] })).toEqual([]);
+		const found = configProblems({
+			triggers: [{ on: 'key' }, { on: 'key', keys: ['KeyB', 'Escape'] }]
+		});
+		expect(found).toContain('"triggers[0].keys" is empty: the trigger never fires.');
+		expect(found).toContain(
+			'"triggers[1].keys" can\'t contain "Escape": it always leaves the game.'
+		);
+	});
+
+	it('show up in the JSON Schema', () => {
+		expect(JSON.stringify(playJsonSchema())).toContain('"key"');
+	});
+});

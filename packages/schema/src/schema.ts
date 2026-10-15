@@ -218,7 +218,8 @@ const TRIGGER = object(t('Auslöser', 'Trigger'), {
 			break: t('Ein Seitenelement zerbricht', 'A page element breaks'),
 			enterVehicle: t('Die Figur einsteigt', 'The figure gets in'),
 			exitVehicle: t('Die Figur aussteigt', 'The figure gets out'),
-			viewChange: t('Die Ansicht wechselt', 'The view switches')
+			viewChange: t('Die Ansicht wechselt', 'The view switches'),
+			key: t('Eine Taste gedrückt wird', 'A key is pressed')
 		}
 	}),
 	only: str(
@@ -232,6 +233,12 @@ const TRIGGER = object(t('Auslöser', 'Trigger'), {
 		1,
 		3600
 	),
+	keys: keys(t('Tasten (nur „Eine Taste gedrückt wird“)', 'Keys (“a key is pressed” only)'), [], {
+		help: t(
+			'Esc ist nicht möglich: es verlässt immer das Spiel.',
+			'Esc is not possible: it always leaves the game.'
+		)
+	}),
 	once: bool(t('Nur einmal', 'Only once'), false),
 	conditions: { type: 'list', label: t('Nur wenn', 'Only if'), of: CONDITION, maxItems: 10 },
 	do: ACTIONS(t('Dann', 'Then'))
