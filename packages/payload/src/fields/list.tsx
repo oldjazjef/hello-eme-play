@@ -1,4 +1,5 @@
 import type { ListNode } from '@hello-eme/play-schema';
+import { describeTrigger } from '../sentence.js';
 import { itemTitle, moveItem, newItem, pick, removeAt, replaceAt } from '../state.js';
 import { Button, Section } from './controls.js';
 import { styles } from './styles.js';
@@ -24,7 +25,11 @@ export function ListField({
 			onReset={resettable && value !== undefined ? () => onChange(undefined) : undefined}
 		>
 			{items.map((item, index) => {
-				const title = itemTitle(node.of, item, `${own} ${index + 1}`, ctx.lang);
+				// Triggers read as a sentence, so the collapsed list already tells what each one does.
+				const title =
+					path === 'triggers'
+						? describeTrigger(node.of, item, ctx.root, ctx.lang) || `${own} ${index + 1}`
+						: itemTitle(node.of, item, `${own} ${index + 1}`, ctx.lang);
 				return (
 					// Items have no identity of their own, so the position is the key.
 					<Section key={index} node={node.of} ctx={ctx} title={`${index + 1}. ${title}`}>
