@@ -11,6 +11,7 @@ import { useConfig, useField, useTranslation } from '@payloadcms/ui';
 import type { JSONFieldClientProps } from 'payload';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { merge } from './fields/controls.js';
+import { groupNodes, type GroupId } from './groups.js';
 import { styles } from './fields/styles.js';
 import type { EditorContext, MediaOption } from './fields/types.js';
 import { LABELS, toLang, type Labels } from './labels.js';
@@ -22,7 +23,7 @@ export type PlayConfigFieldProps = JSONFieldClientProps & {
 	mediaCollection?: string;
 };
 
-type Tab = 'form' | 'raw';
+type Tab = GroupId | 'raw';
 
 interface MediaDoc {
 	filename?: string | null;
@@ -103,7 +104,8 @@ export function PlayConfigField({ path, mediaCollection = 'media' }: PlayConfigF
 	const { config: payloadConfig } = useConfig();
 	const lang = toLang(i18n.language);
 	const labels = LABELS[lang];
-	const [tab, setTab] = useState<Tab>('form');
+	const groups = useMemo(() => groupNodes(PLAY_SCHEMA), []);
+	const [tab, setTab] = useState<Tab>('groupGame');
 	const [preset, setPreset] = useState('');
 	const presetId = useId();
 
@@ -160,7 +162,7 @@ export function PlayConfigField({ path, mediaCollection = 'media' }: PlayConfigF
 			{PRESETS[preset] && <p style={styles.muted}>{pick(PRESETS[preset].description, lang)}</p>}
 
 			<div role="tablist" style={styles.tabs}>
-				{(['form', 'raw'] as const).map((id) => (
+				{[...groups.map((group) => group.id), 'raw' as const].map((id) => (
 					<button
 						key={id}
 						type="button"
@@ -169,22 +171,27 @@ export function PlayConfigField({ path, mediaCollection = 'media' }: PlayConfigF
 						style={merge(styles.tab, tab === id ? styles.tabActive : {})}
 						onClick={() => setTab(id)}
 					>
-						{id === 'form' ? labels.form : labels.rawJson}
+						{id === 'raw' ? labels.rawJson : labels[id]}
 					</button>
 				))}
 			</div>
 
 			<div role="tabpanel">
-				{tab === 'form' ? (
-					<NodeEditor
-						node={PLAY_SCHEMA}
-						value={stored}
-						path=""
-						ctx={ctx}
-						onChange={(next) => setValue(next ?? {})}
-					/>
-				) : (
+				{tab === 'raw' ? (
 					<RawJson value={value} labels={labels} onApply={setValue} />
+				) : (
+					groups
+						.filter((group) => group.id === tab)
+						.map((group) => (
+							<NodeEditor
+								key={group.id}
+								node={group.node}
+								value={stored}
+								path=""
+								ctx={ctx}
+								onChange={(next) => setValue(next ?? {})}
+							/>
+						))
 				)}
 			</div>
 
