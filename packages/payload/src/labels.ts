@@ -1,0 +1,88 @@
+/** The plugin's own UI strings (the game's labels come from the schema). */
+export type Lang = 'de' | 'en';
+
+const en = {
+	form: 'Form',
+	rawJson: 'Raw JSON',
+	problems: 'Problems (corrected when the game loads)',
+	noProblems: 'No problems found.',
+	add: 'Add',
+	remove: 'Remove',
+	moveUp: 'Move up',
+	moveDown: 'Move down',
+	duplicate: 'Duplicate',
+	reset: 'Reset to default',
+	resetShort: 'Reset',
+	preset: 'Preset',
+	applyPreset: 'Apply preset',
+	choosePreset: 'Choose a preset …',
+	confirmPreset: 'Replace the whole configuration with this preset?',
+	pressKey: 'Press a key',
+	pressAKey: 'Press a key … (Esc cancels)',
+	keysHint: 'Key codes separated by commas',
+	id: 'ID',
+	from: 'from',
+	to: 'to',
+	none: '(none)',
+	choose: 'Choose …',
+	missing: 'missing',
+	media: 'Choose from media',
+	mediaUpload: 'Upload new image',
+	invalidJson: 'Not valid JSON',
+	notObject: 'The configuration must be a JSON object.',
+	rawHint: 'Changes apply when you leave the field.',
+	summary: 'Summary',
+	entities: 'entities',
+	items: 'items',
+	upgrades: 'upgrades',
+	triggers: 'triggers',
+	entries: 'entries',
+	modified: 'changed'
+};
+
+export type Labels = typeof en;
+
+const de: Labels = {
+	form: 'Formular',
+	rawJson: 'Roh-JSON',
+	problems: 'Probleme (werden beim Laden des Spiels korrigiert)',
+	noProblems: 'Keine Probleme gefunden.',
+	add: 'Hinzufügen',
+	remove: 'Entfernen',
+	moveUp: 'Nach oben',
+	moveDown: 'Nach unten',
+	duplicate: 'Duplizieren',
+	reset: 'Auf Standard zurücksetzen',
+	resetShort: 'Zurücksetzen',
+	preset: 'Vorlage',
+	applyPreset: 'Vorlage anwenden',
+	choosePreset: 'Vorlage wählen …',
+	confirmPreset: 'Die ganze Konfiguration durch diese Vorlage ersetzen?',
+	pressKey: 'Taste drücken',
+	pressAKey: 'Taste drücken … (Esc bricht ab)',
+	keysHint: 'Tastencodes, durch Komma getrennt',
+	id: 'ID',
+	from: 'von',
+	to: 'bis',
+	none: '(keine)',
+	choose: 'Wählen …',
+	missing: 'fehlt',
+	media: 'Aus Medien wählen',
+	mediaUpload: 'Neues Bild hochladen',
+	invalidJson: 'Kein gültiges JSON',
+	notObject: 'Die Konfiguration muss ein JSON-Objekt sein.',
+	rawHint: 'Änderungen gelten, sobald du das Feld verlässt.',
+	summary: 'Übersicht',
+	entities: 'Figuren',
+	items: 'Gegenstände',
+	upgrades: 'Upgrades',
+	triggers: 'Auslöser',
+	entries: 'Einträge',
+	modified: 'geändert'
+};
+
+export const LABELS: Record<Lang, Labels> = { de, en };
+
+/** The admin language (`i18n.language`) as one of the two supported ones. */
+export const toLang = (language: string | undefined): Lang =>
+	language?.startsWith('de') ? 'de' : 'en';

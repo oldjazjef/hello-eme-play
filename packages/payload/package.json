@@ -16,6 +16,10 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
+		},
+		"./client": {
+			"types": "./dist/exports/client.d.ts",
+			"import": "./dist/exports/client.js"
 		}
 	},
 	"files": [
@@ -37,9 +41,16 @@
 		"@hello-eme/play-schema": "^0.0.0"
 	},
 	"peerDependencies": {
-		"payload": "^3.60.0"
+		"@payloadcms/ui": "^3.60.0",
+		"payload": "^3.60.0",
+		"react": ">=19"
 	},
 	"devDependencies": {
-		"payload": "3.90.2"
+		"@payloadcms/ui": "^3.90.2",
+		"@types/react": "^19.2.14",
+		"@types/react-dom": "^19.3.0",
+		"payload": "3.90.2",
+		"react": "^19.2.6",
+		"react-dom": "^19.2.6"
 	}
 }

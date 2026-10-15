@@ -1,4 +1,4 @@
-import { configProblems, DEFAULT_CONFIG } from '@hello-eme/play-schema';
+import { objectProblem } from './state.js';
 import type { Access, GlobalConfig, Plugin } from 'payload';
 
 export interface PlayPluginOptions {
@@ -8,17 +8,23 @@ export interface PlayPluginOptions {
 	group?: string | Record<string, string>;
 	/** Who may read and change it. Default: everyone reads, logged-in users change it. */
 	access?: { read?: Access; update?: Access };
+	/** Slug of the upload collection the picture picker lists (default `media`). */
+	mediaCollection?: string;
 	/** Turns the plugin off but keeps the global, so the database schema stays the same. */
 	disabled?: boolean;
 }
 
 export const DEFAULT_SLUG = 'play';
 
-/** Payload's `validate` for the JSON: readable problems, or true. */
+export { configProblems, DEFAULT_CONFIG, resolveConfig } from '@hello-eme/play-schema';
+export type { PlayConfig } from '@hello-eme/play-schema';
+
+/**
+ * Payload's `validate` for the JSON. Lenient: `resolveConfig` fixes nonsense when the game loads
+ * and the editor lists the problems, so only something that is no JSON object blocks saving.
+ */
 export function validateConfig(value: unknown): string | true {
-	if (value === null || value === undefined) return true;
-	const problems = configProblems(value);
-	return problems.length === 0 ? true : problems.join(' ');
+	return objectProblem(value) ?? true;
 }
 
 export function playGlobal(options: PlayPluginOptions = {}): GlobalConfig {
@@ -30,15 +36,22 @@ export function playGlobal(options: PlayPluginOptions = {}): GlobalConfig {
 			update: options.access?.update ?? (({ req }) => Boolean(req.user))
 		},
 		admin: { group: options.group, hidden: options.disabled },
-		// The form that abstracts the JSON arrives with the Payload milestone (docs/PLAN.md); until
-		// then the JSON is edited as plain JSON.
 		fields: [
 			{
 				name: 'config',
 				type: 'json',
 				label: { de: 'Konfiguration', en: 'Configuration' },
-				defaultValue: DEFAULT_CONFIG,
-				validate: (value: unknown) => validateConfig(value)
+				// Only what editors change is stored; everything else comes from the defaults.
+				defaultValue: {},
+				validate: (value: unknown) => validateConfig(value),
+				admin: {
+					components: {
+						Field: {
+							path: '@hello-eme/play-payload/client#PlayConfigField',
+							clientProps: { mediaCollection: options.mediaCollection ?? 'media' }
+						}
+					}
+				}
 			}
 		]
 	};
