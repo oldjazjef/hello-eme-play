@@ -2,7 +2,6 @@
 export type Lang = 'de' | 'en';
 
 const en = {
-	form: 'Form',
 	rawJson: 'Raw JSON',
 	problems: 'Problems (corrected when the game loads)',
 	noProblems: 'No problems found.',
@@ -37,13 +36,17 @@ const en = {
 	upgrades: 'upgrades',
 	triggers: 'triggers',
 	entries: 'entries',
-	modified: 'changed'
+	modified: 'changed',
+	groupGame: 'Game',
+	groupCharacters: 'Characters',
+	groupItems: 'Items & upgrades',
+	groupTriggers: 'Triggers',
+	groupControls: 'Keys, sound & texts'
 };
 
 export type Labels = typeof en;
 
 const de: Labels = {
-	form: 'Formular',
 	rawJson: 'Roh-JSON',
 	problems: 'Probleme (werden beim Laden des Spiels korrigiert)',
 	noProblems: 'Keine Probleme gefunden.',
@@ -78,7 +81,12 @@ const de: Labels = {
 	upgrades: 'Upgrades',
 	triggers: 'Auslöser',
 	entries: 'Einträge',
-	modified: 'geändert'
+	modified: 'geändert',
+	groupGame: 'Spiel',
+	groupCharacters: 'Figuren',
+	groupItems: 'Gegenstände & Upgrades',
+	groupTriggers: 'Auslöser',
+	groupControls: 'Tasten, Ton & Texte'
 };
 
 export const LABELS: Record<Lang, Labels> = { de, en };
