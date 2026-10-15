@@ -12,6 +12,9 @@ test('the demo: editor with a live preview, and the JSON it makes', async ({ pag
 	await page.getByRole('combobox', { name: 'View' }).selectOption('side');
 	await expect(canvas).toHaveAttribute('data-view', 'side');
 	await expect(page.locator('#json')).toContainText('"mode": "side"');
+	// The page explains the game's script as well as the editor's.
+	await expect(page.getByRole('heading', { name: 'Use the game on your own page' })).toBeVisible();
+	await expect(page.getByText('data-config-url="/play.json"')).toBeVisible();
 	expect(errors).toEqual([]);
 });
 

@@ -55,19 +55,56 @@
 			</section>
 
 			<section>
-				<h2>Use it on your own page</h2>
+				<h2>Use the game on your own page</h2>
+				<p>
+					The game is one script, <code>play.js</code> (attached to every
+					<a href="https://github.com/oldjazjef/hello-eme-play/releases">release</a>). The page it
+					runs on is the playing field, and the JSON this editor makes is its configuration.
+				</p>
+				<pre tabindex="0" style="margin-top: 8px">
+&lt;!-- the configuration: a file, or inline with data-config='{...}' --&gt;
+&lt;script src="/play.js" data-config-url="/play.json" defer&gt;&lt;/script&gt;
+
+&lt;!-- optional: your own start button (the script adds a floating one by itself) --&gt;
+&lt;button type="button" data-play-toggle&gt;Play&lt;/button&gt;</pre>
+				<p style="margin-top: 8px">
+					Paste the JSON from above into <code>play.json</code>, or let your CMS serve it.
+					<code>{}</code> is already a complete game with all defaults. Elements with
+					<code>data-play-ui</code> are left alone by the game;
+					<code>data-toggle="off"</code> removes the floating button.
+				</p>
+				<pre tabindex="0" style="margin-top: 8px">
+// window.Play controls it from your own code
+Play.start();               Play.stop();            Play.toggle();
+Play.configure(json);       // new settings, applied at once where possible
+Play.setPath('/projects');  // single-page apps: pick the per-page settings
+
+// with a bundler instead of the script tag
+import { createPlay } from '@hello-eme/play';
+createPlay({ config }).start();</pre>
+				<p style="margin-top: 8px">
+					Every setting is in the <a href="guide.html">guide</a>. The
+					<a href="game.html">game page</a> of this demo is exactly this: <code>play.js</code> plus
+					the configuration from the editor.
+				</p>
+			</section>
+
+			<section>
+				<h2>Use the editor on your own page</h2>
 				<pre tabindex="0">
 &lt;div id="editor"&gt;&lt;/div&gt;
 &lt;script src="editor.js"&gt;&lt;/script&gt;
 &lt;script&gt;
   PlayEditor.mount(document.getElementById('editor'), {
     value: await (await fetch('/play.json')).json(),
-    onChange: (json) =&gt; save(json)
+    onChange: (json) =&gt; save(json)   // e.g. PUT it to where play.json comes from
   });
 &lt;/script&gt;</pre>
 				<p style="margin-top: 8px">
-					<code>editor.js</code> is attached to every
-					<a href="https://github.com/oldjazjef/hello-eme-play/releases">release</a>.
+					<code>editor.js</code> is attached to every release too. The editor shows the game in its
+					preview by itself; give it <code>previewUrl</code> to preview a page of your own instead.
+					With Payload CMS the plugin <code>@hello-eme/play-payload</code> puts this editor into the
+					admin.
 				</p>
 			</section>
 		</main>
