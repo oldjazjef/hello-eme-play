@@ -13,7 +13,8 @@
 		"verify": "npm run format:check && nx run-many -t lint check test build",
 		"changeset": "changeset",
 		"release": "npm run build && changeset publish",
-		"prepare": "husky"
+		"prepare": "husky",
+		"e2e": "nx run-many -t e2e"
 	},
 	"workspaces": [
 		"packages/*",

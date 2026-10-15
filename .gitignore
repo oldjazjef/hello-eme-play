@@ -8,3 +8,5 @@ coverage
 .idea
 .vscode/*
 !.vscode/settings.json
+test-results
+playwright-report

@@ -1,0 +1,14 @@
+{
+	"compilerOptions": {
+		"target": "es2022",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"lib": ["es2022", "dom", "dom.iterable"],
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"skipLibCheck": true,
+		"noEmit": true,
+		"types": ["node"]
+	},
+	"include": ["tests", "playwright.config.ts"]
+}

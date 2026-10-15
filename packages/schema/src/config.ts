@@ -11,9 +11,24 @@ import type { PlayConfig } from './types.js';
 
 const DEFAULT_ENTITIES = (resolve(PLAY_SCHEMA, {}) as PlayConfig).entities;
 
+/** What an entity looks like, how big it is and how it behaves when its definition doesn't say. */
+const KIND_DEFAULTS = {
+	figure: { look: 'figure', size: 50, behavior: 'stand' },
+	monster: { look: 'enemy', size: 50, behavior: 'chase' },
+	vehicle: { look: 'car', size: 90, behavior: 'arrive' }
+} as const;
+
 function build(json: unknown): PlayConfig {
 	const config = resolve(PLAY_SCHEMA, json) as PlayConfig;
 	config.version = SCHEMA_VERSION;
+	const given = isObject(json) && isObject(json.entities) ? json.entities : {};
+	for (const [id, entity] of Object.entries(config.entities)) {
+		const source = isObject(given[id]) ? given[id] : {};
+		const defaults = KIND_DEFAULTS[entity.kind];
+		for (const key of ['look', 'size', 'behavior'] as const) {
+			if (source[key] === undefined) Object.assign(entity, { [key]: defaults[key] });
+		}
+	}
 	// The played figure must exist, or there is nothing to steer.
 	if (!config.entities[config.game.player]) {
 		const fallback = DEFAULT_ENTITIES[config.game.player] ?? DEFAULT_ENTITIES.hero;

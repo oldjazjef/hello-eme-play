@@ -2,5 +2,14 @@
 	"name": "@hello-eme/play-example-static",
 	"version": "0.0.0",
 	"private": true,
-	"description": "A plain HTML page with the drop-in script."
+	"description": "A plain HTML page with the drop-in script.",
+	"devDependencies": {
+		"@playwright/test": "^1.56.1",
+		"@hello-eme/play": "*"
+	},
+	"scripts": {
+		"e2e": "playwright test",
+		"check": "tsc --noEmit",
+		"lint": "eslint ."
+	}
 }

@@ -38,6 +38,19 @@ describe('resolveConfig', () => {
 		expect(config.view.mode).toBe('topdown');
 	});
 
+	it('picks look, size and behavior from the kind unless the entity says otherwise', () => {
+		const config = resolveConfig({
+			entities: {
+				hero: { kind: 'figure' },
+				truck: { kind: 'vehicle', size: 120 },
+				ghost: { kind: 'monster', look: 'figure' }
+			}
+		});
+		expect(config.entities.hero).toMatchObject({ look: 'figure', behavior: 'stand', size: 50 });
+		expect(config.entities.truck).toMatchObject({ look: 'car', behavior: 'arrive', size: 120 });
+		expect(config.entities.ghost).toMatchObject({ look: 'figure', behavior: 'chase' });
+	});
+
 	it('brings the hero back when the played figure is missing', () => {
 		const config = resolveConfig({ entities: { blob: { kind: 'monster' } } });
 		expect(config.entities.hero?.kind).toBe('figure');

@@ -5,6 +5,7 @@
  * <script src="play.js" data-config-url="/play.json" defer></script>
  * <!-- or the JSON inline: -->
  * <script src="play.js" data-config='{"view":{"mode":"side"}}' defer></script>
+ * <!-- data-toggle="off": no floating start button (start it with window.Play.start()). -->
  * ```
  *
  * The game is available as `window.Play` afterwards.
@@ -31,5 +32,8 @@ async function readConfig(): Promise<unknown> {
 readConfig()
 	.catch(() => ({}))
 	.then((config) => {
-		window.Play = createPlay({ config });
+		window.Play = createPlay({
+			config,
+			toggleButton: script instanceof HTMLScriptElement ? script.dataset.toggle !== 'off' : true
+		});
 	});

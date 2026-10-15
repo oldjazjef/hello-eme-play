@@ -20,6 +20,9 @@
 		"test": {
 			"dependsOn": ["^build"],
 			"cache": true
+		},
+		"e2e": {
+			"dependsOn": ["^build"]
 		}
 	},
 	"analytics": false,

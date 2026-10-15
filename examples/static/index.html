@@ -4,15 +4,70 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>@hello-eme/play: static example</title>
-		<!-- Build first: npm run build. -->
+		<style>
+			body {
+				margin: 0;
+				font-family: system-ui, sans-serif;
+				line-height: 1.5;
+			}
+			header {
+				position: sticky;
+				top: 0;
+				padding: 0.75rem 1rem;
+				background: #1e1b4b;
+				color: #fff;
+			}
+			main {
+				max-width: 48rem;
+				margin: 0 auto;
+				padding: 1rem;
+			}
+			section {
+				min-height: 40vh;
+			}
+			button,
+			.card {
+				padding: 0.5rem 1rem;
+				border: 2px solid #1e1b4b;
+				border-radius: 0.5rem;
+				background: #fff;
+			}
+			.card {
+				margin: 1rem 0;
+			}
+		</style>
+		<!-- Build first: npm run build. The configuration is one JSON (here inline). -->
 		<script
 			src="../../packages/play/dist/play.js"
-			data-config='{"view":{"mode":"topdown"}}'
+			data-config='{"levels":[{"label":"Warm-up","goal":{"type":"kills","amount":3}},{"label":"Heat","view":"side","goal":{"type":"survive","amount":30}}],"upgrades":{"muscles":{"label":"Muscles","help":"+1 attack","cost":100,"max":3,"stats":{"attack":1}}},"items":{"heart":{"look":"heart","do":[{"do":"heal","amount":30}]}},"entities":{"hero":{"kind":"figure","stats":{"hp":100,"attack":1,"speed":220},"moves":["punch","kick"]},"blob":{"kind":"monster","stats":{"hp":2,"attack":5,"speed":70},"moves":["bite"],"reward":{"points":100,"drops":[{"item":"heart","chance":30}]}},"car":{"kind":"vehicle","look":"car","size":90,"behavior":"arrive","stats":{"hp":100,"attack":3,"speed":420,"accel":520,"handling":3}}}}'
 			defer
 		></script>
 	</head>
 	<body>
-		<h1>Static example</h1>
-		<p>A page without a bundler; the game comes from one script tag.</p>
+		<header data-unbreakable><strong>Static example</strong></header>
+		<main>
+			<h1>A page that is also a game</h1>
+			<p>
+				Press the game button (bottom right). Walk with the arrow keys, punch with space, kick with
+				Q, get into the car with E. Everything is configured by one JSON.
+			</p>
+			<section>
+				<h2>Things to break</h2>
+				<p class="card">A paragraph that cracks after two punches.</p>
+				<button type="button">A button</button>
+				<a href="#top" class="card" style="display: inline-block">A link</a>
+			</section>
+			<section>
+				<h2>Platforms</h2>
+				<p>
+					In the side-scroller view page elements like this paragraph are platforms you can jump on.
+				</p>
+				<p class="card">Another card.</p>
+			</section>
+			<section>
+				<h2>More</h2>
+				<p>Enough text to scroll the page.</p>
+			</section>
+		</main>
 	</body>
 </html>

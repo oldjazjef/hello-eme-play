@@ -61,13 +61,13 @@ export function useMove(world: World, moveId: string): boolean {
 	const at = { x: body.x + facing.x * move.reach, y: body.y + facing.y * move.reach };
 	world.events.emit('move', { move: moveId, pose: move.pose });
 	if (move.sound) world.events.emit('sound', { id: move.sound });
-	if (move.breaks)
-		world.events.emit('strike', { at, from, move: moveId, power: move.power, breaks: true });
+	let hits = 0;
 	for (const target of [...world.bodies]) {
 		if (!isMonster(target)) continue;
 		const reach = radiusOf(sizeOf(world, target)) + 8;
 		if (distanceToSegment(target, from, at) > reach) continue;
 		const hit = hitOf(world, body, move.power, target);
+		hits += 1;
 		if (hit.evaded) continue;
 		const away = Math.atan2(target.y - from.y, target.x - from.x);
 		target.vx = Math.cos(away) * move.push;
@@ -75,6 +75,10 @@ export function useMove(world: World, moveId: string): boolean {
 		if (world.view === 'side' && move.push > 0) target.fall = -move.push * 0.5;
 		target.cooldown = Math.max(target.cooldown, 0.6);
 		world.damage(target, hit.amount, body, 'move');
+	}
+	// Nothing hit: the fist or foot lands on the page, which may break whatever is there.
+	if (hits === 0 && move.breaks) {
+		world.events.emit('strike', { at, from, move: moveId, power: move.power, breaks: true });
 	}
 	return true;
 }
