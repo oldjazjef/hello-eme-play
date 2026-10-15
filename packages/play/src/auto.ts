@@ -6,11 +6,14 @@
  * <!-- or the JSON inline: -->
  * <script src="play.js" data-config='{"view":{"mode":"side"}}' defer></script>
  * <!-- data-toggle="off": no floating start button (start it with window.Play.start()). -->
+ * <!-- data-preview="https://cms.example.com": plays the configuration the CMS admin sends (see
+ *      the Payload plugin's `previewUrl`); only messages from that origin count. -->
  * ```
  *
  * The game is available as `window.Play` afterwards.
  */
 import { createPlay, type Play } from './play.js';
+import { applyPreview, PREVIEW_READY } from './preview.js';
 
 declare global {
 	interface Window {
@@ -32,8 +35,14 @@ async function readConfig(): Promise<unknown> {
 readConfig()
 	.catch(() => ({}))
 	.then((config) => {
-		window.Play = createPlay({
+		const html = script instanceof HTMLScriptElement ? script : undefined;
+		const preview = html?.dataset.preview;
+		const play = createPlay({
 			config,
-			toggleButton: script instanceof HTMLScriptElement ? script.dataset.toggle !== 'off' : true
+			toggleButton: preview ? false : html ? html.dataset.toggle !== 'off' : true
 		});
+		window.Play = play;
+		if (!preview) return;
+		addEventListener('message', (event) => applyPreview(event, preview, window.parent, play));
+		window.parent.postMessage({ type: PREVIEW_READY }, preview);
 	});
