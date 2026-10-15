@@ -79,7 +79,7 @@ const en = {
 	verdictHard: 'Hard',
 	verdictVeryHard: 'Very hard',
 	verdictEasy: 'Easy',
-	verdictIdle: 'Nothing happens',
+	verdictIdle: 'Peaceful: no monsters, no goals',
 	flowIntro:
 		'What sets off what: triggers, item pickups and upgrades, and the triggers their actions lead on to.',
 	flowWhen: 'When',
@@ -218,7 +218,7 @@ const de: Labels = {
 	verdictHard: 'Schwer',
 	verdictVeryHard: 'Sehr schwer',
 	verdictEasy: 'Leicht',
-	verdictIdle: 'Es passiert nichts',
+	verdictIdle: 'Friedlich: keine Monster, keine Ziele',
 	flowIntro:
 		'Was was auslöst: Auslöser, eingesammelte Gegenstände und Upgrades, und die Auslöser, zu denen ihre Aktionen weiterführen.',
 	flowWhen: 'Wenn',

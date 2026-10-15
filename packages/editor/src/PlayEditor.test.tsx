@@ -1,3 +1,4 @@
+import { PRESETS } from '@hello-eme/play-schema';
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { PlayEditor } from './PlayEditor.js';
@@ -59,10 +60,10 @@ describe('PlayEditor', () => {
 	it('gives each preset card one button: Try it with a preview, Use without', () => {
 		const withPreview = render({ previewUrl: 'https://example.com/play-preview' });
 		expect(withPreview).not.toContain('Use this preset');
-		expect(withPreview.match(/Try it/g)).toHaveLength(4);
+		expect(withPreview.match(/Try it/g)).toHaveLength(Object.keys(PRESETS).length);
 		const without = render();
 		expect(without).not.toContain('Try it');
-		expect(without.match(/Use this preset/g)).toHaveLength(4);
+		expect(without.match(/Use this preset/g)).toHaveLength(Object.keys(PRESETS).length);
 	});
 
 	it('shows the preview next to the form when given a page', () => {
