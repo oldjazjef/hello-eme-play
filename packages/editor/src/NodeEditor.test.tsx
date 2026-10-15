@@ -129,3 +129,42 @@ describe('problems at the field', () => {
 		expect(html).toMatch(/⚠ (<!-- -->)?1/);
 	});
 });
+
+describe('cards show what things look like', () => {
+	const render = (value: unknown) =>
+		renderToString(
+			<NodeEditor
+				node={PLAY_SCHEMA}
+				value={value}
+				path=""
+				onChange={noop}
+				ctx={{ ...ctx('en'), root: resolveConfig(value) }}
+			/>
+		);
+
+	it('draws the built-in picture of figures, monsters and vehicles', () => {
+		const html = render({});
+		// Hero, Blob and Car: one drawing each (rects in the game's colours).
+		expect(html.match(/<svg viewBox="-10 -10/g)?.length).toBeGreaterThanOrEqual(3);
+		expect(html).toContain('var(--play-body');
+		expect(html).toContain('var(--play-car');
+		expect(html).toContain('var(--play-enemy');
+	});
+
+	it('draws items by their look', () => {
+		const html = render({ items: { star: { look: 'star' }, heart: { look: 'heart' } } });
+		expect(html.match(/<svg viewBox="-60 -60 120 120"/g)).toHaveLength(2);
+		expect(html).toContain('var(--play-item-alt');
+	});
+
+	it('shows a custom picture instead of the built-in one, and pictures of the library as cards', () => {
+		const html = render({
+			sprites: { hero: { url: '/media/hero.png', size: 64, columns: 4 } },
+			entities: { hero: { kind: 'figure', sprite: 'hero' } }
+		});
+		expect(html).toContain('url(&quot;/media/hero.png&quot;)');
+		// The library is a card grid too: the picture, its size and its sheet.
+		expect(html).toContain('64 px');
+		expect(html).toContain('4 × 1');
+	});
+});

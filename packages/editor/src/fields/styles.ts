@@ -118,8 +118,10 @@ export const styles = {
 		position: 'relative',
 		display: 'grid',
 		placeItems: 'center',
-		width: '4rem',
-		height: '4rem',
+		width: '5rem',
+		height: '5rem',
+		padding: '0.35rem',
+		boxSizing: 'border-box',
 		borderRadius: 'var(--pe-radius)',
 		background: 'var(--pe-surface-2)',
 		color: 'var(--pe-muted)',
@@ -127,7 +129,7 @@ export const styles = {
 	},
 	thumbImage: {
 		position: 'absolute',
-		inset: 0,
+		inset: '0.35rem',
 		backgroundRepeat: 'no-repeat',
 		imageRendering: 'pixelated'
 	},
