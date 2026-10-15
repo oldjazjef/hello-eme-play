@@ -7,6 +7,19 @@ import { createWorld } from './world.js';
 const example = (name: string): unknown =>
 	JSON.parse(readFileSync(new URL(`../../../docs/examples/${name}.json`, import.meta.url), 'utf8'));
 
+describe('docs/examples/key-bindings.json', () => {
+	it('has no problems and binds B, V and H', () => {
+		const json = example('key-bindings');
+		expect(configProblems(json)).toEqual([]);
+		const world = createWorld({ ...(json as object), spawns: [] }, { seed: 1 });
+		world.press('KeyH');
+		world.press('KeyB');
+		expect(world.bodies.filter((body) => body.def === 'blob')).toHaveLength(1);
+		world.press('KeyV');
+		expect(world.view).toBe('side');
+	});
+});
+
 describe('docs/examples/view-switch.json', () => {
 	it('has no problems and switches the view back and forth', () => {
 		const json = example('view-switch');
