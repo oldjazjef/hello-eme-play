@@ -50,6 +50,8 @@ export interface View {
 }
 
 export interface UiActions {
+	/** Lets go of all pad buttons (they are rebuilt, so a held one never reports its release). */
+	releasePad(): void;
 	press(direction: Direction): void;
 	release(direction: Direction): void;
 	/** Get in or out of the car. */
@@ -251,6 +253,7 @@ export class GameUi {
 		// Controls that disappear while held would otherwise stay "pressed".
 		a.steer(0);
 		a.pedal(0);
+		a.releasePad();
 		const lobby = view.phase === 'visit';
 		const over = view.over !== 'none';
 		this.#pad = lobby || over || view.shopOpen ? undefined : this.#buildPad(view);
