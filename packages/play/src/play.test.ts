@@ -122,10 +122,10 @@ describe('Input', () => {
 		expect([...controls.held]).toEqual(['kick']);
 	});
 
-	it('jumps on foot, honks and drifts in a vehicle, uses with E', () => {
+	it('jumps on foot, honks and drifts in a vehicle, uses with F', () => {
 		const onFoot = setup();
-		onFoot.input.keydown(key('Enter'));
 		onFoot.input.keydown(key('KeyE'));
+		onFoot.input.keydown(key('KeyF'));
 		onFoot.input.apply(onFoot.controls, false);
 		expect([...onFoot.controls.pressed]).toEqual(['jump', 'use']);
 
@@ -159,7 +159,7 @@ describe('Input', () => {
 	});
 
 	it('uses the keys of the configuration', () => {
-		const custom = resolveConfig({ moves: { punch: { keys: ['KeyF'] } } });
+		const custom = resolveConfig({ moves: { punch: { keys: ['KeyG'] } } });
 		const hooks: InputHooks = {
 			config: () => custom,
 			active: () => true,
@@ -175,7 +175,7 @@ describe('Input', () => {
 			pressed: new Set()
 		};
 		input.keydown(key('Space'));
-		input.keydown(key('KeyF'));
+		input.keydown(key('KeyG'));
 		input.apply(controls, false);
 		expect([...controls.held]).toEqual(['punch']);
 	});

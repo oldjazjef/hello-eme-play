@@ -679,11 +679,11 @@ export const PLAY_SCHEMA: ObjectNode = object(t('Spiel', 'Game'), {
 		right: keys(t('Rechts', 'Right'), ['ArrowRight', 'KeyD']),
 		up: keys(t('Hoch', 'Up'), ['ArrowUp', 'KeyW']),
 		down: keys(t('Runter', 'Down'), ['ArrowDown', 'KeyS']),
-		jump: keys(t('Springen und klicken', 'Jump and click'), ['Enter']),
+		jump: keys(t('Springen und klicken', 'Jump and click'), ['KeyE']),
 		// Shift too: many keyboards can't register space together with two arrow keys.
 		drift: keys(t('Driften', 'Drift'), ['Space', 'ShiftLeft', 'ShiftRight']),
 		honk: keys(t('Hupen', 'Honk'), ['Enter', 'KeyH']),
-		use: keys(t('Ein- und Aussteigen, Aufheben', 'Get in/out, pick up'), ['KeyE']),
+		use: keys(t('Ein- und Aussteigen, Aufheben', 'Get in/out, pick up'), ['KeyF']),
 		shop: keys(t('Upgrades öffnen', 'Open upgrades'), ['KeyU'])
 	}),
 	hint: object(t('Anleitung', 'Instructions'), {

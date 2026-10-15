@@ -108,7 +108,7 @@ test('gets into a car, drives, drifts and leaves tire marks', async ({ page }) =
 		const car = world.spawn('car', world.player.x + 30, world.player.y);
 		if (car) car.pilot = undefined;
 	});
-	await page.keyboard.press('KeyE');
+	await page.keyboard.press('KeyF');
 	await expect.poll(() => canvas(page, 'driving')).toBe('true');
 	await page.keyboard.down('ArrowUp');
 	await page.keyboard.down('ArrowRight');
@@ -118,7 +118,7 @@ test('gets into a car, drives, drifts and leaves tire marks', async ({ page }) =
 	await page.keyboard.up('ArrowUp');
 	await page.keyboard.up('ArrowRight');
 	await page.keyboard.up('Space');
-	await page.keyboard.press('KeyE');
+	await page.keyboard.press('KeyF');
 	await expect.poll(() => canvas(page, 'driving')).toBe('false');
 });
 

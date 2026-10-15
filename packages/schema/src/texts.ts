@@ -52,12 +52,12 @@ export const DEFAULT_TEXTS: Record<Locale, GameTexts> = {
 	de: {
 		toggle: 'Spielmodus',
 		keyboardHint:
-			'Pfeiltasten oder WASD: laufen · Leertaste: boxen · Q: kicken · Enter: springen und klicken · Esc: beenden',
+			'Pfeiltasten oder WASD: laufen · Leertaste: boxen · Q: kicken · E: springen und klicken · Esc: beenden',
 		touchHint:
 			'Steuerkreuz: laufen · Springen: springen und klicken · Boxen und Kicken: Gegner und Elemente treffen',
-		nearHint: 'E oder «Einsteigen»: ins Auto steigen',
+		nearHint: 'F oder «Einsteigen»: ins Auto steigen',
 		driveHint:
-			'Pfeiltasten oder WASD: Gas, Bremse und lenken · Leertaste oder Shift halten: driften · Enter oder H: hupen und klicken · E oder Esc: aussteigen',
+			'Pfeiltasten oder WASD: Gas, Bremse und lenken · Leertaste oder Shift halten: driften · Enter oder H: hupen und klicken · F oder Esc: aussteigen',
 		touchDriveHint:
 			'Lenkrad ziehen: lenken · Gas und Bremse halten · Drift halten: driften · Hupe: hupen und klicken',
 		sideHint:
@@ -100,11 +100,11 @@ export const DEFAULT_TEXTS: Record<Locale, GameTexts> = {
 	en: {
 		toggle: 'Game mode',
 		keyboardHint:
-			'Arrow keys or WASD: walk · Space: punch · Q: kick · Enter: jump and click · Esc: exit',
+			'Arrow keys or WASD: walk · Space: punch · Q: kick · E: jump and click · Esc: exit',
 		touchHint: 'D-pad: walk · Jump: jump and click · Punch and Kick: hit enemies and things',
-		nearHint: 'E or “Get in”: get into the car',
+		nearHint: 'F or “Get in”: get into the car',
 		driveHint:
-			'Arrow keys or WASD: gas, brake and steer · Hold space or Shift: drift · Enter or H: honk and click · E or Esc: get out',
+			'Arrow keys or WASD: gas, brake and steer · Hold space or Shift: drift · Enter or H: honk and click · F or Esc: get out',
 		touchDriveHint:
 			'Drag the wheel: steer · Hold gas and brake · Hold Drift: drift · Honk: honk and click',
 		sideHint: 'Arrow keys or WASD: walk and jump · Space: punch · Q: kick · Esc: exit',
