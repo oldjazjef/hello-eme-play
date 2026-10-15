@@ -1,0 +1,170 @@
+/* Layout: one column. A slim header, the page's copy, then the tool. */
+:root {
+	--bg: #f7f7f5;
+	--fg: #1b1d21;
+	--muted: #5f636b;
+	--line: #d9dad6;
+	--card: #ffffff;
+	--accent: #d4491c;
+	--font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	--mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+	color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme='light']) {
+		--bg: #141517;
+		--fg: #ececea;
+		--muted: #a0a3a9;
+		--line: #34363a;
+		--card: #1c1e21;
+		--accent: #ff7a4d;
+		color-scheme: dark;
+	}
+}
+:root[data-theme='dark'] {
+	--bg: #141517;
+	--fg: #ececea;
+	--muted: #a0a3a9;
+	--line: #34363a;
+	--card: #1c1e21;
+	--accent: #ff7a4d;
+	color-scheme: dark;
+}
+* {
+	box-sizing: border-box;
+}
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+	font-family: var(--font);
+	font-size: 15px;
+	line-height: 1.55;
+}
+a {
+	color: inherit;
+	text-decoration-color: var(--accent);
+	text-underline-offset: 3px;
+}
+.bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 20px;
+	padding: 12px max(16px, env(safe-area-inset-left, 0px));
+	border-bottom: 1px solid var(--line);
+}
+.bar strong {
+	margin-right: auto;
+}
+.bar a[aria-current='page'] {
+	font-weight: 600;
+	text-decoration-thickness: 2px;
+}
+main {
+	max-width: 62rem;
+	margin: 0 auto;
+	display: grid;
+	gap: 28px;
+	padding: 24px max(16px, env(safe-area-inset-left, 0px)) 64px;
+}
+h1 {
+	margin: 0;
+	font-size: clamp(1.6rem, 4vw, 2.3rem);
+	line-height: 1.15;
+	text-wrap: balance;
+}
+h2 {
+	margin: 0 0 8px;
+	font-size: 1.1rem;
+}
+p {
+	margin: 0;
+	max-width: 65ch;
+}
+.lede {
+	margin-top: 8px;
+	color: var(--muted);
+}
+kbd,
+code {
+	font-family: var(--mono);
+	font-size: 0.9em;
+}
+kbd {
+	padding: 0 0.4em;
+	border: 1px solid var(--line);
+	border-radius: 4px;
+	background: var(--card);
+}
+.steps {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+	gap: 12px;
+}
+.steps div {
+	padding: 12px 14px;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	background: var(--card);
+}
+.steps b {
+	display: block;
+	margin-bottom: 2px;
+}
+.langs {
+	display: flex;
+	gap: 6px;
+}
+.langs button,
+.cta {
+	padding: 6px 12px;
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	background: var(--card);
+	color: var(--fg);
+	font: inherit;
+	cursor: pointer;
+	text-decoration: none;
+}
+.langs button[aria-pressed='true'] {
+	border-color: var(--accent);
+	font-weight: 600;
+}
+.cta {
+	display: inline-block;
+	border-color: var(--accent);
+}
+pre {
+	overflow: auto;
+	max-height: 18rem;
+	margin: 0;
+	padding: 12px;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	background: var(--card);
+	font-family: var(--mono);
+	font-size: 12.5px;
+}
+.field {
+	display: grid;
+	gap: 12px;
+	padding: 16px;
+	border: 2px dashed var(--line);
+	border-radius: 10px;
+}
+.thing {
+	padding: 12px 14px;
+	border: 2px solid var(--fg);
+	border-radius: 8px;
+	background: var(--card);
+}
+.field button {
+	justify-self: start;
+	padding: 8px 14px;
+	border: 2px solid var(--fg);
+	border-radius: 8px;
+	background: var(--card);
+	color: var(--fg);
+	font: inherit;
+}

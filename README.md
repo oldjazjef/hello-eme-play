@@ -23,7 +23,8 @@ It works with plain HTML, any framework and any CMS. A Payload plugin edits the 
 | [`@hello-eme/play`](packages/play)            | Browser runtime and drop-in script                                   |
 | [`@hello-eme/play-core`](packages/core)       | Game logic without a DOM (entities, events, RNG)                     |
 | [`@hello-eme/play-schema`](packages/schema)   | The JSON as data: defaults, validation, migrations, JSON Schema      |
-| [`@hello-eme/play-payload`](packages/payload) | Payload CMS plugin that renders the schema as a form                 |
+| [`@hello-eme/play-editor`](packages/editor)   | The configuration editor for any page (one script), React export too |
+| [`@hello-eme/play-payload`](packages/payload) | Payload CMS plugin: the same editor inside the Payload admin         |
 | [`@hello-eme/play-sim`](packages/sim)         | Headless bots for balancing (`play-sim`)                             |
 | [`examples/static`](examples/static)          | A plain HTML page with the game and Playwright tests (not published) |
 
@@ -95,6 +96,7 @@ All keys can be changed in the JSON (`keys` for walking, jumping, using and the 
 | ------------------------ | ---------------------------------------------------------------------------------------------------------- |
 | A plain HTML page        | The script tag above.                                                                                      |
 | A bundler or a framework | `import { createPlay } from '@hello-eme/play'; createPlay({ config }).start();` ([package](packages/play)) |
+| No CMS, but want to edit | The standalone editor: one script, one call ([package](packages/editor), [example](examples/editor)).      |
 | Payload CMS 3            | The plugin, so editors change the game in the admin ([package](packages/payload), steps below).            |
 | A server or a build step | Validate JSON with `resolveConfig` / `configProblems` from `@hello-eme/play-schema`.                       |
 
@@ -133,6 +135,25 @@ To update, install the URL of a newer release.
    ```
 
    An old `@hello-eme/page-game` JSON is migrated automatically.
+
+### Edit the game without a CMS
+
+The same editor that runs in Payload also runs on any page: quick settings, presets with a live preview,
+a balance check, the full form, a flow of what triggers what, a guide, undo and redo.
+
+```html
+<div id="editor"></div>
+<script src="editor.js"></script>
+<script>
+	PlayEditor.mount(document.getElementById('editor'), {
+		value: await (await fetch('/play.json')).json(),
+		onChange: (json) => save(json)
+	});
+</script>
+```
+
+Details and options: [packages/editor](packages/editor). A live demo (guide, editor, live preview) is built from [site/](site) and published with GitHub Pages. Every setting, key, event and action is listed in
+the [configuration reference](docs/REFERENCE.md) ([Deutsch](docs/REFERENCE.de.md)), which is generated from the schema.
 
 ### Balance without a browser
 

@@ -1,4 +1,4 @@
-import { objectProblem } from './state.js';
+import { isObject } from '@hello-eme/play-schema';
 import type { Access, GlobalConfig, Plugin } from 'payload';
 
 export interface PlayPluginOptions {
@@ -29,7 +29,9 @@ export type { PlayConfig } from '@hello-eme/play-schema';
  * and the editor lists the problems, so only something that is no JSON object blocks saving.
  */
 export function validateConfig(value: unknown): string | true {
-	return objectProblem(value) ?? true;
+	return value === null || value === undefined || isObject(value)
+		? true
+		: 'The configuration must be a JSON object.';
 }
 
 export function playGlobal(options: PlayPluginOptions = {}): GlobalConfig {

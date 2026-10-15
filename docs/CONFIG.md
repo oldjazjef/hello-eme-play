@@ -1,6 +1,6 @@
 # Configuration
 
-One JSON, every key optional. Missing values get defaults, invalid ones are corrected
+One JSON, every key optional. [REFERENCE.md](REFERENCE.md) lists every setting, event, action, condition and key (generated from the schema; also in the editor's Guide tab). Missing values get defaults, invalid ones are corrected
 (`resolveConfig`), `configProblems` explains what would be corrected. Editors can use
 `@hello-eme/play-schema/play.schema.json` for autocompletion. The settings below are the top-level keys;
 the Payload form or the JSON Schema list every field with bounds.

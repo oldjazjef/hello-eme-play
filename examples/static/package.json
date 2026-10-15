@@ -4,11 +4,12 @@
 	"private": true,
 	"description": "A plain HTML page with the drop-in script.",
 	"devDependencies": {
-		"@playwright/test": "^1.56.1",
-		"@hello-eme/play": "*"
+		"@hello-eme/play": "*",
+		"@hello-eme/play-editor": "*",
+		"@playwright/test": "^1.56.1"
 	},
 	"scripts": {
-		"e2e": "playwright test",
+		"e2e": "node ../../scripts/build-site.mjs && playwright test",
 		"check": "tsc --noEmit",
 		"lint": "eslint ."
 	}

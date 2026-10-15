@@ -10,8 +10,11 @@ BASE=https://github.com/oldjazjef/hello-eme-play/releases/download/v0.1.0
 # The engine (also pulls in play-core and play-schema)
 npm install $BASE/hello-eme-play-0.1.0.tgz
 
-# The Payload plugin
+# The Payload plugin (also pulls in the editor)
 npm install $BASE/hello-eme-play-payload-0.1.0.tgz
+
+# The editor without Payload (React component; the script below needs no install)
+npm install $BASE/hello-eme-play-editor-0.1.0.tgz
 ```
 
 `package.json` then holds the release URL, so `npm install` and `npm ci` keep working and the version
@@ -27,7 +30,9 @@ Without a bundler, load the script of the release:
 ></script>
 ```
 
-(GitHub sends release files as downloads, so for a live site copy `play.js` to your own host.)
+The configuration editor has a script too, `editor.js` (React included), which puts `PlayEditor.mount` on the page.
+
+(GitHub sends release files as downloads, so for a live site copy `play.js` and `editor.js` to your own host.)
 
 Also attached: `hello-eme-play-schema` (types, validation, presets), `hello-eme-play-core` and
 `hello-eme-play-sim` (`play-sim` bots).

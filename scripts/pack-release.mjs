@@ -29,7 +29,7 @@ const out = resolve(outArg);
 mkdirSync(out, { recursive: true });
 
 const root = resolve(import.meta.dirname, '..');
-const folders = ['schema', 'core', 'play', 'payload', 'sim'];
+const folders = ['schema', 'core', 'play', 'payload', 'sim', 'editor'];
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
 const manifests = folders.map((folder) => readJson(join(root, 'packages', folder, 'package.json')));
 
@@ -57,6 +57,7 @@ for (const [index, folder] of folders.entries()) {
 	execFileSync('npm', ['pack', '--pack-destination', out], { cwd: staging, stdio: 'inherit' });
 }
 
-// The drop-in script for plain websites.
+// The drop-in scripts for plain websites: the game and its editor.
 cpSync(join(root, 'packages/play/dist/play.iife.js'), join(out, 'play.js'));
+cpSync(join(root, 'packages/editor/dist/editor.iife.js'), join(out, 'editor.js'));
 console.log(`Packed ${folders.length} packages into ${out}`);
