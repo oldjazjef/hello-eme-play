@@ -279,6 +279,21 @@ describe('levels', () => {
 		expect(levelUp).toHaveBeenCalledTimes(1);
 	});
 
+	it('reaches a score goal by the points earned in the level, not by the total', () => {
+		const world = quiet({
+			levels: [{ goal: { type: 'score', amount: 150 } }, { goal: { type: 'score', amount: 150 } }]
+		});
+		world.run([{ do: 'points', amount: 100 }]);
+		world.step(0.05);
+		expect(world.level).toBe(1);
+		world.run([{ do: 'points', amount: 100 }]);
+		world.step(0.05);
+		expect(world.level).toBe(2);
+		world.run([{ do: 'points', amount: 100 }]);
+		world.step(0.05);
+		expect(world.level).toBe(2);
+	});
+
 	it('scales spawned monsters per level', () => {
 		const world = createWorld(
 			{

@@ -11,6 +11,21 @@ describe('resolveConfig', () => {
 		expect(DEFAULT_CONFIG.version).toBe(SCHEMA_VERSION);
 	});
 
+	it('spawns blobs in waves by default', () => {
+		expect(DEFAULT_CONFIG.spawns).toEqual([
+			{
+				entity: 'blob',
+				every: { min: 12, max: 30 },
+				count: { min: 1, max: 3 },
+				max: 8,
+				fromLevel: 1,
+				toLevel: 100,
+				scalePerLevel: 0
+			}
+		]);
+		expect(resolveConfig({ spawns: [] }).spawns).toEqual([]);
+	});
+
 	it('has the classic hero, blob, car, punch and kick', () => {
 		expect(Object.keys(DEFAULT_CONFIG.entities)).toEqual(['hero', 'blob', 'car']);
 		expect(DEFAULT_CONFIG.entities.hero).toMatchObject({

@@ -11,12 +11,8 @@ const isMonster = (body: Body) => body.kind === 'monster';
 
 /** Adds (or takes) points. */
 export function addPoints(world: World, amount: number): void {
-	const state = stateOf(world);
 	world.score = Math.max(0, world.score + amount);
-	if (amount > 0) {
-		world.stats.earned += amount;
-		state.level.earned += amount;
-	}
+	if (amount > 0) world.stats.earned += amount;
 	world.events.emit('points', { amount, total: world.score });
 }
 

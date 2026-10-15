@@ -595,6 +595,7 @@ export const PLAY_SCHEMA: ObjectNode = object(t('Spiel', 'Game'), {
 		type: 'list',
 		label: t('Monster erscheinen', 'Monster spawns'),
 		of: SPAWN,
+		default: [{ entity: 'blob' }],
 		maxItems: 50
 	},
 	itemSpawns: {

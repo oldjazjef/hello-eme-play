@@ -84,6 +84,8 @@ export interface ListNode extends Base {
 	type: 'list';
 	of: Node;
 	maxItems: number;
+	/** Used when the list is missing (not when it is empty). */
+	default?: readonly unknown[];
 }
 
 /** One of several shapes, told apart by the string field `by` (triggers, actions, conditions). */
@@ -156,7 +158,7 @@ export function defaultOf(node: Node): unknown {
 		case 'record':
 			return resolve(node, node.default);
 		case 'list':
-			return [];
+			return resolve(node, undefined);
 		case 'union':
 			return undefined;
 	}
@@ -202,8 +204,8 @@ export function resolve(node: Node, value: unknown): unknown {
 		case 'record':
 			return resolveEntries(node, isObject(value) ? value : node.default);
 		case 'list': {
-			if (!Array.isArray(value)) return [];
-			return value
+			const items = Array.isArray(value) ? value : (node.default ?? []);
+			return items
 				.map((item) => resolve(node.of, item))
 				.filter((item) => item !== undefined)
 				.slice(0, node.maxItems);

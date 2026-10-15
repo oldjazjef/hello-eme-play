@@ -86,7 +86,7 @@ export const PRESETS: Record<string, Preset> = {
 					look: 'enemy',
 					size: 110,
 					boss: true,
-					stats: { hp: 60, attack: 25, defense: 4, speed: 80 },
+					stats: { hp: 120, attack: 25, defense: 4, speed: 80 },
 					moves: ['bite'],
 					reward: { points: 2000, drops: [{ item: 'portal', chance: 100 }] }
 				},
