@@ -49,6 +49,14 @@ export const STYLES = /* css */ `
 	color: var(--play-text, #1e1b4b);
 	box-shadow: var(--play-shadow-box, 0 10px 15px -3px rgb(0 0 0 / 0.15));
 }
+.play-hint {
+	/* The instructions sit at the top of the screen, out of the way of the touch controls. */
+	position: fixed;
+	top: 1rem;
+	left: 1rem;
+	right: 1rem;
+	width: fit-content;
+}
 .play-hint > p {
 	flex: 1;
 	min-width: 0;
@@ -63,14 +71,13 @@ export const STYLES = /* css */ `
 .play-tab {
 	pointer-events: auto;
 	position: fixed;
-	top: 50%;
+	top: 1rem;
 	left: 0;
 	z-index: var(--play-z, 9990);
 	display: flex;
 	align-items: center;
 	gap: 0.25rem;
 	padding: 0.75rem 0.75rem 0.75rem 0.5rem;
-	transform: translateY(-50%);
 	border: 2px solid var(--play-border, #1e1b4b);
 	border-left: 0;
 	border-radius: 0 var(--play-radius, 0.5rem) var(--play-radius, 0.5rem) 0;
@@ -288,10 +295,9 @@ export const STYLES = /* css */ `
 	.play-coarse {
 		display: block;
 	}
-	/* Full width at the very bottom, below the touch controls. */
 	.play-hint {
 		max-width: none;
-		align-self: stretch;
+		width: auto;
 	}
 }
 .play-wreck[data-cracks] {
@@ -335,13 +341,13 @@ export const STYLES = /* css */ `
 @keyframes play-in {
 	from {
 		opacity: 0;
-		translate: -1rem 0;
+		translate: 0 -0.75rem;
 	}
 }
 
 .play-toast {
 	position: fixed;
-	top: 1rem;
+	top: 5rem;
 	left: 50%;
 	z-index: var(--play-z, 9990);
 	max-width: min(90vw, 32rem);
@@ -361,7 +367,7 @@ export const STYLES = /* css */ `
 }
 .play-boss {
 	position: fixed;
-	top: 3.5rem;
+	top: 7.5rem;
 	left: 50%;
 	z-index: var(--play-z, 9990);
 	width: min(60vw, 24rem);
