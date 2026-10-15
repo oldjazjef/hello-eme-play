@@ -22,6 +22,29 @@ the Payload form or the JSON Schema list every field with bounds.
 | `audio`, `progress`   | synth sounds by id, event → sound, high score storage                                    |
 | `texts`               | UI texts (empty: the default of `locale`)                                                |
 
+## Sprite sheets and animations
+
+A picture in `sprites` can be a sheet: `columns` × `rows` frames, numbered row by row from 0. `size` is the
+longer side of **one** frame. `animations` lists the frames per state (`idle`, `walk`, `jump`, `hurt`,
+`punch`, `kick`, `bite`); they loop with `fps`. An empty state plays `idle`, and if that is empty too, frame 0.
+Items use `idle`. With reduced motion the first frame of each state stays.
+
+```json
+{
+	"sprites": {
+		"hero": {
+			"url": "/media/hero-sheet.png",
+			"size": 64,
+			"columns": 4,
+			"rows": 2,
+			"fps": 10,
+			"animations": { "idle": [0], "walk": [1, 2, 3, 2], "punch": [4, 5], "jump": [6] }
+		}
+	},
+	"entities": { "hero": { "sprite": "hero" } }
+}
+```
+
 ## Cookbook
 
 Stronger monsters each level:

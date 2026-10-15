@@ -70,4 +70,16 @@ describe('NodeEditor', () => {
 		expect(html).toContain('Space, KeyQ');
 		expect(html).toContain('Choose from media');
 	});
+
+	it('renders the sprite sheet settings and animation frames', () => {
+		const value = {
+			sprites: { hero: { url: '/a.png', columns: 4, rows: 2, animations: { walk: [4, 5, 6] } } }
+		};
+		const html = renderToString(
+			<NodeEditor node={PLAY_SCHEMA} value={value} path="" ctx={ctx('en')} onChange={noop} />
+		);
+		expect(html).toContain('Sheet columns');
+		expect(html).toContain('Walk');
+		expect(html).toContain('value="6"');
+	});
 });

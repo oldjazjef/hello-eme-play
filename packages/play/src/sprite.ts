@@ -176,10 +176,10 @@ export function frameAt(sheet: Sheet, state: Animation, time: number, still: boo
 }
 
 /** The state of a body: what it does right now decides the animation. */
-export function animationOf(body: Body): Animation {
+export function animationOf(body: Body, side: boolean): Animation {
 	if (body.pose) return body.pose.pose;
 	if (body.hurt > 0) return 'hurt';
-	if (!body.grounded || body.jump > 0) return 'jump';
+	if (side ? !body.grounded : body.jump > 0) return 'jump';
 	return body.moving ? 'walk' : 'idle';
 }
 
@@ -316,7 +316,7 @@ function humanoidRows(body: Body, look: Look): readonly string[] {
 function frameOf(body: Body, picture: Picture, scene: Scene): number {
 	// Each body starts at another point of the loop.
 	const time = scene.time + body.id * 0.37;
-	return frameAt(picture.sheet, animationOf(body), time, scene.reducedMotion);
+	return frameAt(picture.sheet, animationOf(body, scene.side), time, scene.reducedMotion);
 }
 
 /** Draws a figure, monster or vehicle, in the current view. */

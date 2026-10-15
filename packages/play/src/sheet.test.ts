@@ -41,14 +41,18 @@ describe('animationOf', () => {
 
 	it('picks the state from what the body does', () => {
 		const hero = body();
-		expect(animationOf(hero)).toBe('idle');
+		expect(animationOf(hero, false)).toBe('idle');
 		hero.moving = true;
-		expect(animationOf(hero)).toBe('walk');
+		expect(animationOf(hero, false)).toBe('walk');
+		hero.jump = 0.2;
+		expect(animationOf(hero, false)).toBe('jump');
+		hero.jump = 0;
 		hero.grounded = false;
-		expect(animationOf(hero)).toBe('jump');
+		expect(animationOf(hero, true)).toBe('jump');
+		expect(animationOf(hero, false)).toBe('walk');
 		hero.hurt = 0.2;
-		expect(animationOf(hero)).toBe('hurt');
+		expect(animationOf(hero, false)).toBe('hurt');
 		hero.pose = { pose: 'kick', left: 0.1 };
-		expect(animationOf(hero)).toBe('kick');
+		expect(animationOf(hero, false)).toBe('kick');
 	});
 });

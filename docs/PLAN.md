@@ -115,7 +115,7 @@ Status: all done on branch `feat/scaffold`.
    _Done; not yet tried in a running Payload admin._
 6. **M5 Side-scroller**: gravity, platforms from page elements, `setView` at runtime. _Done._
 7. **M6 Polish**: sound, high score, bosses, goals, reduced motion, keyboard shop, docs, example. _Done.
-   Not done: sprite sheets and animations, object pools, analytics adapter._
+   Sprite sheets with animations per state came afterwards. Not done: object pools, analytics adapter._
 8. **M7 `play-sim`**: bots and the `play-sim` CLI. _Done._
 
 ## Decisions taken
