@@ -34,9 +34,9 @@ the same round.
 
 ## JSON
 
-One file with a `version`. Everything is optional. Top-level keys: `view`, `stats`, `entities`,
-`spawns`, `levels`, `items`, `upgrades`, `triggers`, `input`, `ui`, `texts`, `sprites`, `audio`.
-The skeleton implements `view`, `stats`, `entities` and `spawns` (see `packages/schema`).
+One file with a `version`. Everything is optional. Top-level keys: `view`, `game`, `stats`, `sprites`, `entities`,
+`moves`, `items`, `upgrades`, `spawns`, `itemSpawns`, `visits`, `triggers`, `levels`, `keys`, `hint`, `audio`,
+`progress`, `texts`. All implemented; reference in [CONFIG.md](CONFIG.md).
 
 ```json
 {
@@ -66,10 +66,14 @@ The skeleton implements `view`, `stats`, `entities` and `spawns` (see `packages/
 
 Items and upgrades do nothing themselves; they fire **triggers**, a trigger runs **actions**.
 
-- Ons: `item.picked`, `enemy.killed`, `points.reached`, `level.up`, `timer`, `vehicle.entered`,
-  `element.broken`, `health.low`.
-- Conditions: stat comparison, level, perspective, chance, times fired.
-- Actions: `spawn`, `setView`, `modifyStat`, `grantItem`, `setConfig`, `message`, `sound`, `emit`, `end`.
+- Events (`on`): `start`, `interval`, `kill`, `hurt`, `death`, `levelUp`, `pickup`, `upgrade`, `break`,
+  `enterVehicle`, `exitVehicle`, `viewChange`.
+- Conditions: `level`, `score`, `view`, `health`, `chance`, `kills`.
+- Actions (`do`): `spawn`, `setView`, `points`, `heal`, `stat`, `dropItem`, `nextLevel`, `message`, `sound`,
+  `win`, `lose`.
+
+This is what was built; the first draft named them differently (`item.picked`, `modifyStat`, …). Triggers
+run at most 8 levels deep so two triggers cannot call each other forever.
 
 "x monsters spawn" is `spawn`; "switch from top-down to side-scroller" is `setView`. Custom actions
 can be registered in code.
@@ -99,20 +103,25 @@ cookbook; license and asset rules.
 
 ## Roadmap
 
-1. **M0 Repo**: monorepo, CI, changesets, license. _Done: this skeleton._
-2. **M1 Extraction**: move the game mode of hello-eme into `core`/`play`, behavior unchanged; migration
-   from the old JSON. _Accept:_ hello-eme runs on the published packages, e2e green.
-3. **M2 Entities and stats**: entity definitions with stats, spawn rules, levels and scaling.
-   _Accept:_ today's game is built from JSON alone.
-4. **M3 Items, upgrades, triggers**: event bus, triggers with conditions and actions, upgrade shop.
-5. **M4 Payload plugin v2**: schema-driven form, trigger builder, sprite library, preview.
-6. **M5 Side-scroller**: perspective module with platforms and gravity; `setView` at runtime.
-7. **M6 Polish**: sound, progress, bosses, accessibility, performance budget, docs, examples.
-8. **M7 `play-sim`**: headless balancing; can start in parallel from M3.
+Status: all done on branch `feat/scaffold`.
 
-## Open decisions
+1. **M0 Repo**: monorepo, CI, changesets, license. _Done._
+2. **M1 Extraction**: the game mode of hello-eme lives in `core`/`play`; `migrate` reads the old JSON.
+   _Done in this repo. Still open: switch hello-eme itself to the packages (needs published packages)._
+3. **M2 Entities and stats**: entity definitions with stats, spawn rules, levels and scaling. _Done: the
+   classic game is the default JSON._
+4. **M3 Items, upgrades, triggers**: event bus, triggers, conditions, actions, upgrade shop. _Done._
+5. **M4 Payload plugin v2**: schema-driven form, presets, key capture, sprite picker from media, raw JSON.
+   _Done; not yet tried in a running Payload admin._
+6. **M5 Side-scroller**: gravity, platforms from page elements, `setView` at runtime. _Done._
+7. **M6 Polish**: sound, high score, bosses, goals, reduced motion, keyboard shop, docs, example. _Done.
+   Not done: sprite sheets and animations, object pools, analytics adapter._
+8. **M7 `play-sim`**: bots and the `play-sim` CLI. _Done._
 
-- Project and npm organisation name: `@hello-eme/play` is set; the rest follows it.
-- How much physics in the side-scroller (platforms from page elements to start).
-- Progress and high score only in the browser, or also to the CMS?
-- Keep the old game-mode JSON readable for good (migration) or allow it to break?
+## Decisions taken
+
+- Name: `@hello-eme/play`, packages `play-schema`, `play-core`, `play-payload`, `play-sim`. License MIT.
+- Physics in the side view: gravity and platforms from page elements (selector in `view.platforms`);
+  the floor is the bottom of the viewport.
+- Progress and high score live in the browser (`localStorage`), not in the CMS.
+- The old game-mode JSON stays readable for good: `migrate` turns it into hero, blob and car.

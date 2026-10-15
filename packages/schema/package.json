@@ -14,7 +14,8 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
-		}
+		},
+		"./play.schema.json": "./dist/play.schema.json"
 	},
 	"files": [
 		"dist",
@@ -26,7 +27,7 @@
 		"access": "public"
 	},
 	"scripts": {
-		"build": "tsc -p tsconfig.build.json",
+		"build": "tsc -p tsconfig.build.json && node scripts/emit-schema.mjs",
 		"check": "tsc --noEmit",
 		"lint": "eslint .",
 		"test": "vitest run --passWithNoTests"
