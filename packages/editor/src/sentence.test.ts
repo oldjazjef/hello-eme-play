@@ -33,6 +33,14 @@ describe('describeTrigger', () => {
 		expect(sentence).toContain(root.entities[blob]?.label ?? blob);
 	});
 
+	it('shows the keys of a key trigger', () => {
+		const item = { on: 'key', keys: ['KeyB', 'KeyV'], do: [{ do: 'heal', amount: 20 }] };
+		expect(describeTrigger(node, item, root, 'en')).toMatch(
+			/^When A key is pressed \(KeyB, KeyV\), then .*\(20\)$/
+		);
+		expect(describeTrigger(node, { on: 'key' }, root, 'en')).toBe('When A key is pressed, then …');
+	});
+
 	it('says what is missing for a trigger without actions', () => {
 		expect(describeTrigger(node, { on: 'start' }, root, 'en')).toBe('When The game starts, then …');
 	});

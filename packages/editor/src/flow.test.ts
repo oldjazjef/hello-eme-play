@@ -43,6 +43,14 @@ describe('analyzeFlow', () => {
 		});
 	});
 
+	it('treats a pressed key as always possible', () => {
+		const result = flow({
+			triggers: [{ on: 'key', keys: ['KeyB'], do: [{ do: 'heal', amount: 1 }] }]
+		});
+		expect(result.warnings).toEqual([]);
+		expect(result.steps[0]?.when).toBe('A key is pressed (KeyB)');
+	});
+
 	it('does not warn once an item exists', () => {
 		const result = flow({
 			items: { star: {} },
