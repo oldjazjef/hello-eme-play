@@ -213,31 +213,18 @@ export const STYLES = /* css */ `
 	border-radius: 9999px;
 	background: var(--play-primary, #6d28d9);
 }
-.play-pedals {
+.play-cluster {
 	display: flex;
 	align-items: flex-end;
-	gap: 0.5rem;
-}
-.play-pedal {
-	touch-action: none;
-	user-select: none;
-	-webkit-user-select: none;
-	width: 4rem;
-	height: 5rem;
-	border: 2px solid var(--play-control-text, #ffffff);
-	border-radius: var(--play-radius, 0.5rem);
-	background: var(--play-control, #1e1b4b);
-	color: var(--play-control-text, #ffffff);
-	font-weight: 600;
-	box-shadow: var(--play-shadow-box, 0 10px 15px -3px rgb(0 0 0 / 0.15));
+	gap: 0.375rem;
 }
 .play-gas {
-	height: 6.5rem;
-	width: 5rem;
+	width: 4.5rem;
+	height: 4.5rem;
 }
-.play-pedal:active {
-	background: var(--play-primary, #6d28d9);
-	color: var(--play-primary-text, #ffffff);
+.play-gas .play-icon {
+	width: 2rem;
+	height: 2rem;
 }
 .play-hold {
 	touch-action: none;
@@ -283,7 +270,7 @@ export const STYLES = /* css */ `
 	box-shadow: var(--play-shadow-box, 0 10px 15px -3px rgb(0 0 0 / 0.15));
 }
 :is(.play-button, .play-outline, .play-icon-button, .play-pill,
-	.play-pad-button, .play-pedal, .play-wheel, .play-tab, .play-toggle):focus-visible {
+	.play-pad-button, .play-wheel, .play-tab, .play-toggle):focus-visible {
 	outline: 2px solid var(--play-focus, #6d28d9);
 	outline-offset: 2px;
 }

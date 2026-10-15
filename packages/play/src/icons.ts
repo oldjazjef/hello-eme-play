@@ -3,7 +3,19 @@
  * Built with DOM methods, never `innerHTML`, so the game also runs under Trusted Types.
  */
 export type IconName =
-	'up' | 'down' | 'left' | 'right' | 'close' | 'panelOpen' | 'panelClose' | 'gamepad';
+	| 'up'
+	| 'down'
+	| 'left'
+	| 'right'
+	| 'close'
+	| 'panelOpen'
+	| 'panelClose'
+	| 'gamepad'
+	| 'gas'
+	| 'brake'
+	| 'honk'
+	| 'drift'
+	| 'exit';
 
 const PATHS: Record<IconName, readonly string[]> = {
 	up: ['m5 12 7-7 7 7', 'M12 19V5'],
@@ -11,6 +23,18 @@ const PATHS: Record<IconName, readonly string[]> = {
 	left: ['m12 19-7-7 7-7', 'M19 12H5'],
 	right: ['M5 12h14', 'm12 5 7 7-7 7'],
 	close: ['M18 6 6 18', 'm6 6 12 12'],
+	gas: ['m17 11-5-5-5 5', 'm17 18-5-5-5 5'],
+	brake: ['m7 6 5 5 5-5', 'm7 13 5 5 5-5'],
+	honk: [
+		'M10.268 21a2 2 0 0 0 3.464 0',
+		'M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326'
+	],
+	drift: [
+		'M12.8 19.6A2 2 0 1 0 14 16H2',
+		'M17.5 8a2.5 2.5 0 1 1 2 4H2',
+		'M9.8 4.4A2 2 0 1 1 11 8H2'
+	],
+	exit: ['M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4', 'm16 17 5-5-5-5', 'M21 12H9'],
 	panelOpen: [
 		'M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
 		'M9 3v18',

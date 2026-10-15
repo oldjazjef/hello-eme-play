@@ -286,18 +286,24 @@ export class GameUi {
 		let steering: HTMLElement;
 		if (view.phase === 'driving') {
 			steering = steeringWheel(t.steering, a.steer);
-			const pedals = element('div', 'play-pedals');
-			const brake = button('play-pedal', t.brake);
-			const gas = button('play-pedal play-gas', t.gas);
+			const round = (name: IconName, label: string, className = 'play-pad-button') => {
+				const node = button(className, icon(name));
+				node.setAttribute('aria-label', label);
+				return node;
+			};
+			const brake = round('brake', t.brake);
+			const gas = round('gas', t.gas, 'play-pad-button play-gas');
+			const drift = round('drift', t.drift);
 			holdable(brake, (held) => a.pedal(held ? 1 : 0));
 			holdable(gas, (held) => a.pedal(held ? -1 : 0));
-			pedals.append(brake, gas);
-			const drift = button('play-pill play-hold', t.drift);
 			holdable(drift, a.handbrake);
+			const getOut = round('exit', t.getOut);
+			getOut.addEventListener('click', a.use);
+			const honk = round('honk', t.honk);
+			honk.addEventListener('click', a.jump);
 			actions.append(
-				button('play-pill', t.getOut, a.use),
-				element('div', 'play-row', button('play-pill', t.honk, a.jump), drift),
-				pedals
+				element('div', 'play-cluster', getOut, honk, drift),
+				element('div', 'play-cluster', brake, gas)
 			);
 		} else {
 			steering = element('div', 'play-dpad');
