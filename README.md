@@ -39,6 +39,8 @@ It works with plain HTML, any framework and any CMS. A Payload plugin edits the 
 
 **2. Start it.** The script adds a floating game button by itself (`data-toggle="off"` turns that off). Any button of yours can start and stop the game too:
 
+**Preview in the CMS.** A page for the admin's live preview loads the script with `data-preview="https://cms.example.com"` (the admin's origin). It then plays whatever configuration the admin sends and starts a fresh round on every change; messages from other origins are ignored.
+
 ```html
 <button type="button" data-play-toggle>Play</button>
 ```
