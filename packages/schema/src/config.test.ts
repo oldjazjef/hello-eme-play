@@ -1,85 +1,95 @@
 import { describe, expect, it } from 'vitest';
-import { configProblems, DEFAULT_CONFIG, resolveConfig, SCHEMA_VERSION } from './config.js';
-import { migrate } from './migrate.js';
+import { configProblems, DEFAULT_CONFIG, playJsonSchema, resolveConfig } from './config.js';
+import { PRESETS } from './presets.js';
+import { SCHEMA_VERSION } from './version.js';
 
 describe('resolveConfig', () => {
-	it('uses the defaults for a missing or nonsense configuration', () => {
+	it('gives the classic game for nothing, nonsense or an empty object', () => {
 		expect(resolveConfig(undefined)).toEqual(DEFAULT_CONFIG);
+		expect(resolveConfig('x')).toEqual(DEFAULT_CONFIG);
 		expect(resolveConfig({})).toEqual(DEFAULT_CONFIG);
-		expect(resolveConfig('nonsense')).toEqual(DEFAULT_CONFIG);
+		expect(DEFAULT_CONFIG.version).toBe(SCHEMA_VERSION);
 	});
 
-	it('takes the perspective, stats, entities and spawns from the JSON', () => {
+	it('has the classic hero, blob, car, punch and kick', () => {
+		expect(Object.keys(DEFAULT_CONFIG.entities)).toEqual(['hero', 'blob', 'car']);
+		expect(DEFAULT_CONFIG.entities.hero).toMatchObject({
+			kind: 'figure',
+			moves: ['punch', 'kick'],
+			stats: { hp: 100 }
+		});
+		expect(DEFAULT_CONFIG.moves.kick).toMatchObject({ keys: ['KeyQ'], power: 2 });
+		expect(DEFAULT_CONFIG.keys.drift).toEqual(['Space', 'ShiftLeft', 'ShiftRight']);
+	});
+
+	it('fills gaps inside an entity and corrects nonsense', () => {
 		const config = resolveConfig({
-			view: { mode: 'side' },
 			entities: {
-				blob: { kind: 'monster', stats: { hp: 20, nope: 5 }, reward: { points: 100 } }
+				hero: { kind: 'figure', stats: { hp: 'lots', attack: 2_000_000_000 } },
+				ghost: { kind: 'wizard', size: -4, behavior: 'dance' }
 			},
-			spawns: [
-				{ entity: 'blob', every: { min: 30, max: 10 }, count: { min: 1, max: 3 }, max: 8 },
-				{ entity: 'ghost' }
-			]
+			spawns: [{ entity: 'ghost', every: { min: 50, max: 5 }, count: { min: 0.2, max: 99 } }],
+			view: { mode: 'sideways' }
 		});
-		expect(config.view.mode).toBe('side');
-		expect(config.entities.blob).toMatchObject({
-			kind: 'monster',
-			stats: { hp: 20 },
-			behavior: 'chase',
-			reward: { points: 100 }
-		});
-		// Swapped ends are put in order; the rule for the unknown entity is dropped.
-		expect(config.spawns).toEqual([
-			{
-				entity: 'blob',
-				every: { min: 10, max: 30 },
-				count: { min: 1, max: 3 },
-				max: 8,
-				fromLevel: 1
-			}
-		]);
+		expect(config.entities.ghost).toMatchObject({ kind: 'monster', size: 8, behavior: 'chase' });
+		expect(config.entities.hero?.stats.attack).toBe(1_000_000);
+		expect(config.spawns[0]?.every).toEqual({ min: 5, max: 50 });
+		expect(config.spawns[0]?.count).toEqual({ min: 1, max: 50 });
+		expect(config.view.mode).toBe('topdown');
 	});
 
-	it('keeps numbers in bounds', () => {
-		const config = resolveConfig({
-			entities: { tank: { stats: { hp: 1e9 } } },
-			spawns: [{ entity: 'tank', max: 1e6, count: { min: 0, max: 1e6 } }]
-		});
-		expect(config.entities.tank?.stats.hp).toBe(9999);
-		expect(config.spawns[0]).toMatchObject({ max: 200, count: { min: 1, max: 50 } });
+	it('brings the hero back when the played figure is missing', () => {
+		const config = resolveConfig({ entities: { blob: { kind: 'monster' } } });
+		expect(config.entities.hero?.kind).toBe('figure');
+	});
+
+	it('resolves every preset to a configuration without problems', () => {
+		for (const [name, preset] of Object.entries(PRESETS)) {
+			expect(configProblems(preset.config), name).toEqual([]);
+			expect(resolveConfig(preset.config).version, name).toBe(SCHEMA_VERSION);
+		}
 	});
 });
 
 describe('configProblems', () => {
-	it('has nothing to say about the defaults', () => {
-		expect(configProblems(DEFAULT_CONFIG)).toEqual([]);
+	it('is empty for fine JSON and for the empty object', () => {
 		expect(configProblems({})).toEqual([]);
+		expect(configProblems({ view: { mode: 'side' }, hint: { hideAfter: 2 } })).toEqual([]);
 	});
 
-	it('names what would be ignored', () => {
-		expect(
-			configProblems({
-				enemis: {},
-				view: { mode: 'isometric' },
-				entities: { blob: {} },
-				spawns: [{ entity: 'ghost' }]
-			})
-		).toEqual([
-			'Unknown setting "enemis".',
-			'"view.mode" must be "topdown" or "side".',
-			'"spawns[0].entity" must name an entity from "entities".'
-		]);
+	it('says what is wrong, in readable words', () => {
+		const found = configProblems({
+			view: { mode: 'sideways' },
+			bogus: true,
+			hint: { hideAfter: 'soon' },
+			spawns: [{ entity: 'ghost' }],
+			game: { player: 'blob' }
+		});
+		expect(found).toContain('"view.mode" must be one of "topdown", "side".');
+		expect(found).toContain('Unknown setting "bogus".');
+		expect(found).toContain('"hint.hideAfter" must be a number.');
+		expect(found.some((message) => message.includes('"spawns[0].entity"'))).toBe(true);
+		expect(found).toContain('"game.player" must name an entity of kind "figure".');
+	});
+
+	it('rejects anything but an object', () => {
 		expect(configProblems([])).toEqual(['The configuration must be a JSON object.']);
+	});
+
+	it('checks actions and conditions inside triggers', () => {
+		const found = configProblems({
+			triggers: [{ on: 'kill', do: [{ do: 'spawn', entity: 'nobody', count: 2 }, { do: 'dance' }] }]
+		});
+		expect(found.some((message) => message.includes('triggers[0].do[0].entity'))).toBe(true);
+		expect(found.some((message) => message.includes('triggers[0].do[1].do'))).toBe(true);
 	});
 });
 
-describe('migrate', () => {
-	it('brings an unversioned JSON to the current version and leaves current ones alone', () => {
-		expect(migrate({ view: { mode: 'side' } })).toEqual({
-			view: { mode: 'side' },
-			version: SCHEMA_VERSION
-		});
-		const current = { version: SCHEMA_VERSION, spawns: [] };
-		expect(migrate(current)).toEqual(current);
-		expect(migrate('text')).toBe('text');
+describe('playJsonSchema', () => {
+	it('describes the configuration as JSON Schema', () => {
+		const schema = playJsonSchema();
+		expect(schema.$schema).toContain('json-schema.org');
+		expect(schema.type).toBe('object');
+		expect(JSON.stringify(schema)).toContain('"topdown"');
 	});
 });
