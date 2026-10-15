@@ -56,6 +56,15 @@ describe('PlayEditor', () => {
 		expect(render({ previewUrl: 'https://example.com/play-preview' })).toContain('Try it');
 	});
 
+	it('gives each preset card one button: Try it with a preview, Use without', () => {
+		const withPreview = render({ previewUrl: 'https://example.com/play-preview' });
+		expect(withPreview).not.toContain('Use this preset');
+		expect(withPreview.match(/Try it/g)).toHaveLength(4);
+		const without = render();
+		expect(without).not.toContain('Try it');
+		expect(without.match(/Use this preset/g)).toHaveLength(4);
+	});
+
 	it('shows the preview next to the form when given a page', () => {
 		const html = render({ previewUrl: 'https://example.com/play-preview' });
 		expect(html).toContain('<iframe');

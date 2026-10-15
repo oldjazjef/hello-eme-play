@@ -4,7 +4,7 @@ import { PRESETS, resolveConfig } from '@hello-eme/play-schema';
 import { useEffect, useState } from 'react';
 import { runBalance, type Verdict } from './balance.js';
 import { VerdictChip } from './BalancePanel.js';
-import { Button, merge } from './fields/controls.js';
+import { merge } from './fields/controls.js';
 import { styles } from './fields/styles.js';
 import { fill, type Labels, type Lang } from './labels.js';
 import { countEntries, pick } from './state.js';
@@ -21,7 +21,8 @@ function presetVerdicts(): Record<string, Verdict | undefined> {
 
 /**
  * The presets as cards: what each is, how big it is and how hard it plays. "Try it" shows one in
- * the preview without touching the configuration; "Use" replaces the configuration (undo brings it back).
+ * the preview without touching the configuration; the banner above the preview then offers "Use this preset",
+ * which replaces the configuration (undo brings it back). Without a preview the button uses the preset directly.
  */
 export function PresetGallery(props: {
 	lang: Lang;
@@ -61,16 +62,17 @@ export function PresetGallery(props: {
 							})}
 						</span>
 						{verdict && <VerdictChip verdict={verdict} labels={labels} />}
-						<span style={styles.toolbar}>
-							{props.canTry && (
-								<Button pressed={active} onClick={() => props.onTry(active ? undefined : id)}>
-									{labels.tryPreset}
-								</Button>
-							)}
-							<Button primary onClick={() => props.onUse(id)}>
-								{labels.usePreset}
-							</Button>
-						</span>
+						{/* One button: with a preview it tries the preset (the banner above then offers "Use"), without one it uses it. */}
+						<button
+							type="button"
+							style={merge(styles.button, styles.primary, { width: '100%' })}
+							aria-pressed={props.canTry ? active : undefined}
+							onClick={() =>
+								props.canTry ? props.onTry(active ? undefined : id) : props.onUse(id)
+							}
+						>
+							{props.canTry ? labels.tryPreset : labels.usePreset}
+						</button>
 					</div>
 				);
 			})}

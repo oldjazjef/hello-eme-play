@@ -14,7 +14,7 @@ test('edits the configuration without a CMS: quick setting, undo, redo', async (
 	await lives.fill('4');
 	await expect.poll(async () => (await json(page)).game).toMatchObject({ lives: 4 });
 	// The preset list does not fold itself away on the first edit.
-	await expect(page.getByRole('button', { name: 'Use this preset' }).first()).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Try it' }).first()).toBeVisible();
 
 	await page.getByRole('button', { name: /Undo/ }).click();
 	await expect.poll(async () => json(page)).toEqual({});
@@ -26,7 +26,35 @@ test('edits the configuration without a CMS: quick setting, undo, redo', async (
 test('shows the balance check and the presets', async ({ page }) => {
 	await page.goto(url);
 	await expect(page.getByText(/A practice bot played 10 rounds/)).toBeVisible();
-	await expect(page.getByRole('button', { name: 'Use this preset' }).first()).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Try it' }).first()).toBeVisible();
+});
+
+test('trying a preset shows it in the preview and offers to use it', async ({ page }) => {
+	await page.goto(url);
+	await page.getByRole('button', { name: 'Try it' }).nth(1).click();
+	await expect(page.getByText(/Trying “Arcade with upgrades” in the preview/)).toBeVisible();
+	// The configuration is not changed until "Use this preset".
+	await expect.poll(async () => json(page)).toEqual({});
+	await page.getByRole('button', { name: 'Use this preset' }).click();
+	await expect.poll(async () => Object.keys(await json(page)).length).toBeGreaterThan(0);
+});
+
+test('using a preset works where dialogs are blocked, and undo brings the settings back', async ({
+	page
+}) => {
+	// Embedded pages often cannot show confirm(); it answers "no" at once.
+	page.on('dialog', (dialog) => void dialog.dismiss());
+	await page.goto(url);
+	await page.getByRole('spinbutton', { name: 'Lives' }).fill('4');
+	await expect.poll(async () => (await json(page)).game).toMatchObject({ lives: 4 });
+	await page.getByRole('button', { name: 'Try it' }).nth(1).click();
+	await page.getByRole('button', { name: 'Use this preset' }).click();
+	await expect(page.getByText(/Preset applied/)).toBeVisible();
+	await expect
+		.poll(async () => ((await json(page)).game as { lives?: number } | undefined)?.lives)
+		.not.toBe(4);
+	await page.getByRole('button', { name: /Undo/ }).click();
+	await expect.poll(async () => (await json(page)).game).toMatchObject({ lives: 4 });
 });
 
 test('expert mode: a dropped picture becomes a sprite, a problem links to its field', async ({

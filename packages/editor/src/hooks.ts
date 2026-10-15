@@ -13,8 +13,8 @@ const sameJson = (a: unknown, b: unknown): boolean => {
 };
 
 export interface UseHistory {
-	/** Records and reports a new value. */
-	set: (value: unknown) => void;
+	/** Records and reports a new value; `separate` makes it a step of its own (a preset, a reset, a file). */
+	set: (value: unknown, separate?: boolean) => void;
 	undo: () => void;
 	redo: () => void;
 	canUndo: boolean;
@@ -39,8 +39,8 @@ export function useHistory(value: unknown, onChange: (value: unknown) => void): 
 		}
 	}, [value]);
 
-	const set = useCallback((next: unknown) => {
-		ref.current = commit(ref.current, next, Date.now());
+	const set = useCallback((next: unknown, separate = false) => {
+		ref.current = commit(ref.current, next, Date.now(), separate);
 		bump((count) => count + 1);
 		report.current(next);
 	}, []);

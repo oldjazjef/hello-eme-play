@@ -99,7 +99,8 @@ export function PlayEditor(props: PlayEditorProps): ReactNode {
 	const history = useHistory(props.value ?? {}, (next) =>
 		props.onChange(isObject(next) ? next : {})
 	);
-	const set = (next: unknown) => history.set(isObject(next) ? next : {});
+	const set = (next: unknown, separate = false) =>
+		history.set(isObject(next) ? next : {}, separate);
 
 	const hasPreview = props.previewUrl !== undefined || props.previewHtml !== undefined;
 	const groups = useMemo(() => groupNodes(PLAY_SCHEMA), []);
@@ -110,6 +111,11 @@ export function PlayEditor(props: PlayEditorProps): ReactNode {
 	const fileInput = useRef<HTMLInputElement>(null);
 	const [status, setStatus] = useState('');
 	const presetsId = useId();
+	useEffect(() => {
+		if (status === '') return;
+		const timer = setTimeout(() => setStatus(''), 8000);
+		return () => clearTimeout(timer);
+	}, [status]);
 	// Open for a new configuration only; once you edit, it stays however you left it.
 	const [presetsOpen] = useState(
 		() => !isObject(props.value) || Object.keys(props.value).length === 0
@@ -182,9 +188,10 @@ export function PlayEditor(props: PlayEditorProps): ReactNode {
 	const usePreset = (id: string) => {
 		const preset = PRESETS[id];
 		if (!preset) return;
-		if (Object.keys(stored).length > 0 && !window.confirm(labels.confirmPreset)) return;
-		set(structuredClone(preset.config));
+		// No "are you sure?" dialog (embedded pages may block them): undo is the way back.
+		set(structuredClone(preset.config), true);
 		setTrying(undefined);
+		setStatus(labels.presetApplied);
 	};
 
 	const onKeyDown = (event: KeyboardEvent) => {
@@ -209,7 +216,7 @@ export function PlayEditor(props: PlayEditorProps): ReactNode {
 			.then((text) => {
 				const parsed: unknown = JSON.parse(text);
 				if (!isObject(parsed)) throw new Error('not an object');
-				set(parsed);
+				set(parsed, true);
 				setStatus('');
 			})
 			.catch(() => setStatus(labels.importFailed));
@@ -370,7 +377,8 @@ export function PlayEditor(props: PlayEditorProps): ReactNode {
 								type="button"
 								style={styles.button}
 								onClick={() => {
-									if (window.confirm(labels.confirmResetTab)) set(resetGroup(stored, group));
+									set(resetGroup(stored, group), true);
+									setStatus(labels.tabWasReset);
 								}}
 							>
 								{labels.resetTab}

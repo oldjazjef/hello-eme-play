@@ -27,6 +27,17 @@ describe('history', () => {
 		expect(undo(h).present).toBe(2);
 	});
 
+	it('keeps a deliberate change as a step of its own, even right after an edit', () => {
+		let h = commit(start<number>(0), 1, 10_000);
+		h = commit(h, 2, 10_001);
+		h = commit(h, 9, 10_002, true);
+		expect(h.past).toEqual([0, 2]);
+		expect(undo(h).present).toBe(2);
+		// ...and the next quick edit does not merge into it.
+		h = commit(h, 10, 10_003);
+		expect(undo(h).present).toBe(9);
+	});
+
 	it('forgets the redo steps after a new edit', () => {
 		let h = commit(commit(start<number>(0), 1, 10_000), 2, 20_000);
 		h = undo(h);

@@ -20,13 +20,25 @@ export const start = <T>(value: T, now = 0): History<T> => ({
 	at: now
 });
 
-/** Records a new value. Quick successive edits replace the present instead of adding a step. */
-export function commit<T>(history: History<T>, value: T, now: number): History<T> {
+/**
+ * Records a new value. Quick successive edits replace the present instead of adding a step, unless
+ * the change is one the person made on purpose (`separate`: a preset, a reset, a loaded file).
+ */
+export function commit<T>(
+	history: History<T>,
+	value: T,
+	now: number,
+	separate = false
+): History<T> {
 	if (Object.is(value, history.present)) return history;
 	const merge =
-		history.past.length > 0 && history.future.length === 0 && now - history.at < MERGE_MS;
+		!separate &&
+		history.past.length > 0 &&
+		history.future.length === 0 &&
+		now - history.at < MERGE_MS;
 	const past = merge ? history.past : [...history.past, history.present].slice(-MAX_STEPS);
-	return { past, present: value, future: [], at: now };
+	// After a deliberate change the next edit starts a step of its own.
+	return { past, present: value, future: [], at: separate ? 0 : now };
 }
 
 export const canUndo = (history: History<unknown>): boolean => history.past.length > 0;
