@@ -47,5 +47,8 @@
 			"eslint --fix --no-warn-ignored"
 		],
 		"*.{css,json,md,yml,yaml,html}": "prettier --write"
+	},
+	"overrides": {
+		"undici": "^7.29.1"
 	}
 }
