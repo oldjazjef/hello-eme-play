@@ -56,7 +56,11 @@ export function Row(props: {
 	const label = pick(node.label, ctx.lang);
 	const found = props.path === undefined ? [] : problemsAt(ctx.problems, props.path);
 	return (
-		<div style={styles.row} {...(props.path === undefined ? {} : { 'data-pe-path': props.path })}>
+		<div
+			className="pe-row"
+			style={styles.row}
+			{...(props.path === undefined ? {} : { 'data-pe-path': props.path })}
+		>
 			<label htmlFor={id} style={styles.label}>
 				{label}
 			</label>

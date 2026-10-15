@@ -64,17 +64,54 @@ export function Preview(props: { url?: string; html?: string; config: unknown; l
 		return () => clearTimeout(timer);
 	}, [ready, origin, props.config]);
 
+	// Full screen: the browser's own (hides its bars on a phone), else a layer over the page (iPhone).
+	const box = useRef<HTMLDivElement>(null);
+	const [full, setFull] = useState(false);
+	useEffect(() => {
+		const left = () => {
+			if (!document.fullscreenElement) setFull(false);
+		};
+		const escape = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') setFull(false);
+		};
+		document.addEventListener('fullscreenchange', left);
+		document.addEventListener('keydown', escape);
+		return () => {
+			document.removeEventListener('fullscreenchange', left);
+			document.removeEventListener('keydown', escape);
+		};
+	}, []);
+	const toggleFull = () => {
+		if (full) {
+			if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+			setFull(false);
+			return;
+		}
+		setFull(true);
+		// If the browser refuses, the layer over the page is the full screen.
+		void box.current?.requestFullscreen?.().catch(() => undefined);
+	};
+
 	if (!origin) return null;
 	return (
 		<details open style={styles.section}>
 			<summary style={styles.summary}>{props.labels.preview}</summary>
 			<div style={styles.sectionBody}>
-				<iframe
-					ref={frame}
-					{...(props.html !== undefined ? { srcDoc: props.html } : { src: props.url })}
-					title={props.labels.preview}
-					style={styles.preview}
-				/>
+				<div ref={box} style={full ? styles.previewFull : styles.previewBox}>
+					<div style={styles.toolbar}>
+						<button type="button" style={styles.button} aria-pressed={full} onClick={toggleFull}>
+							{full ? '⤡ ' : '⤢ '}
+							{full ? props.labels.previewExit : props.labels.previewFull}
+						</button>
+					</div>
+					<iframe
+						ref={frame}
+						{...(props.html !== undefined ? { srcDoc: props.html } : { src: props.url })}
+						title={props.labels.preview}
+						className="pe-preview"
+						style={full ? styles.previewFrameFull : styles.preview}
+					/>
+				</div>
 				<p style={styles.muted}>{props.labels.previewHint}</p>
 			</div>
 		</details>

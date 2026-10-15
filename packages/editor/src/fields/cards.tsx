@@ -126,7 +126,7 @@ export function EntryCards(props: {
 }) {
 	const { ctx } = props;
 	return (
-		<div style={styles.cards}>
+		<div className="pe-cards" style={styles.cards}>
 			{Object.entries(props.entries).map(([id, entry]) => {
 				const card = factsOf(props.path, props.node, id, entry, ctx);
 				return (

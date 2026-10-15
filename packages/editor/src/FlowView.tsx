@@ -29,7 +29,7 @@ function Step(props: {
 	const { step, labels } = props;
 	const title = `${labels[KIND_LABEL[step.kind]]} ${step.title}`;
 	return (
-		<li style={styles.flowRow} data-flow-step={step.path}>
+		<li className="pe-flow" style={styles.flowRow} data-flow-step={step.path}>
 			<div>
 				<strong>{labels.flowWhen}</strong> {step.when}
 				{step.conditions.length > 0 && (

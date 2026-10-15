@@ -66,6 +66,14 @@ describe('PlayEditor', () => {
 		expect(without.match(/Use this preset/g)).toHaveLength(Object.keys(PRESETS).length);
 	});
 
+	it('offers the preview in full screen', () => {
+		expect(render({ previewUrl: 'https://example.com/play-preview' })).toContain('Full screen');
+		expect(render({ lang: 'de', previewUrl: 'https://example.com/play-preview' })).toContain(
+			'Vollbild'
+		);
+		expect(render()).not.toContain('Full screen');
+	});
+
 	it('shows the preview next to the form when given a page', () => {
 		const html = render({ previewUrl: 'https://example.com/play-preview' });
 		expect(html).toContain('<iframe');

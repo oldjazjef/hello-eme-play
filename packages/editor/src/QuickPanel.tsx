@@ -19,7 +19,7 @@ function Control(props: {
 	const label = pick(setting.label, props.lang);
 	const control = setting.control;
 	return (
-		<div style={styles.row}>
+		<div className="pe-row" style={styles.row}>
 			<label htmlFor={id} style={styles.label}>
 				{label}
 			</label>
