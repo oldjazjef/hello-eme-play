@@ -71,10 +71,13 @@ export function triggerParts(
 	const trigger: Record<string, unknown> = { ...(isObject(defaults) ? defaults : {}), ...item };
 	const on = node.fields.on;
 	if (on?.type !== 'select') return undefined;
+	const keys = Array.isArray(trigger.keys) ? trigger.keys.map(String) : [];
 	const event =
 		trigger.on === 'interval'
 			? WORDS[lang].every.replace('{n}', String(trigger.every))
-			: show(on, trigger.on, root, lang);
+			: trigger.on === 'key' && keys.length > 0
+				? `${show(on, trigger.on, root, lang)} (${keys.join(', ')})`
+				: show(on, trigger.on, root, lang);
 	return {
 		event,
 		only: typeof trigger.only === 'string' ? trigger.only : '',

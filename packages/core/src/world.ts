@@ -251,6 +251,10 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 			if (vehicle) enter(world, vehicle);
 		},
 
+		press(code) {
+			if (world.phase === 'playing') events.emit('key', { code });
+		},
+
 		canBuy: (id) => canBuy(world, id),
 		buy: (id) => buy(world, id),
 

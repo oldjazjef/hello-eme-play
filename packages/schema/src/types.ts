@@ -42,7 +42,8 @@ export const EVENT_NAMES = [
 	'break',
 	'enterVehicle',
 	'exitVehicle',
-	'viewChange'
+	'viewChange',
+	'key'
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
@@ -202,6 +203,8 @@ export interface Trigger {
 	only: string;
 	/** For `interval`: seconds between two runs. */
 	every: number;
+	/** For `key`: the key codes that set it off. */
+	keys: string[];
 	once: boolean;
 	conditions: Condition[];
 	do: Action[];

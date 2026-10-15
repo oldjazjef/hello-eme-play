@@ -70,13 +70,14 @@ describe('Input', () => {
 	});
 	const config = resolveConfig({});
 	const setup = (riding = false, active = true) => {
-		const calls = { escape: 0, shop: 0 };
+		const calls = { escape: 0, shop: 0, keys: [] as string[] };
 		const hooks: InputHooks = {
 			config: () => config,
 			active: () => active,
 			riding: () => riding,
 			escape: () => void calls.escape++,
-			toggleShop: () => void calls.shop++
+			toggleShop: () => void calls.shop++,
+			key: (code) => void calls.keys.push(code)
 		};
 		const controls: Controls = {
 			axis: { x: 0, y: 0 },
@@ -176,10 +177,26 @@ describe('Input', () => {
 		const { input, calls } = setup();
 		input.keydown(key('Escape', { key: 'Escape' }));
 		input.keydown(key('KeyU'));
-		expect(calls).toEqual({ escape: 1, shop: 1 });
+		expect(calls).toMatchObject({ escape: 1, shop: 1 });
 		const idle = setup(false, false);
 		idle.input.keydown(key('Escape', { key: 'Escape' }));
 		expect(idle.calls.escape).toBe(0);
+	});
+
+	it('reports key presses for triggers: also the game keys, not repeats, not typing, not Esc', () => {
+		const { input, calls } = setup();
+		input.keydown(key('KeyB'));
+		input.keydown(key('KeyB', { repeat: true }));
+		input.keydown(key('Space'));
+		input.keydown(key('KeyX', { ctrlKey: true }));
+		input.keydown(key('Escape', { key: 'Escape' }));
+		const field = Object.create(HTMLElement.prototype) as HTMLElement;
+		Object.defineProperty(field, 'isContentEditable', { value: true });
+		input.keydown(key('KeyC', { target: field }));
+		expect(calls.keys).toEqual(['KeyB', 'Space']);
+		const idle = setup(false, false);
+		idle.input.keydown(key('KeyB'));
+		expect(idle.calls.keys).toEqual([]);
 	});
 
 	it('uses the keys of the configuration', () => {
@@ -189,7 +206,8 @@ describe('Input', () => {
 			active: () => true,
 			riding: () => false,
 			escape() {},
-			toggleShop() {}
+			toggleShop() {},
+			key() {}
 		};
 		const input = new Input(hooks);
 		const controls: Controls = {

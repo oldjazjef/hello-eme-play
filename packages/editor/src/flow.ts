@@ -70,7 +70,7 @@ function entryNode(key: 'items' | 'upgrades'): ObjectNode {
 
 /** The events that can happen at all in this configuration (besides the always possible ones). */
 function possible(config: PlayConfig, actions: readonly { do: string }[]): Set<EventName> {
-	const events = new Set<EventName>(['start', 'interval', 'hurt', 'death', 'break', 'kill']);
+	const events = new Set<EventName>(['start', 'interval', 'hurt', 'death', 'break', 'kill', 'key']);
 	if (Object.keys(config.items).length > 0) events.add('pickup');
 	if (Object.keys(config.upgrades).length > 0) events.add('upgrade');
 	if (Object.values(config.entities).some((entity) => entity.kind === 'vehicle')) {
