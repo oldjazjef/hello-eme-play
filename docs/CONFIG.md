@@ -11,11 +11,14 @@ the Payload form or the JSON Schema list every field with bounds.
 | `game`                | played entity, lives, page wrap, overrun speed, points per broken element                |
 | `stats`               | stat ids (`hp`, `attack`, `defense`, `dex`, `speed`, `luck` …) with label, min, max      |
 | `entities`            | figure, monsters, vehicles: `kind`, stats, `behavior`, `moves`, `reward`, `boss`, sprite |
+|                       | bosses also `phases`: `below` (% health), `label`, `stats`, `do` actions                 |
 | `moves`               | attacks: keys, power, reach, cooldown, push, `breaks`, where usable                      |
 | `items`, `itemSpawns` | pickups and when they appear; `do` is a list of actions                                  |
 | `upgrades`            | shop entries: cost, levels, stats added, optional actions                                |
 | `spawns`              | which monster, how often (`every`), how many (`count`), `max`, level range, scaling      |
+| `waves`               | timed scripts: level range, `after`, `steps` (`at`, `every`, `repeat`, `do` actions)     |
 | `triggers`            | `on` event, `only`, `conditions`, `do` actions                                           |
+| `pages`               | `{ match, config }`: other settings for some pages (path pattern, partial JSON)          |
 | `levels`              | label, view, goal (`score`, `kills`, `survive`, `boss`)                                  |
 | `visits`              | a vehicle that drives in by itself                                                       |
 | `keys`, `hint`        | keyboard bindings, hint timeout                                                          |
@@ -77,6 +80,66 @@ A swarm when the visitor reaches 1000 points, once:
 			"once": true,
 			"conditions": [{ "if": "score", "min": 1000 }],
 			"do": [{ "do": "spawn", "entity": "blob", "count": 5, "where": "edge" }]
+		}
+	]
+}
+```
+
+A wave script: three blobs at 10 s, a swarm of 8 at 25 s, the boss at 40 s, in every level from 2 on. Steps run
+the same `do` actions as triggers; `at` counts from the wave's start (`after` seconds into the level), and a step
+with `"repeat": 2, "every": 5` runs three times, five seconds apart. Each level of the range starts the script anew.
+
+```json
+{
+	"waves": [
+		{
+			"fromLevel": 2,
+			"steps": [
+				{ "at": 10, "do": [{ "do": "spawn", "entity": "blob", "count": 3, "where": "edge" }] },
+				{ "at": 25, "do": [{ "do": "spawn", "entity": "blob", "count": 8, "where": "edge" }] },
+				{ "at": 40, "do": [{ "do": "spawn", "entity": "king" }] }
+			]
+		}
+	]
+}
+```
+
+Boss phases: each phase starts once, when the boss' health falls below `below` percent (several at once when one
+hit skips them, highest first). `stats` are added for good (`hp` heals too), `label` is shown as a message. Only
+for monsters with `"boss": true`.
+
+```json
+{
+	"entities": {
+		"king": {
+			"boss": true,
+			"phases": [
+				{ "below": 50, "label": "Enraged!", "stats": { "attack": 10, "speed": 30 } },
+				{ "below": 25, "do": [{ "do": "spawn", "entity": "blob", "count": 4 }] }
+			]
+		}
+	}
+}
+```
+
+Other settings per page: `/blog` top-down, `/projects` a side-scroller with other monsters. `match` is a glob on
+`location.pathname` (`*` = any characters; `/blog/*` also matches `/blog`; trailing slash, query and hash don't
+count). **Every** matching entry is merged over the base, in the order listed, later ones win (so `*` first sets
+what all pages share). Objects merge key by key, lists and values are replaced, then the result is resolved like
+any JSON. A page's `config` can't contain `pages`. The game follows the visitor (`popstate`, Navigation API); call
+`play.setPath("/projects")` for routers it can't see. A changed configuration starts a fresh round.
+
+```json
+{
+	"view": { "mode": "topdown" },
+	"pages": [
+		{
+			"match": "/projects",
+			"config": {
+				"view": { "mode": "side" },
+				"entities": { "bat": { "kind": "monster", "stats": { "hp": 3 } } },
+				"spawns": [{ "entity": "bat" }]
+			}
 		}
 	]
 }
