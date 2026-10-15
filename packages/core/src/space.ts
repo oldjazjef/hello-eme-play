@@ -79,7 +79,8 @@ export function advance(world: World, body: Body, dx: number, dy: number, wrap: 
 	let y = body.y + dy;
 	const maxX = pg.width - HARD_EDGE;
 	const maxY = pg.height - HARD_EDGE;
-	if (wrap && pg.width > world.host.viewport().width) {
+	// Sideways the page usually is as wide as the window; the figure wraps there too.
+	if (wrap) {
 		if (x < HARD_EDGE) x = Math.max(HARD_EDGE, pg.width - EDGE);
 		else if (x > maxX) x = EDGE;
 	}

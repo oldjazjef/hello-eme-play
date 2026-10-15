@@ -1,5 +1,5 @@
 /**
- * Drop-in build (`dist/play.js`) for websites without a bundler:
+ * Drop-in build (`dist/play.iife.js`, released as `play.js`) for websites without a bundler:
  *
  * ```html
  * <script src="play.js" data-config-url="/play.json" defer></script>

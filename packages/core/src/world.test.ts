@@ -392,6 +392,20 @@ describe('camera and page', () => {
 		expect(world.player.y).toBeLessThan(2100);
 		expect(world.player.y).toBeGreaterThan(0);
 	});
+
+	it('wraps sideways even when the page is as wide as the window', () => {
+		const host = createStaticHost({ width: 1000, height: 700, page: { width: 1000, height: 700 } });
+		const world = createWorld({ spawns: [], visits: { enabled: false } }, { host, seed: 1 });
+		world.controls.axis.x = 1;
+		let wrapped = false;
+		let last = world.player.x;
+		for (let i = 0; i < 60 * 15 && !wrapped; i++) {
+			world.step(1 / 60);
+			wrapped = world.player.x < last - 100;
+			last = world.player.x;
+		}
+		expect(wrapped).toBe(true);
+	});
 });
 
 describe('summary', () => {

@@ -122,6 +122,16 @@ describe('Input', () => {
 		expect([...controls.held]).toEqual(['kick']);
 	});
 
+	it('counts a tap that ends before the next frame', () => {
+		const { input, controls } = setup();
+		input.keydown(key('Space'));
+		input.keyup(key('Space'));
+		input.apply(controls, false);
+		expect([...controls.held]).toEqual(['punch']);
+		input.apply(controls, false);
+		expect([...controls.held]).toEqual([]);
+	});
+
 	it('jumps on foot, honks and drifts in a vehicle, uses with F', () => {
 		const onFoot = setup();
 		onFoot.input.keydown(key('KeyE'));
