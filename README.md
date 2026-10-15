@@ -4,8 +4,8 @@ Turns any website into a game, configured by **one JSON**: top-down or side-scro
 figure, monsters and vehicles, items, upgrades, triggers, levels and sounds. A Payload plugin edits that
 JSON in the CMS.
 
-> Status: all milestones M1 to M7 of [docs/PLAN.md](docs/PLAN.md) are implemented. Not yet done: publishing
-> to npm and switching [hello-eme](https://github.com/oldjazjef/hello-eme) from `@hello-eme/page-game`.
+> Status: all milestones M1 to M7 of [docs/PLAN.md](docs/PLAN.md) are implemented. Packages come as GitHub
+> release tarballs; not yet done: publishing to npm and switching [hello-eme](https://github.com/oldjazjef/hello-eme) from `@hello-eme/page-game`.
 
 | Package                                       | Purpose                                                              |
 | --------------------------------------------- | -------------------------------------------------------------------- |
@@ -27,6 +27,10 @@ npx play-sim preset:arcade --rounds 20 --bot brawler   # balance check without a
 Presets (`PRESETS` in the schema package): `classic`, `arcade` (levels, items, upgrades, a boss),
 `platformer` (side view) and `view-switch` (an item changes the view). The full JSON Schema for editor
 autocompletion is published as `@hello-eme/play-schema/play.schema.json`. See [docs/CONFIG.md](docs/CONFIG.md).
+
+## Install
+
+From npm once published, or without npm from a GitHub release: [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Develop
 
