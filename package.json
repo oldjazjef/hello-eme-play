@@ -9,6 +9,7 @@
 		"check": "nx run-many -t check",
 		"test": "nx run-many -t test",
 		"format": "prettier --write .",
+		"docs": "nx run play-schema:build && node scripts/gen-reference.mjs && prettier --write docs/REFERENCE.md docs/REFERENCE.de.md",
 		"format:check": "prettier --check .",
 		"verify": "npm run format:check && nx run-many -t lint check test build",
 		"changeset": "changeset",
