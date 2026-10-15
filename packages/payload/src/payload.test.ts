@@ -21,6 +21,19 @@ describe('playGlobal', () => {
 	});
 });
 
+describe('previewUrl', () => {
+	it('is handed to the form only when set', () => {
+		const props = (url?: string) => {
+			const field = playGlobal(url ? { previewUrl: url } : {}).fields[0];
+			return field && 'admin' in field
+				? (field.admin?.components?.Field as { clientProps: Record<string, unknown> }).clientProps
+				: {};
+		};
+		expect(props('https://site.example/preview').previewUrl).toBe('https://site.example/preview');
+		expect(props()).not.toHaveProperty('previewUrl');
+	});
+});
+
 describe('validateConfig', () => {
 	it('is lenient: only something that is no object blocks saving', () => {
 		expect(validateConfig({ view: { mode: 'side' } })).toBe(true);

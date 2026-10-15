@@ -83,6 +83,13 @@ export const styles = {
 		cursor: 'pointer'
 	},
 	tabActive: { borderBottomColor: 'var(--theme-elevation-800)', fontWeight: 600 },
+	preview: {
+		width: '100%',
+		height: '28rem',
+		border: '1px solid var(--theme-elevation-150)',
+		borderRadius: 'var(--style-radius-m)',
+		background: 'var(--theme-elevation-0)'
+	},
 	cards: {
 		display: 'grid',
 		gridTemplateColumns: 'repeat(auto-fill, minmax(9rem, 1fr))',
