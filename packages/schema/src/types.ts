@@ -55,9 +55,19 @@ export interface StatDefinition {
 	max: number;
 }
 
+export const ANIMATIONS = ['idle', 'walk', 'jump', 'hurt', 'punch', 'kick', 'bite'] as const;
+export type Animation = (typeof ANIMATIONS)[number];
+
 export interface SpriteDefinition {
 	url: string;
+	/** Longer side of one frame, px. */
 	size: number;
+	/** A sprite sheet: frames laid out in a grid, numbered row by row from 0. */
+	columns: number;
+	rows: number;
+	fps: number;
+	/** Frame numbers by state; empty falls back to `idle`, then to frame 0. */
+	animations: Record<Animation, number[]>;
 	facing: Facing;
 }
 

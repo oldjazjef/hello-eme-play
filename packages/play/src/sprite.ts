@@ -5,6 +5,7 @@
  */
 import { jumpHeight, walkFrame, type Body, type Pickup } from '@hello-eme/play-core';
 import type {
+	Animation,
 	EntityDefinition,
 	Facing,
 	ItemDefinition,
@@ -151,6 +152,35 @@ export interface Picture {
 	image: HTMLImageElement;
 	size: number;
 	facing: Facing;
+	sheet: Sheet;
+}
+
+/** How a picture is cut into frames and which frames play in which state. */
+export interface Sheet {
+	columns: number;
+	rows: number;
+	fps: number;
+	animations: Record<Animation, readonly number[]>;
+}
+
+/**
+ * The frame to show: the state's frames, else `idle`'s, else frame 0. They loop with `fps`; with
+ * reduced motion the first one stays.
+ */
+export function frameAt(sheet: Sheet, state: Animation, time: number, still: boolean): number {
+	const own = sheet.animations[state];
+	const frames = own.length > 0 ? own : sheet.animations.idle;
+	if (frames.length === 0) return 0;
+	const step = still ? 0 : Math.floor(time * sheet.fps);
+	return frames[step % frames.length] ?? 0;
+}
+
+/** The state of a body: what it does right now decides the animation. */
+export function animationOf(body: Body): Animation {
+	if (body.pose) return body.pose.pose;
+	if (body.hurt > 0) return 'hurt';
+	if (!body.grounded || body.jump > 0) return 'jump';
+	return body.moving ? 'walk' : 'idle';
 }
 
 export type Pictures = Record<string, Picture>;
@@ -160,11 +190,11 @@ export function loadPictures(sprites: PlayConfig['sprites']): Pictures {
 	return Object.fromEntries(
 		Object.entries(sprites)
 			.filter(([, { url }]) => url.trim() !== '')
-			.map(([id, { url, size, facing }]) => {
+			.map(([id, { url, size, facing, columns, rows, fps, animations }]) => {
 				const image = new Image();
 				image.decoding = 'async';
 				image.src = url;
-				return [id, { image, size, facing }];
+				return [id, { image, size, facing, sheet: { columns, rows, fps, animations } }];
 			})
 	);
 }
@@ -180,6 +210,8 @@ export interface Scene {
 	colors: SpriteColors;
 	pictures: Pictures;
 	reducedMotion: boolean;
+	/** Seconds on a steady clock, drives the animations. */
+	time: number;
 	scroll: { x: number; y: number };
 	side: boolean;
 }
@@ -187,22 +219,36 @@ export interface Scene {
 /** Draws a picture centered, turned from where it looks (`facing`) to `rotation` (0 = right). */
 function drawPicture(
 	ctx: CanvasRenderingContext2D,
-	{ image, size, facing }: Picture,
+	{ image, size, facing, sheet }: Picture,
 	x: number,
 	y: number,
 	rotation: number,
 	scale: number,
-	flip = false
+	flip = false,
+	frame = 0
 ): boolean {
 	if (!image.complete || image.naturalWidth === 0) return false;
-	const longer = Math.max(image.naturalWidth, image.naturalHeight);
-	const width = (image.naturalWidth / longer) * size;
-	const height = (image.naturalHeight / longer) * size;
+	const cellWidth = image.naturalWidth / sheet.columns;
+	const cellHeight = image.naturalHeight / sheet.rows;
+	const longer = Math.max(cellWidth, cellHeight);
+	const width = (cellWidth / longer) * size;
+	const height = (cellHeight / longer) * size;
+	const cell = frame % (sheet.columns * sheet.rows);
 	ctx.save();
 	ctx.translate(x, y);
 	ctx.rotate(rotation - FACING_ANGLE[facing]);
 	ctx.scale(flip ? -scale : scale, scale);
-	ctx.drawImage(image, -width / 2, -height / 2, width, height);
+	ctx.drawImage(
+		image,
+		(cell % sheet.columns) * cellWidth,
+		Math.floor(cell / sheet.columns) * cellHeight,
+		cellWidth,
+		cellHeight,
+		-width / 2,
+		-height / 2,
+		width,
+		height
+	);
 	ctx.restore();
 	return true;
 }
@@ -267,6 +313,12 @@ function humanoidRows(body: Body, look: Look): readonly string[] {
 	return body.moving ? (WALKING[walkFrame(body)] ?? STANDING) : STANDING;
 }
 
+function frameOf(body: Body, picture: Picture, scene: Scene): number {
+	// Each body starts at another point of the loop.
+	const time = scene.time + body.id * 0.37;
+	return frameAt(picture.sheet, animationOf(body), time, scene.reducedMotion);
+}
+
 /** Draws a figure, monster or vehicle, in the current view. */
 export function drawBody(
 	ctx: CanvasRenderingContext2D,
@@ -289,7 +341,10 @@ export function drawBody(
 		return;
 	}
 	if (definition.look === 'car') {
-		if (!(picture && drawPicture(ctx, picture, x, y, body.angle, scale))) {
+		if (!(
+			picture &&
+			drawPicture(ctx, picture, x, y, body.angle, scale, false, frameOf(body, picture, scene))
+		)) {
 			drawPixels(ctx, CAR_ROWS, x, y, body.angle, scale, colors);
 		}
 		ctx.globalAlpha = 1;
@@ -298,7 +353,10 @@ export function drawBody(
 	const half = (10 * PIXEL * scale) / 2;
 	shadow(ctx, x, y + PIXEL, half, colors, height);
 	const grow = scale * (1 + height * JUMP_SCALE);
-	if (!(picture && drawPicture(ctx, picture, x, y, body.angle, grow))) {
+	if (!(
+		picture &&
+		drawPicture(ctx, picture, x, y, body.angle, grow, false, frameOf(body, picture, scene))
+	)) {
 		// The sprite faces down (π/2); turn it to where the body goes.
 		drawPixels(
 			ctx,
@@ -331,7 +389,16 @@ function drawSide(
 		shadow(ctx, x, feet, width / 2, colors, 0);
 		if (
 			picture &&
-			drawPicture(ctx, picture, x, feet - height, 0, 1, left !== (picture.facing === 'left'))
+			drawPicture(
+				ctx,
+				picture,
+				x,
+				feet - height,
+				0,
+				1,
+				left !== (picture.facing === 'left'),
+				frameOf(body, picture, scene)
+			)
 		)
 			return;
 		ctx.save();
@@ -368,7 +435,8 @@ function drawSide(
 			feet - picture.size / 2,
 			0,
 			1,
-			left !== (picture.facing === 'left')
+			left !== (picture.facing === 'left'),
+			frameOf(body, picture, scene)
 		)
 	)
 		return;
@@ -407,7 +475,20 @@ export function drawPickup(
 	const x = pickup.x - scene.scroll.x;
 	const y = pickup.y - scene.scroll.y - (scene.side ? definition.size / 2 : 0) + bob;
 	const picture = definition.sprite ? scene.pictures[definition.sprite] : undefined;
-	if (picture && drawPicture(ctx, picture, x, y, 0, 1, false)) return;
+	if (
+		picture &&
+		drawPicture(
+			ctx,
+			picture,
+			x,
+			y,
+			0,
+			1,
+			false,
+			frameAt(picture.sheet, 'idle', scene.time + pickup.age, scene.reducedMotion)
+		)
+	)
+		return;
 	const r = definition.size / 2;
 	const { colors } = scene;
 	ctx.save();

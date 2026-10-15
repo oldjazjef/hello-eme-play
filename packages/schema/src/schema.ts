@@ -6,6 +6,7 @@ import {
 	t,
 	type BooleanNode,
 	type KeysNode,
+	type ListNode,
 	type Node,
 	type NumberNode,
 	type ObjectNode,
@@ -244,9 +245,47 @@ const STAT = object(t('Wert', 'Stat'), {
 	max: num(t('Grösster Wert', 'Highest'), 9999, -1_000_000, 1_000_000)
 });
 
+const frames = (label: Text): ListNode => ({
+	type: 'list',
+	label,
+	of: int(t('Bild Nr.', 'Frame no.'), 0, 0, 4095),
+	maxItems: 64,
+	default: []
+});
+
 const SPRITE = object(t('Bild', 'Picture'), {
 	url: str(t('Adresse (PNG, SVG, WebP …)', 'URL (PNG, SVG, WebP …)')),
-	size: num(t('Länge der längeren Seite (px)', 'Longer side (px)'), 50, 8, 400),
+	size: num(
+		t(
+			'Länge der längeren Seite (px, bei Sheets eines Einzelbilds)',
+			'Longer side (px; of one frame for sheets)'
+		),
+		50,
+		8,
+		400
+	),
+	columns: int(t('Spalten im Sheet', 'Sheet columns'), 1, 1, 64),
+	rows: int(t('Zeilen im Sheet', 'Sheet rows'), 1, 1, 64),
+	fps: num(t('Bilder pro Sekunde', 'Frames per second'), 8, 1, 60),
+	animations: object(
+		t(
+			'Animationen (Bildnummern ab 0, zeilenweise gezählt)',
+			'Animations (frame numbers from 0, row by row)'
+		),
+		{
+			idle: frames(t('Stehen', 'Idle')),
+			walk: frames(t('Laufen', 'Walk')),
+			jump: frames(t('Springen', 'Jump')),
+			hurt: frames(t('Getroffen', 'Hurt')),
+			punch: frames(t('Schlag', 'Punch')),
+			kick: frames(t('Tritt', 'Kick')),
+			bite: frames(t('Biss', 'Bite'))
+		},
+		t(
+			'Leer: Stehen, ist auch das leer, das erste Bild.',
+			'Empty: Idle; if that is empty too, the first frame.'
+		)
+	),
 	facing: select(t('Blickt nach', 'Looks'), FACINGS, 'right', {
 		optionLabels: {
 			right: t('Rechts', 'Right'),

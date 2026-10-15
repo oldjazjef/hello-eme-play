@@ -573,6 +573,7 @@ export class Session {
 			colors: this.#colors,
 			pictures: this.#pictures,
 			reducedMotion: this.#reducedMotion.matches,
+			time: now / 1000,
 			scroll: { x: scrollX, y: scrollY },
 			side: world.view === 'side'
 		};

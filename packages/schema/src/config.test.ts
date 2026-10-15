@@ -121,3 +121,19 @@ describe('playJsonSchema', () => {
 		expect(JSON.stringify(schema)).toContain('"topdown"');
 	});
 });
+
+describe('sprite sheets', () => {
+	it('defaults to a single picture without animations', () => {
+		const config = resolveConfig({ sprites: { hero: { url: '/hero.png' } } });
+		expect(config.sprites.hero).toMatchObject({ columns: 1, rows: 1, fps: 8 });
+		expect(config.sprites.hero?.animations.walk).toEqual([]);
+	});
+
+	it('keeps animations and corrects nonsense', () => {
+		const config = resolveConfig({
+			sprites: { hero: { url: '/h.png', columns: 4, rows: 0, animations: { walk: [1, 2, 9999] } } }
+		});
+		expect(config.sprites.hero).toMatchObject({ columns: 4, rows: 1 });
+		expect(config.sprites.hero?.animations.walk).toEqual([1, 2, 4095]);
+	});
+});
