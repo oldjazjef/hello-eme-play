@@ -2,7 +2,8 @@
 
 Turns **any website into a game**, configured by **one JSON**. The page itself is the playing field: the
 visitor walks over it, punches paragraphs until they break, fights monsters, jumps on cards and drives a car.
-It works with plain HTML, any framework and any CMS. A Payload plugin edits the JSON in the admin.
+It works with plain HTML, any framework and any CMS. An editor (one script, no framework) and a Payload plugin
+change the JSON; try it in the [live demo](https://oldjazjef.github.io/hello-eme-play/): guide, editor and live preview.
 
 ![Top-down view: the figure fights monsters on a web page](docs/images/topdown.png)
 
@@ -11,10 +12,13 @@ It works with plain HTML, any framework and any CMS. A Payload plugin edits the 
 - **Two views:** top-down and side-scroller (the figure and monsters are drawn in profile; page elements are platforms), switchable at any time by items, triggers or levels.
 - **Figure, monsters, vehicles:** every one has stats (health, attack, speed, …), moves (punch, kick, bite) and a behavior (chase, wander, flee).
 - **Levels and goals:** score, kills, survive for some time or defeat a boss.
+- **Wave scripts and boss phases:** "at 10 s three blobs, at 25 s a swarm, at 40 s the boss"; a boss enrages or summons help when its health falls below a share.
+- **Per-page settings:** `/blog` can be top-down and `/projects` a side-scroller, with other monsters; the game follows the visitor's navigation.
 - **Items, upgrades and a shop**, **triggers** ("when X happens, if Y holds, do Z"), sounds and a high score.
 - **Own pictures:** pixel art is built in; your own PNG or SVG sprite sheets with animations replace it.
 - **Touch controls:** d-pad, round action buttons, steering wheel and pedals for the car.
 - **Safe by design:** the JSON is always validated; wrong values are corrected, never crash the page.
+- **An editor for the JSON:** quick settings, presets, a balance check, a live preview, a flow view and a guide, on any page or in Payload.
 
 ![Side-scroller view](docs/images/side-scroller.png)
 
@@ -23,7 +27,8 @@ It works with plain HTML, any framework and any CMS. A Payload plugin edits the 
 | [`@hello-eme/play`](packages/play)            | Browser runtime and drop-in script                                   |
 | [`@hello-eme/play-core`](packages/core)       | Game logic without a DOM (entities, events, RNG)                     |
 | [`@hello-eme/play-schema`](packages/schema)   | The JSON as data: defaults, validation, migrations, JSON Schema      |
-| [`@hello-eme/play-payload`](packages/payload) | Payload CMS plugin that renders the schema as a form                 |
+| [`@hello-eme/play-editor`](packages/editor)   | The configuration editor for any page (one script), React export too |
+| [`@hello-eme/play-payload`](packages/payload) | Payload CMS plugin: the same editor inside the Payload admin         |
 | [`@hello-eme/play-sim`](packages/sim)         | Headless bots for balancing (`play-sim`)                             |
 | [`examples/static`](examples/static)          | A plain HTML page with the game and Playwright tests (not published) |
 
@@ -95,6 +100,7 @@ All keys can be changed in the JSON (`keys` for walking, jumping, using and the 
 | ------------------------ | ---------------------------------------------------------------------------------------------------------- |
 | A plain HTML page        | The script tag above.                                                                                      |
 | A bundler or a framework | `import { createPlay } from '@hello-eme/play'; createPlay({ config }).start();` ([package](packages/play)) |
+| No CMS, but want to edit | The standalone editor: one script, one call ([package](packages/editor), [example](examples/editor)).      |
 | Payload CMS 3            | The plugin, so editors change the game in the admin ([package](packages/payload), steps below).            |
 | A server or a build step | Validate JSON with `resolveConfig` / `configProblems` from `@hello-eme/play-schema`.                       |
 
@@ -134,6 +140,66 @@ To update, install the URL of a newer release.
 
    An old `@hello-eme/page-game` JSON is migrated automatically.
 
+### Edit the game without a CMS
+
+The same editor that runs in Payload also runs on any page: quick settings, presets with a live preview,
+a balance check, the full form, a flow of what triggers what, a guide, undo and redo.
+
+```html
+<div id="editor"></div>
+<script src="editor.js"></script>
+<script>
+	PlayEditor.mount(document.getElementById('editor'), {
+		value: await (await fetch('/play.json')).json(),
+		onChange: (json) => save(json)
+	});
+</script>
+```
+
+Details and options: [packages/editor](packages/editor). A live demo (guide, editor, live preview) is built from [site/](site) and published with GitHub Pages. Every setting, key, event and action is listed in
+the [configuration reference](docs/REFERENCE.md) ([Deutsch](docs/REFERENCE.de.md)), which is generated from the schema.
+
+### Waves, bosses and other pages
+
+```json
+{
+	"waves": [
+		{
+			"label": "Raid",
+			"steps": [
+				{ "at": 10, "do": [{ "do": "spawn", "entity": "blob", "count": 3 }] },
+				{
+					"at": 25,
+					"every": 5,
+					"repeat": 2,
+					"do": [{ "do": "spawn", "entity": "blob", "count": 8 }]
+				},
+				{ "at": 40, "do": [{ "do": "spawn", "entity": "king" }] }
+			]
+		}
+	],
+	"entities": {
+		"king": {
+			"kind": "monster",
+			"boss": true,
+			"phases": [
+				{ "below": 50, "label": "Enraged!", "stats": { "attack": 10 } },
+				{ "below": 25, "do": [{ "do": "spawn", "entity": "blob", "count": 4 }] }
+			]
+		}
+	},
+	"pages": [
+		{ "match": "/projects", "config": { "view": { "mode": "side" } } },
+		{ "match": "/blog/*", "config": { "view": { "mode": "topdown" } } }
+	]
+}
+```
+
+A wave runs actions on a timeline (`at` seconds after it starts, `every` and `repeat` for repeats). A boss
+phase fires once when its health falls below `below` percent. `pages` entries are merged over the base
+configuration in order for the visitor's path; the game follows navigation, and `play.setPath(path)` is there for
+frameworks that prefer to say so. All of it is explained in [docs/CONFIG.md](docs/CONFIG.md).
+
 ### Balance without a browser
 
 ```sh
@@ -153,8 +219,13 @@ The screenshots above come from `node scripts/screenshots.mjs` (after `npm run b
 ```sh
 npm install
 npm run verify   # format check + lint + check + test + build
-npm run e2e      # Playwright against the example page (needs chromium)
+npm run e2e      # Playwright against the example page and the demo site (needs chromium)
+npm run docs     # regenerate docs/REFERENCE.md from the schema (a test fails when it is stale)
 ```
+
+The demo site (`site/`: editor with live preview, guide, a page that plays your configuration) is built with
+`node scripts/build-site.mjs` after `npm run build` and published by GitHub Pages from `main`
+(Settings → Pages → Source: GitHub Actions).
 
 Node 22. Nx + npm workspaces. Commits follow Conventional Commits (commitlint, husky). Changes to a
 published package need a changeset: `npm run changeset`.
