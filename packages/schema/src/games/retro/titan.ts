@@ -168,7 +168,7 @@ export const titan: Preset = {
 				radius: 0,
 				power: 0.9,
 				breaks: false,
-				ammo: 1,
+				ammo: 0,
 				maxAmmo: 1,
 				where: 'foot'
 			},
@@ -183,7 +183,7 @@ export const titan: Preset = {
 				power: 1.2,
 				push: 350,
 				breaks: false,
-				ammo: 1,
+				ammo: 0,
 				maxAmmo: 1,
 				where: 'foot',
 				explodeSound: 'boom'

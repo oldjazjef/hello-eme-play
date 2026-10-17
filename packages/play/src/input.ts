@@ -70,6 +70,12 @@ export class Input {
 		this.#pressed.add(action);
 	}
 
+	/** A throwable that keeps firing while its touch button is held. */
+	holdThrow(id: string, held: boolean): void {
+		if (held) this.#autoThrows.set(`pad-${id}`, id);
+		else this.#autoThrows.delete(`pad-${id}`);
+	}
+
 	/** Throw or drop one (an id of `config.throwables`). */
 	throwItem(id: string): void {
 		this.#throws.add(id);

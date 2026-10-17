@@ -155,6 +155,7 @@ export class Session {
 			jump: () => this.#input.request(this.#world.riding ? 'honk' : 'jump'),
 			move: (id, held) => this.#input.holdMove('pad', id, held),
 			throwItem: (id) => this.#input.throwItem(id),
+			holdThrow: (id, held) => this.#input.holdThrow(id, held),
 			party: () => this.#input.request('party'),
 			handbrake: (held) => (this.#input.handbrake.pad = held),
 			steer: (value) => (this.#input.wheel = value),
@@ -593,12 +594,15 @@ export class Session {
 				out: member.id === world.ally?.member
 			})),
 			throwables: Object.entries(config.throwables).flatMap(([id, item]) =>
-				item.where === 'both' || (item.where === 'vehicle') === (world.riding !== undefined)
+				// Throwables only monsters use (no key, nothing to carry) get no button.
+				(item.unlimited || item.keys.length > 0 || world.ammoOf(id) > 0) &&
+				(item.where === 'both' || (item.where === 'vehicle') === (world.riding !== undefined))
 					? [
 							{
 								id,
 								label: item.label || id,
-								ammo: item.unlimited ? '∞' : String(world.ammoOf(id))
+								ammo: item.unlimited ? '∞' : String(world.ammoOf(id)),
+								auto: item.auto
 							}
 						]
 					: []

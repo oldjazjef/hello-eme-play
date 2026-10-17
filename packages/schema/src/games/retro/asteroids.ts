@@ -164,7 +164,7 @@ export const asteroids: Preset = {
 				radius: 0,
 				power: 1,
 				breaks: false,
-				ammo: 1,
+				ammo: 0,
 				maxAmmo: 1,
 				where: 'foot'
 			}
