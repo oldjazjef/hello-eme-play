@@ -12,7 +12,8 @@ export function radiusOf(size: number): number {
 }
 
 export function sizeOf(world: World, body: Body): number {
-	return world.config.entities[body.def]?.size ?? 50;
+	const definition = world.config.entities[body.def];
+	return (definition?.size ?? 50) + (definition ? definition.evolve.size * body.level : 0);
 }
 
 export interface StaticHostOptions {
@@ -72,7 +73,13 @@ export function floorY(world: World): number {
  * Moves a body by (dx, dy) within the page. Past the end of the page it either stops or (with
  * `wrap`) comes back in at the other end; the camera follows.
  */
-export function advance(world: World, body: Body, dx: number, dy: number, wrap: boolean): void {
+export function advance(
+	world: World,
+	body: { x: number; y: number },
+	dx: number,
+	dy: number,
+	wrap: boolean
+): void {
 	const pg = world.host.page();
 	const top = world.host.viewport().top;
 	let x = body.x + dx;

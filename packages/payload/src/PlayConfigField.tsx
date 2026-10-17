@@ -10,6 +10,7 @@ export type PlayConfigFieldProps = JSONFieldClientProps & {
 	mediaCollection?: string;
 	/** A page that plays the configuration sent by the admin (the game's `data-preview` mode). */
 	previewUrl?: string;
+	supportUrl?: string;
 };
 
 interface MediaDoc {
@@ -45,7 +46,8 @@ function useMedia(apiRoute: string, collection: string, reload: number): MediaOp
 export function PlayConfigField({
 	path,
 	mediaCollection = 'media',
-	previewUrl
+	previewUrl,
+	supportUrl
 }: PlayConfigFieldProps) {
 	const { value, setValue } = useField<unknown>({ path });
 	const { i18n } = useTranslation();
@@ -83,6 +85,7 @@ export function PlayConfigField({
 				mediaUploadHref={`${payloadConfig.routes.admin}/collections/${mediaCollection}/create`}
 				onUpload={onUpload}
 				{...(previewUrl ? { previewUrl } : {})}
+				{...(supportUrl ? { supportUrl } : {})}
 			/>
 		</div>
 	);

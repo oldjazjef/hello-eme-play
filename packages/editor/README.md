@@ -9,7 +9,8 @@ around it). The host only passes the JSON in and takes it out again.
 - **Quick settings**: sliders and switches for what most people change (difficulty, speed, how many monsters).
   They write the same JSON as the full form.
 - **Simple / Expert mode**: Simple shows quick settings and the guide; Expert shows every setting, flow and raw JSON.
-- **Presets** as cards with a verdict, and **Try it** in the preview before you use one.
+- **Presets** as cards with a verdict, and **Try it** in the preview before you use one. The ten example games
+  (`game-*`: Ememons, Bombastic, Road Rage …) are in there with their pictures.
 - **Live preview**: the game running next to the form, playing every change (needs a preview page, see below).
 - **Balance check**: a practice bot plays ten rounds in the editor ([`play-sim`](../sim)) and says easy / balanced / hard.
 - **The full form**, generated from the schema: a new setting in `schema.ts` shows up here without editor code.
@@ -41,7 +42,12 @@ around it). The host only passes the JSON in and takes it out again.
 preview), so there is nothing to install or set up. As a module: `import { mount } from '@hello-eme/play-editor'`.
 
 Options: `value`, `onChange`, `lang`, `storageKey` (keeps a draft in `localStorage`), `defaultMode`
-(`simple`/`expert`), `media`, `onUpload`, `previewUrl`, `previewHtml`, `preview: false`, `referenceUrl`.
+(`simple`/`expert`), `media`, `onUpload`, `previewUrl`, `previewHtml`, `preview: false`, `referenceUrl`,
+`supportUrl`.
+
+**Support link.** `supportUrl: 'https://buymeacoffee.com/<name>'` puts a "Buy me a coffee" (German: "Kaffee spendieren")
+link into the toolbar. Only `http` and `https` addresses are shown; without the option there is no link. With Payload
+set `supportUrl` in `playPlugin({ … })`.
 
 **Live preview.** Out of the box the editor shows the game on a small sample page and restarts it on every
 change. For the real thing give it a page of your own: `previewUrl: '/play-preview.html'`, a page that loads the

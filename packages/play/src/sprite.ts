@@ -3,7 +3,13 @@
  * tire marks. Everything is drawn on one canvas that covers the window; world positions are page
  * coordinates, so the scroll position is subtracted.
  */
-import { jumpHeight, walkFrame, type Body, type Pickup } from '@hello-eme/play-core';
+import {
+	jumpHeight,
+	walkFrame,
+	type Body,
+	type Pickup,
+	type Projectile
+} from '@hello-eme/play-core';
 import type {
 	Animation,
 	EntityDefinition,
@@ -11,7 +17,10 @@ import type {
 	ItemDefinition,
 	ItemLook,
 	Look,
-	PlayConfig
+	PlayConfig,
+	HideoutLook,
+	ThrowableLook,
+	ThrowableDefinition
 } from '@hello-eme/play-schema';
 import { opacity as skidOpacity, SKID, type SkidMark } from './skid.js';
 import type { Shard } from './wreck.js';
@@ -188,22 +197,28 @@ export type SpritePart = 'h' | 's' | 'b' | 'f' | 'c' | 'w' | 'l' | 'e' | 'x';
  * tokens, which then follow its theme and light/dark mode) and a fallback. `outline` separates
  * the sprites from whatever they walk over.
  */
-export const SPRITE_COLORS: Record<SpritePart | 'shadow' | 'outline' | 'item' | 'itemAlt', string> =
-	{
-		h: 'var(--play-hair, #1e1b4b)',
-		s: 'var(--play-skin, #f6b98f)',
-		b: 'var(--play-body, #6d28d9)',
-		f: 'var(--play-feet, #1e1b4b)',
-		c: 'var(--play-car, #5eead4)',
-		w: 'var(--play-window, #1e1b4b)',
-		l: 'var(--play-light, #fcd34d)',
-		e: 'var(--play-enemy, #dc2626)',
-		x: 'var(--play-enemy-eyes, #ffffff)',
-		shadow: 'var(--play-shadow, #1e1b4b)',
-		outline: 'var(--play-outline, #ffffff)',
-		item: 'var(--play-item, #f59e0b)',
-		itemAlt: 'var(--play-item-alt, #dc2626)'
-	};
+export const SPRITE_COLORS: Record<
+	SpritePart | 'shadow' | 'outline' | 'item' | 'itemAlt' | 'grass' | 'grassAlt' | 'water' | 'rock',
+	string
+> = {
+	h: 'var(--play-hair, #1e1b4b)',
+	s: 'var(--play-skin, #f6b98f)',
+	b: 'var(--play-body, #6d28d9)',
+	f: 'var(--play-feet, #1e1b4b)',
+	c: 'var(--play-car, #5eead4)',
+	w: 'var(--play-window, #1e1b4b)',
+	l: 'var(--play-light, #fcd34d)',
+	e: 'var(--play-enemy, #dc2626)',
+	x: 'var(--play-enemy-eyes, #ffffff)',
+	shadow: 'var(--play-shadow, #1e1b4b)',
+	outline: 'var(--play-outline, #ffffff)',
+	item: 'var(--play-item, #f59e0b)',
+	itemAlt: 'var(--play-item-alt, #dc2626)',
+	grass: 'var(--play-grass, #4ade80)',
+	grassAlt: 'var(--play-grass-dark, #16a34a)',
+	water: 'var(--play-water, #38bdf8)',
+	rock: 'var(--play-rock, #94a3b8)'
+};
 
 export type SpriteColors = Record<keyof typeof SPRITE_COLORS, string>;
 
@@ -227,7 +242,37 @@ export const ITEM_LOOK_PATHS: Record<ItemLook, string> = {
 			return `${i === 0 ? 'M' : 'L'}${(Math.cos(angle) * radius).toFixed(1)} ${(Math.sin(angle) * radius).toFixed(1)}`;
 		}).join(' ') + ' Z',
 	gem: 'M0 -50 L40 -10 L0 50 L-40 -10 Z',
-	bolt: 'M10 -50 L-30 5 L-2.5 5 L-10 50 L30 -10 L2.5 -10 Z'
+	bolt: 'M10 -50 L-30 5 L-2.5 5 L-10 50 L30 -10 L2.5 -10 Z',
+	wall: 'M-46 -38 L46 -38 L46 38 L-46 38 Z',
+	spikes: 'M-48 40 L-36 -30 L-24 40 L-12 -40 L0 40 L12 -40 L24 40 L36 -30 L48 40 Z',
+	bush: 'M-44 26 C-60 4 -40 -22 -18 -16 C-14 -42 18 -42 22 -16 C46 -22 60 6 44 26 Z',
+	puddle: 'M-50 0 C-50 -26 -10 -34 20 -28 C50 -22 52 10 30 24 C0 38 -50 28 -50 0 Z'
+};
+
+/** What an item's built-in look is filled with. */
+function itemFill(look: ItemLook, colors: SpriteColors): string {
+	switch (look) {
+		case 'heart':
+			return colors.itemAlt;
+		case 'wall':
+			return colors.rock;
+		case 'spikes':
+			return colors.itemAlt;
+		case 'bush':
+			return colors.grass;
+		case 'puddle':
+			return colors.water;
+		default:
+			return colors.item;
+	}
+}
+
+/** The outline of each built-in throwable look around (0, 0), like `ITEM_LOOK_PATHS`, for previews. */
+export const THROWABLE_LOOK_PATHS: Record<ThrowableLook, string> = {
+	bomb: 'M-38 8 A38 38 0 1 0 38 8 A38 38 0 1 0 -38 8 Z M-4 -24 L14 -44 L22 -36 L6 -20 Z',
+	rock: 'M46.0 0.0 L22.4 28.1 L-10.2 44.8 L-32.4 15.6 L-41.4 -20.0 L-8.0 -35.1 L28.7 -36.0 Z',
+	mine: 'M-46 0 A46 46 0 1 0 46 0 A46 46 0 1 0 -46 0 Z',
+	ball: 'M-44 0 A44 44 0 1 0 44 0 A44 44 0 1 0 -44 0 Z'
 };
 
 const isPart = (char: string): char is SpritePart =>
@@ -245,6 +290,8 @@ export interface Picture {
 	image: HTMLImageElement;
 	size: number;
 	facing: Facing;
+	/** From above: turns to where it goes; otherwise upright and mirrored. */
+	rotate: boolean;
 	sheet: Sheet;
 }
 
@@ -283,11 +330,11 @@ export function loadPictures(sprites: PlayConfig['sprites']): Pictures {
 	return Object.fromEntries(
 		Object.entries(sprites)
 			.filter(([, { url }]) => url.trim() !== '')
-			.map(([id, { url, size, facing, columns, rows, fps, animations }]) => {
+			.map(([id, { url, size, facing, rotate, columns, rows, fps, animations }]) => {
 				const image = new Image();
 				image.decoding = 'async';
 				image.src = url;
-				return [id, { image, size, facing, sheet: { columns, rows, fps, animations } }];
+				return [id, { image, size, facing, rotate, sheet: { columns, rows, fps, animations } }];
 			})
 	);
 }
@@ -298,6 +345,16 @@ const FACING_ANGLE: Record<Facing, number> = {
 	left: Math.PI,
 	up: -Math.PI / 2
 };
+
+/** How to draw a picture of a body seen from above: turned to its heading, or upright and mirrored. */
+function topdownPose(picture: Picture, angle: number): { rotation: number; flip: boolean } {
+	if (picture.rotate) return { rotation: angle, flip: false };
+	const right = Math.cos(angle) >= 0;
+	return {
+		rotation: 0,
+		flip: (picture.facing === 'right' && !right) || (picture.facing === 'left' && right)
+	};
+}
 
 export interface Scene {
 	colors: SpriteColors;
@@ -312,7 +369,7 @@ export interface Scene {
 /** Draws a picture centered, turned from where it looks (`facing`) to `rotation` (0 = right). */
 function drawPicture(
 	ctx: CanvasRenderingContext2D,
-	{ image, size, facing, sheet }: Picture,
+	{ image, size, facing, rotate, sheet }: Picture,
 	x: number,
 	y: number,
 	rotation: number,
@@ -329,7 +386,8 @@ function drawPicture(
 	const cell = frame % (sheet.columns * sheet.rows);
 	ctx.save();
 	ctx.translate(x, y);
-	ctx.rotate(rotation - FACING_ANGLE[facing]);
+	// Pictures that stay upright (people and creatures seen from the front) are never turned.
+	ctx.rotate(rotate ? rotation - FACING_ANGLE[facing] : 0);
 	ctx.scale(flip ? -scale : scale, scale);
 	ctx.drawImage(
 		image,
@@ -439,7 +497,7 @@ export function drawBody(
 	const picture = definition.sprite ? scene.pictures[definition.sprite] : undefined;
 	const height = scene.reducedMotion ? 0 : jumpHeight(body);
 	const blink = body.invulnerable > 0 && Math.floor(body.invulnerable * 10) % 2 === 0;
-	ctx.globalAlpha = body.hurt > 0 || blink ? 0.45 : 1;
+	ctx.globalAlpha = body.hurt > 0 || blink || body.covered ? 0.45 : 1;
 
 	if (scene.side) {
 		drawSide(ctx, body, definition, scene, x, y, scale, picture);
@@ -449,7 +507,16 @@ export function drawBody(
 	if (definition.look === 'car') {
 		if (!(
 			picture &&
-			drawPicture(ctx, picture, x, y, body.angle, scale, false, frameOf(body, picture, scene))
+			drawPicture(
+				ctx,
+				picture,
+				x,
+				y,
+				topdownPose(picture, body.angle).rotation,
+				scale,
+				topdownPose(picture, body.angle).flip,
+				frameOf(body, picture, scene)
+			)
 		)) {
 			drawPixels(ctx, CAR_ROWS, x, y, body.angle, scale, colors);
 		}
@@ -461,7 +528,16 @@ export function drawBody(
 	const grow = scale * (1 + height * JUMP_SCALE);
 	if (!(
 		picture &&
-		drawPicture(ctx, picture, x, y, body.angle, grow, false, frameOf(body, picture, scene))
+		drawPicture(
+			ctx,
+			picture,
+			x,
+			y,
+			topdownPose(picture, body.angle).rotation,
+			grow,
+			topdownPose(picture, body.angle).flip,
+			frameOf(body, picture, scene)
+		)
 	)) {
 		// The sprite faces down (π/2); turn it to where the body goes.
 		drawPixels(
@@ -570,6 +646,302 @@ export function drawHealth(
 }
 
 /** Draws an item: its picture, or a small shape for its look; it bobs and blinks before it vanishes. */
+/** A going-off throwable: an expanding flash, seconds since the blast. */
+export interface Blast {
+	x: number;
+	y: number;
+	radius: number;
+	/** `performance.now()` when it went off. */
+	at: number;
+}
+
+/** How long a blast flash lasts, ms. */
+export const BLAST_MS = 380;
+
+/** A bomb, rock or mine in flight or lying around: the picture, or the built-in look. */
+export function drawProjectile(
+	ctx: CanvasRenderingContext2D,
+	projectile: Projectile,
+	definition: ThrowableDefinition,
+	scene: Scene
+): void {
+	const x = projectile.x - scene.scroll.x;
+	const y = projectile.y - scene.scroll.y - (scene.side ? definition.size / 2 : 0);
+	const picture = definition.sprite ? scene.pictures[definition.sprite] : undefined;
+	if (
+		picture &&
+		drawPicture(
+			ctx,
+			picture,
+			x,
+			y,
+			0,
+			1,
+			false,
+			frameAt(picture.sheet, 'idle', scene.time + projectile.age, scene.reducedMotion)
+		)
+	)
+		return;
+	const r = definition.size / 2;
+	const { colors } = scene;
+	// A lit fuse blinks faster as the bomb is about to go off.
+	const left = Number.isFinite(projectile.fuse) ? projectile.fuse : Infinity;
+	const blink = scene.reducedMotion
+		? left < 1
+		: Math.floor(projectile.age * (left < 1 ? 14 : 5)) % 2 === 0;
+	ctx.save();
+	ctx.translate(x, y);
+	ctx.lineWidth = 3;
+	ctx.strokeStyle = colors.outline;
+	ctx.fillStyle =
+		definition.look === 'rock'
+			? colors.b
+			: definition.look === 'mine'
+				? colors.e
+				: definition.look === 'ball'
+					? colors.itemAlt
+					: colors.shadow;
+	ctx.beginPath();
+	if (definition.look === 'rock') {
+		for (let i = 0; i < 7; i++) {
+			const angle = (Math.PI * 2 * i) / 7;
+			const radius = r * (i % 2 === 0 ? 1 : 0.78);
+			const px = Math.cos(angle) * radius;
+			const py = Math.sin(angle) * radius;
+			if (i === 0) ctx.moveTo(px, py);
+			else ctx.lineTo(px, py);
+		}
+		ctx.closePath();
+	} else ctx.arc(0, 0, r * (definition.look === 'mine' ? 1 : 0.85), 0, Math.PI * 2);
+	ctx.stroke();
+	ctx.fill();
+	if (definition.look === 'bomb') {
+		// The fuse on top and its spark.
+		ctx.strokeStyle = colors.outline;
+		ctx.beginPath();
+		ctx.moveTo(0, -r * 0.8);
+		ctx.lineTo(r * 0.35, -r * 1.25);
+		ctx.stroke();
+		if (blink) {
+			ctx.fillStyle = colors.itemAlt;
+			ctx.beginPath();
+			ctx.arc(r * 0.35, -r * 1.25, r * 0.25, 0, Math.PI * 2);
+			ctx.fill();
+		}
+	} else if (definition.look === 'ball') {
+		// A ball for catching: red above, white below, a band and a button.
+		const radius = r * 0.85;
+		ctx.fillStyle = colors.x;
+		ctx.beginPath();
+		ctx.arc(0, 0, radius, 0, Math.PI);
+		ctx.fill();
+		ctx.lineWidth = 3;
+		ctx.strokeStyle = colors.shadow;
+		ctx.beginPath();
+		ctx.moveTo(-radius, 0);
+		ctx.lineTo(radius, 0);
+		ctx.stroke();
+		ctx.fillStyle = colors.x;
+		ctx.beginPath();
+		ctx.arc(0, 0, radius * 0.28, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.stroke();
+	} else if (definition.look === 'mine' && blink) {
+		ctx.fillStyle = colors.l;
+		ctx.beginPath();
+		ctx.arc(0, 0, r * 0.3, 0, Math.PI * 2);
+		ctx.fill();
+	}
+	ctx.restore();
+}
+
+/** A deterministic number from 0 to 1 for a seed (the same blades of grass every frame). */
+function noise(seed: number): number {
+	const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+	return x - Math.floor(x);
+}
+
+/**
+ * A hideout: tall grass, a bush, a pond or rocks. `rustle` (0..1) makes it sway and shake: the
+ * figure walks through it, or something is hiding in it.
+ */
+export function drawHideout(
+	ctx: CanvasRenderingContext2D,
+	place: { x: number; y: number; radius: number },
+	look: HideoutLook,
+	index: number,
+	rustle: number,
+	scene: Scene,
+	picture?: Picture
+): void {
+	const x = place.x - scene.scroll.x;
+	const y = place.y - scene.scroll.y;
+	const r = place.radius;
+	if (x + r < 0 || y + r < 0 || x - r > 1e5 || y - r > 1e5) return;
+	const { colors } = scene;
+	const moving = scene.reducedMotion ? 0 : rustle;
+	if (picture && drawHideoutPictures(ctx, picture, x, y, r, index, moving, scene)) return;
+	ctx.save();
+	ctx.translate(x, y);
+	if (look === 'water') {
+		ctx.fillStyle = colors.water;
+		ctx.strokeStyle = colors.outline;
+		ctx.lineWidth = 3;
+		ctx.beginPath();
+		ctx.ellipse(0, 0, r, r * 0.7, 0, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.stroke();
+		ctx.strokeStyle = colors.outline;
+		ctx.globalAlpha = 0.6;
+		for (let i = 0; i < 3; i++) {
+			const wave = (scene.reducedMotion ? 0 : Math.sin(scene.time * 2 + i + index)) * 4;
+			ctx.beginPath();
+			ctx.ellipse(wave, (i - 1) * r * 0.25, r * 0.4, r * 0.1, 0, 0, Math.PI * 2);
+			ctx.stroke();
+		}
+	} else if (look === 'rocks') {
+		const stones = Math.max(3, Math.round(r / 14));
+		for (let i = 0; i < stones; i++) {
+			const angle = noise(index * 31 + i) * Math.PI * 2;
+			const away = Math.sqrt(noise(index * 17 + i * 5)) * r * 0.75;
+			const size = r * (0.18 + noise(index * 7 + i) * 0.16);
+			const shake = moving * Math.sin(scene.time * 30 + i) * 2;
+			ctx.fillStyle = i % 2 === 0 ? colors.rock : colors.shadow;
+			ctx.strokeStyle = colors.outline;
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			ctx.ellipse(
+				Math.cos(angle) * away + shake,
+				Math.sin(angle) * away * 0.7,
+				size,
+				size * 0.75,
+				0,
+				0,
+				Math.PI * 2
+			);
+			ctx.fill();
+			ctx.stroke();
+		}
+	} else if (look === 'bush') {
+		const blobs = Math.max(4, Math.round(r / 12));
+		for (let i = 0; i < blobs; i++) {
+			const angle = noise(index * 13 + i) * Math.PI * 2;
+			const away = Math.sqrt(noise(index * 19 + i * 3)) * r * 0.6;
+			const size = r * (0.28 + noise(index * 5 + i) * 0.14);
+			const shake = moving * Math.sin(scene.time * 24 + i * 2) * 3;
+			ctx.fillStyle = i % 2 === 0 ? colors.grassAlt : colors.grass;
+			ctx.strokeStyle = colors.outline;
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			ctx.arc(Math.cos(angle) * away + shake, Math.sin(angle) * away * 0.7, size, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.stroke();
+		}
+	} else {
+		// Tall grass: many blades from the ground, swaying with a gentle wind and a shake when disturbed.
+		const blades = Math.max(14, Math.round((r * r) / 90));
+		ctx.lineCap = 'round';
+		for (let i = 0; i < blades; i++) {
+			const angle = noise(index * 11 + i) * Math.PI * 2;
+			const away = Math.sqrt(noise(index * 23 + i * 7)) * r;
+			const bx = Math.cos(angle) * away;
+			const by = Math.sin(angle) * away * 0.7;
+			const height = 10 + noise(index * 3 + i) * 12;
+			const sway = scene.reducedMotion
+				? 0
+				: Math.sin(scene.time * (1.6 + moving * 14) + i * 0.7 + index) * (2 + moving * 6);
+			ctx.strokeStyle = i % 3 === 0 ? colors.grass : colors.grassAlt;
+			ctx.lineWidth = 3;
+			ctx.beginPath();
+			ctx.moveTo(bx, by);
+			ctx.quadraticCurveTo(bx + sway * 0.5, by - height * 0.5, bx + sway, by - height);
+			ctx.stroke();
+		}
+	}
+	ctx.restore();
+}
+
+/**
+ * A hideout made of the picture the configuration names: a few of it spread over the patch, the
+ * lower ones in front. Returns false while the picture is still loading (the built-in look shows).
+ */
+function drawHideoutPictures(
+	ctx: CanvasRenderingContext2D,
+	picture: Picture,
+	x: number,
+	y: number,
+	radius: number,
+	index: number,
+	rustle: number,
+	scene: Scene
+): boolean {
+	if (!picture.image.complete || picture.image.naturalWidth === 0) return false;
+	const count = Math.max(1, Math.round((radius * radius) / (picture.size * picture.size)));
+	const spots = Array.from({ length: count }, (_, i) => {
+		const angle = noise(index * 29 + i) * Math.PI * 2;
+		const away = count === 1 ? 0 : Math.sqrt(noise(index * 41 + i * 3)) * radius * 0.8;
+		return { x: Math.cos(angle) * away, y: Math.sin(angle) * away * 0.7, i };
+	}).sort((a, b) => a.y - b.y);
+	for (const spot of spots) {
+		const shake = rustle * Math.sin(scene.time * 26 + spot.i * 2) * 3;
+		drawPicture(
+			ctx,
+			picture,
+			x + spot.x + shake,
+			y + spot.y,
+			0,
+			1,
+			false,
+			frameAt(picture.sheet, 'idle', scene.time + spot.i, scene.reducedMotion)
+		);
+	}
+	return true;
+}
+
+/** A ring under a team member, so it can be told from the wild ones. */
+export function drawTeamRing(
+	ctx: CanvasRenderingContext2D,
+	body: Body,
+	size: number,
+	scene: Scene
+): void {
+	const x = body.x - scene.scroll.x;
+	const y = body.y - scene.scroll.y + (scene.side ? 0 : size * 0.18);
+	ctx.save();
+	ctx.strokeStyle = scene.colors.l;
+	ctx.lineWidth = 3;
+	ctx.globalAlpha = 0.9;
+	ctx.beginPath();
+	ctx.ellipse(x, y, size * 0.42, size * 0.18, 0, 0, Math.PI * 2);
+	ctx.stroke();
+	ctx.restore();
+}
+
+/** The flash of a blast: a disc that grows to the blast radius and fades. */
+export function drawBlast(
+	ctx: CanvasRenderingContext2D,
+	blast: Blast,
+	scene: Scene,
+	now: number
+): void {
+	const progress = Math.min(1, (now - blast.at) / BLAST_MS);
+	const radius = blast.radius * (scene.reducedMotion ? 1 : 0.35 + 0.65 * progress);
+	ctx.save();
+	ctx.globalAlpha = (1 - progress) * 0.85;
+	ctx.translate(
+		blast.x - scene.scroll.x,
+		blast.y - scene.scroll.y - (scene.side ? radius * 0.3 : 0)
+	);
+	ctx.fillStyle = scene.colors.item;
+	ctx.strokeStyle = scene.colors.itemAlt;
+	ctx.lineWidth = 4;
+	ctx.beginPath();
+	ctx.arc(0, 0, radius, 0, Math.PI * 2);
+	ctx.fill();
+	ctx.stroke();
+	ctx.restore();
+}
+
 export function drawPickup(
 	ctx: CanvasRenderingContext2D,
 	pickup: Pickup,
@@ -577,7 +949,9 @@ export function drawPickup(
 	scene: Scene
 ): void {
 	if (pickup.ttl < 3 && Math.floor(pickup.ttl * 6) % 2 === 0) return;
-	const bob = scene.reducedMotion ? 0 : Math.sin(pickup.age * 4) * 3;
+	// Objects that stay (trees, walls, spikes) don't bob.
+	const bob =
+		scene.reducedMotion || definition.pickup === 'none' ? 0 : Math.sin(pickup.age * 4) * 3;
 	const x = pickup.x - scene.scroll.x;
 	const y = pickup.y - scene.scroll.y - (scene.side ? definition.size / 2 : 0) + bob;
 	const picture = definition.sprite ? scene.pictures[definition.sprite] : undefined;
@@ -601,7 +975,7 @@ export function drawPickup(
 	ctx.translate(x, y);
 	ctx.lineWidth = 3;
 	ctx.strokeStyle = colors.outline;
-	ctx.fillStyle = definition.look === 'heart' ? colors.itemAlt : colors.item;
+	ctx.fillStyle = itemFill(definition.look, colors);
 	ctx.beginPath();
 	switch (definition.look) {
 		case 'heart':
@@ -629,6 +1003,27 @@ export function drawPickup(
 			ctx.lineTo(-r * 0.2, r);
 			ctx.lineTo(r * 0.6, -r * 0.2);
 			ctx.lineTo(r * 0.05, -r * 0.2);
+			break;
+		case 'wall':
+			ctx.roundRect(-r, -r * 0.8, r * 2, r * 1.6, r * 0.15);
+			break;
+		case 'spikes':
+			for (let i = 0; i < 5; i++) {
+				const left = -r + (i * 2 * r) / 5;
+				ctx.moveTo(left, r * 0.8);
+				ctx.lineTo(left + r / 5, -r * 0.8);
+				ctx.lineTo(left + (2 * r) / 5, r * 0.8);
+			}
+			break;
+		case 'bush':
+			ctx.arc(-r * 0.45, r * 0.1, r * 0.5, 0, Math.PI * 2);
+			ctx.moveTo(r * 0.95, r * 0.1);
+			ctx.arc(r * 0.45, r * 0.1, r * 0.5, 0, Math.PI * 2);
+			ctx.moveTo(r * 0.5, -r * 0.25);
+			ctx.arc(0, -r * 0.25, r * 0.5, 0, Math.PI * 2);
+			break;
+		case 'puddle':
+			ctx.ellipse(0, 0, r, r * 0.65, 0, 0, Math.PI * 2);
 			break;
 	}
 	ctx.closePath();

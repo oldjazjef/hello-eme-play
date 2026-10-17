@@ -69,10 +69,10 @@ describe('Input', () => {
 		vi.stubGlobal('Element', function Element() {});
 	});
 	const config = resolveConfig({});
-	const setup = (riding = false, active = true) => {
+	const setup = (riding = false, active = true, used = config) => {
 		const calls = { escape: 0, shop: 0, keys: [] as string[] };
 		const hooks: InputHooks = {
-			config: () => config,
+			config: () => used,
 			active: () => active,
 			riding: () => riding,
 			escape: () => void calls.escape++,
@@ -83,7 +83,8 @@ describe('Input', () => {
 			axis: { x: 0, y: 0 },
 			drift: false,
 			held: new Set(),
-			pressed: new Set()
+			pressed: new Set(),
+			throws: new Set()
 		};
 		return { input: new Input(hooks), calls, controls };
 	};
@@ -163,6 +164,27 @@ describe('Input', () => {
 		expect(inCar.controls.held.size).toBe(0);
 	});
 
+	it('throws what a key is bound to, where it can be used, once per press', () => {
+		const bombs = resolveConfig({
+			throwables: {
+				bomb: { keys: ['KeyG'] },
+				mine: { keys: ['KeyM'], where: 'vehicle' }
+			}
+		});
+		const onFoot = setup(false, true, bombs);
+		onFoot.input.keydown(key('KeyG'));
+		onFoot.input.keydown(key('KeyG', { repeat: true }));
+		onFoot.input.keydown(key('KeyM'));
+		onFoot.input.apply(onFoot.controls, false);
+		expect([...onFoot.controls.throws]).toEqual(['bomb']);
+
+		const inCar = setup(true, true, bombs);
+		inCar.input.keydown(key('KeyM'));
+		inCar.input.throwItem('bomb');
+		inCar.input.apply(inCar.controls, true);
+		expect([...inCar.controls.throws].sort()).toEqual(['bomb', 'mine']);
+	});
+
 	it('uses the touch wheel and pedals in a vehicle only', () => {
 		const { input, controls } = setup(true);
 		input.wheel = 0.5;
@@ -214,7 +236,8 @@ describe('Input', () => {
 			axis: { x: 0, y: 0 },
 			drift: false,
 			held: new Set(),
-			pressed: new Set()
+			pressed: new Set(),
+			throws: new Set()
 		};
 		input.keydown(key('Space'));
 		input.keydown(key('KeyG'));

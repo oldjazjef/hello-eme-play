@@ -36,6 +36,7 @@ to `createPlay({ config })`.
 | `access.update`   | logged-in users | Who changes it                                                         |
 | `mediaCollection` | `media`         | Upload collection the picture picker lists                             |
 | `previewUrl`      | -               | A page that loads the game with `data-preview`; shown next to the form |
+| `supportUrl`      | -               | A "Buy me a coffee" page; the editor shows a link to it in its toolbar |
 | `disabled`        | `false`         | Hides the global but keeps the database schema                         |
 
 ## The editor

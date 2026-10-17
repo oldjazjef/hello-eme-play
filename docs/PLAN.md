@@ -35,7 +35,7 @@ the same round.
 ## JSON
 
 One file with a `version`. Everything is optional. Top-level keys: `view`, `game`, `stats`, `sprites`, `entities`,
-`moves`, `items`, `upgrades`, `spawns`, `itemSpawns`, `visits`, `triggers`, `levels`, `keys`, `hint`, `audio`,
+`moves`, `items`, `throwables`, `upgrades`, `spawns`, `itemSpawns`, `visits`, `triggers`, `levels`, `keys`, `hint`, `audio`,
 `progress`, `texts`. All implemented; reference in [CONFIG.md](CONFIG.md).
 
 ```json
@@ -70,7 +70,7 @@ Items and upgrades do nothing themselves; they fire **triggers**, a trigger runs
   `enterVehicle`, `exitVehicle`, `viewChange`.
 - Conditions: `level`, `score`, `view`, `health`, `chance`, `kills`.
 - Actions (`do`): `spawn`, `setView`, `points`, `heal`, `stat`, `dropItem`, `nextLevel`, `message`, `sound`,
-  `win`, `lose`.
+  `win`, `lose`, `ammo`.
 
 This is what was built; the first draft named them differently (`item.picked`, `modifyStat`, …). Triggers
 run at most 8 levels deep so two triggers cannot call each other forever.

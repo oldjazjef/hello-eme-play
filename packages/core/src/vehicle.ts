@@ -2,27 +2,24 @@
  * Vehicles, seen from above: steered like a car (up/down is gas and reverse, left/right turns while
  * it rolls). Top speed, acceleration and handling are the vehicle's stats; the rest is tuned here.
  */
+import { DEFAULT_DRIVE, type DriveDefinition } from '@hello-eme/play-schema';
 import { advance, fall, follow } from './space.js';
 import { statOf } from './stats.js';
 import type { Body, World } from './types.js';
 
+/** What stays the same for every vehicle; how it handles is `drive` in its definition. */
 export const CAR = {
-	maxReverse: 160,
-	/** Braking and rolling out, px/s². */
-	brake: 900,
-	roll: 320,
 	/** How close the figure has to be to get in. */
 	reach: 48,
-	handbrakeTurn: 1.8,
-	handbrakeDrag: 160,
-	/** How fast the drift angle fades (1/s): tires grip almost at once, much less on the handbrake. */
-	grip: 30,
-	slideGrip: 1.2,
-	maxDrift: 1.2,
 	/** Tires leave marks from this drift angle (rad) and speed (px/s) on. */
 	skidAngle: 0.25,
 	skidSpeed: 60
 } as const;
+
+/** How the vehicle handles (the car's way when its definition is gone). */
+export function driveOf(world: World, vehicle: Body): DriveDefinition {
+	return world.config.entities[vehicle.def]?.drive ?? DEFAULT_DRIVE;
+}
 
 function approach(value: number, target: number, rate: number): number {
 	return value < target ? Math.min(value + rate, target) : Math.max(value - rate, target);
@@ -32,24 +29,25 @@ function approach(value: number, target: number, rate: number): number {
 export function drive(world: World, vehicle: Body, dt: number): void {
 	const { axis, drift: handbrake } = world.controls;
 	if (world.view === 'side') return driveSide(world, vehicle, dt, axis.x);
+	const car = driveOf(world, vehicle);
 	const maxSpeed = statOf(world, vehicle, 'speed');
 	const accelerate = statOf(world, vehicle, 'accel');
 	const turnRate = statOf(world, vehicle, 'handling');
 	// Up (y = -1) is gas, down is brake and then reverse.
 	const throttle = -axis.y;
 	let speed = vehicle.speed;
-	if (throttle > 0) speed = approach(speed, maxSpeed, (speed < 0 ? CAR.brake : accelerate) * dt);
+	if (throttle > 0) speed = approach(speed, maxSpeed, (speed < 0 ? car.brake : accelerate) * dt);
 	else if (throttle < 0)
-		speed = approach(speed, -CAR.maxReverse, (speed > 0 ? CAR.brake : accelerate) * dt);
-	else speed = approach(speed, 0, CAR.roll * dt);
-	if (handbrake) speed = approach(speed, 0, CAR.handbrakeDrag * dt);
+		speed = approach(speed, -car.reverse, (speed > 0 ? car.brake : accelerate) * dt);
+	else speed = approach(speed, 0, car.roll * dt);
+	if (handbrake) speed = approach(speed, 0, car.handbrakeDrag * dt);
 
-	const turn = axis.x * turnRate * (handbrake ? CAR.handbrakeTurn : 1) * (speed / maxSpeed) * dt;
+	const turn = axis.x * turnRate * (handbrake ? car.handbrakeTurn : 1) * (speed / maxSpeed) * dt;
 	const heading = vehicle.angle + turn;
 	// The direction of travel keeps where it was going and only slowly follows the front.
-	const grip = handbrake ? CAR.slideGrip : CAR.grip;
+	const grip = handbrake ? car.slideGrip : car.grip;
 	const sliding = (vehicle.drift - turn) * Math.exp(-grip * dt);
-	const drift = Math.max(-CAR.maxDrift, Math.min(CAR.maxDrift, sliding));
+	const drift = Math.max(-car.maxDrift, Math.min(car.maxDrift, sliding));
 	const course = heading + drift;
 	advance(
 		world,
@@ -71,7 +69,7 @@ function driveSide(world: World, vehicle: Body, dt: number, steer: number): void
 	const accelerate = statOf(world, vehicle, 'accel');
 	vehicle.speed =
 		steer === 0
-			? approach(vehicle.speed, 0, CAR.roll * dt)
+			? approach(vehicle.speed, 0, driveOf(world, vehicle).roll * dt)
 			: approach(vehicle.speed, steer * maxSpeed, accelerate * dt);
 	if (vehicle.speed !== 0) vehicle.angle = vehicle.speed > 0 ? 0 : Math.PI;
 	vehicle.drift = 0;
@@ -88,20 +86,25 @@ export function isSkidding(vehicle: Pick<Body, 'drift' | 'speed'>): boolean {
 
 /** The rear wheels (they leave the marks), from the vehicle's center and heading. */
 export function rearWheels(
-	vehicle: Pick<Body, 'x' | 'y' | 'angle'>
+	vehicle: Pick<Body, 'x' | 'y' | 'angle'>,
+	size = 90
 ): [{ x: number; y: number }, { x: number; y: number }] {
-	const back = -27;
+	const back = -0.3 * size;
 	const wheel = (side: number) => ({
 		x: vehicle.x + Math.cos(vehicle.angle) * back - Math.sin(vehicle.angle) * side,
 		y: vehicle.y + Math.sin(vehicle.angle) * back + Math.cos(vehicle.angle) * side
 	});
-	return [wheel(-18), wheel(18)];
+	return [wheel(-0.2 * size), wheel(0.2 * size)];
 }
 
 /** Where the figure stands after getting out: beside the driver's door (left of the car). */
-export function doorSide(vehicle: Pick<Body, 'x' | 'y' | 'angle'>): { x: number; y: number } {
+export function doorSide(
+	vehicle: Pick<Body, 'x' | 'y' | 'angle'>,
+	size = 90
+): { x: number; y: number } {
 	const side = vehicle.angle - Math.PI / 2;
-	return { x: vehicle.x + Math.cos(side) * 40, y: vehicle.y + Math.sin(side) * 40 };
+	const away = size * 0.45;
+	return { x: vehicle.x + Math.cos(side) * away, y: vehicle.y + Math.sin(side) * away };
 }
 
 /** A vehicle driving by itself along a route of spots (arriving, leaving). Returns true when done. */

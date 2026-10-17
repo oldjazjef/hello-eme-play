@@ -43,6 +43,17 @@ export function createBody(
 		drift: 0,
 		wander: { angle: 0, left: 0 },
 		pilot: undefined,
+		covered: false,
+		ally: false,
+		member: 0,
+		hidden: false,
+		hideout: -1,
+		kills: 0,
+		level: 0,
+		levelTime: 0,
+		hits: 0,
+		breedIn: -1,
+		throwCooldown: 2,
 		runOver: 0,
 		parked: false,
 		phase: 0
@@ -55,6 +66,7 @@ export function tickBody(body: Body, dt: number): void {
 	body.hurt = Math.max(0, body.hurt - dt);
 	body.invulnerable = Math.max(0, body.invulnerable - dt);
 	body.runOver = Math.max(0, body.runOver - dt);
+	body.throwCooldown = Math.max(0, body.throwCooldown - dt);
 	if (body.pose) {
 		body.pose.left -= dt;
 		if (body.pose.left <= 0) body.pose = undefined;
@@ -62,3 +74,7 @@ export function tickBody(body: Body, dt: number): void {
 	for (const mod of body.mods) mod.left -= dt;
 	if (body.mods.some((mod) => mod.left <= 0)) body.mods = body.mods.filter((mod) => mod.left > 0);
 }
+
+/** A monster that fights the figure: not one of its team, and not hiding. */
+export const hostile = (body: Body): boolean =>
+	body.kind === 'monster' && !body.ally && !body.hidden;

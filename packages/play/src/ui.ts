@@ -44,6 +44,10 @@ export interface View {
 	boss: { name: string; hp: number; max: number } | undefined;
 	/** Touch buttons for the figure's moves. */
 	moves: { id: string; label: string }[];
+	/** The team: name, health, whether it is out, whether it is out of health. */
+	team: { label: string; hp: number; max: number; out: boolean }[];
+	/** Touch buttons for what can be thrown right now, with the ammo left (`∞` when unlimited). */
+	throwables: { id: string; label: string; ammo: string }[];
 	upgrades: UpgradeRow[];
 	shopOpen: boolean;
 	stats: { label: string; value: string }[];
@@ -58,6 +62,10 @@ export interface UiActions {
 	use(): void;
 	jump(): void;
 	move(id: string, held: boolean): void;
+	/** Throw or drop one. */
+	throwItem(id: string): void;
+	/** Send out the next team member. */
+	party(): void;
 	handbrake(held: boolean): void;
 	/** The steering wheel, -1 (full left) to 1 (full right); 0 when let go. */
 	steer(value: number): void;
@@ -227,6 +235,8 @@ export class GameUi {
 			view.hud,
 			view.levels > 0,
 			view.moves.map((move) => move.id).join('+'),
+			view.throwables.map((item) => `${item.id}:${item.ammo}`).join('+'),
+			view.team.length > 0,
 			view.upgrades.length > 0,
 			view.shopOpen,
 			view.shopOpen ? view.upgrades.map((row) => `${row.level}${row.canBuy}`).join('') : ''
@@ -304,8 +314,12 @@ export class GameUi {
 			getOut.addEventListener('click', a.use);
 			const honk = round('honk', t.honk);
 			honk.addEventListener('click', a.jump);
+			const throwables = view.throwables.map(({ id, label, ammo }) =>
+				button('play-pill', `${label} ${ammo}`, () => a.throwItem(id))
+			);
 			actions.append(
 				element('div', 'play-cluster', getOut, honk, drift),
+				...(throwables.length > 0 ? [element('div', 'play-cluster', ...throwables)] : []),
 				element('div', 'play-cluster', brake, gas)
 			);
 		} else {
@@ -322,6 +336,10 @@ export class GameUi {
 				const pill = button('play-pill play-hold', move.label);
 				holdable(pill, (held) => a.move(move.id, held));
 				actions.append(pill);
+			}
+			if (view.team.length > 0) actions.append(button('play-pill', t.team, a.party));
+			for (const { id, label, ammo } of view.throwables) {
+				actions.append(button('play-pill', `${label} ${ammo}`, () => a.throwItem(id)));
 			}
 			if (!view.side) actions.append(button('play-button play-large play-hold', t.jump, a.jump));
 		}
@@ -342,7 +360,8 @@ export class GameUi {
 			'play-panel play-hud',
 			bar,
 			element('span', 'play-score'),
-			...(view.levels > 0 ? [element('span', 'play-level')] : [])
+			...(view.levels > 0 ? [element('span', 'play-level')] : []),
+			...(view.team.length > 0 ? [element('span', 'play-team')] : [])
 		);
 		if (view.upgrades.length > 0) {
 			hud.append(button('play-outline', this.#texts.shop, this.#actions.toggleShop));
@@ -469,6 +488,15 @@ export class GameUi {
 		};
 		set('.play-score', fill(t.score, { score: view.score }));
 		set('.play-level', fill(t.level, { level: view.level }));
+		set(
+			'.play-team',
+			view.team
+				.map(
+					(member) =>
+						`${member.out ? '▶ ' : ''}${member.label} ${Math.max(0, Math.ceil(member.hp))}/${Math.ceil(member.max)}`
+				)
+				.join(' · ')
+		);
 		const bar = this.#hud.querySelector<HTMLElement>('.play-health');
 		const fillBar = bar?.querySelector<HTMLElement>('span');
 		if (!bar || !fillBar) return;

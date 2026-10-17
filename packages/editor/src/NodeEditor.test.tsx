@@ -157,6 +157,31 @@ describe('cards show what things look like', () => {
 		expect(html).toContain('var(--play-item-alt');
 	});
 
+	it('shows what an object does: blocks, hides, hurts or heals', () => {
+		const html = render({
+			items: {
+				wall: { look: 'wall', pickup: 'none', solid: true },
+				bush: { look: 'bush', pickup: 'none', hides: true },
+				spikes: { look: 'spikes', pickup: 'none', damage: 8 },
+				spring: { look: 'puddle', pickup: 'none', damage: -5 }
+			}
+		});
+		expect(html).toContain('▣');
+		expect(html).toContain('◌');
+		expect(html).toContain('−8/s');
+		expect(html).toContain('+5/s');
+		expect(html.match(/<svg viewBox="-60 -60 120 120"/g)).toHaveLength(4);
+	});
+
+	it('draws throwables by their look, with where they work and their ammo', () => {
+		const html = render({
+			throwables: { bomb: { look: 'bomb', ammo: 5 }, mine: { look: 'mine', where: 'vehicle' } }
+		});
+		expect(html.match(/<svg viewBox="-60 -60 120 120"/g)).toHaveLength(2);
+		expect(html).toContain('× 5');
+		expect(html).toContain('In a vehicle');
+	});
+
 	it('shows a custom picture instead of the built-in one, and pictures of the library as cards', () => {
 		const html = render({
 			sprites: { hero: { url: '/media/hero.png', size: 64, columns: 4 } },

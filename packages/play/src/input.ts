@@ -31,7 +31,9 @@ export class Input {
 	readonly #moves = new Map<string, Set<string>>();
 	/** Moves pressed since the last frame, so a tap that ends within one frame still counts. */
 	readonly #tapped = new Set<string>();
-	readonly #pressed = new Set<'jump' | 'honk' | 'use'>();
+	readonly #pressed = new Set<'jump' | 'honk' | 'use' | 'party'>();
+	/** Throwables asked for since the last frame (a key or a touch button). */
+	readonly #throws = new Set<string>();
 	readonly #hooks: InputHooks;
 	/** Touch driving controls: the wheel (-1..1) and the pedals (-1 gas, 1 brake). */
 	wheel = 0;
@@ -60,8 +62,13 @@ export class Input {
 		this.#moves.set(move, sources);
 	}
 
-	request(action: 'jump' | 'honk' | 'use'): void {
+	request(action: 'jump' | 'honk' | 'use' | 'party'): void {
 		this.#pressed.add(action);
+	}
+
+	/** Throw or drop one (an id of `config.throwables`). */
+	throwItem(id: string): void {
+		this.#throws.add(id);
 	}
 
 	/** Lets go of everything the on-screen pad holds (its buttons were replaced, no release will come). */
@@ -77,6 +84,7 @@ export class Input {
 		this.#moves.clear();
 		this.#tapped.clear();
 		this.#pressed.clear();
+		this.#throws.clear();
 		this.handbrake.key = this.handbrake.pad = false;
 		this.wheel = this.pedal = 0;
 	}
@@ -102,6 +110,8 @@ export class Input {
 		this.#tapped.clear();
 		for (const action of this.#pressed) controls.pressed.add(action);
 		this.#pressed.clear();
+		for (const id of this.#throws) controls.throws.add(id);
+		this.#throws.clear();
 	}
 
 	readonly keydown = (event: KeyboardEvent): void => {
@@ -131,9 +141,25 @@ export class Input {
 			if (!event.repeat) this.request('use');
 			return;
 		}
+		if (keys.party.includes(event.code) && !inGameUi(event)) {
+			event.preventDefault();
+			if (!event.repeat) this.request('party');
+			return;
+		}
 		if (keys.shop.includes(event.code) && !inGameUi(event)) {
 			event.preventDefault();
 			if (!event.repeat) hooks.toggleShop();
+			return;
+		}
+		const thrown = Object.entries(config.throwables).find(
+			([, throwable]) =>
+				throwable.keys.includes(event.code) &&
+				(throwable.where === 'both' || (throwable.where === 'vehicle') === riding)
+		);
+		if (thrown) {
+			if (inGameUi(event)) return;
+			event.preventDefault();
+			if (!event.repeat) this.throwItem(thrown[0]);
 			return;
 		}
 		if (riding && keys.drift.includes(event.code)) {

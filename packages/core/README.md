@@ -13,5 +13,9 @@ world.start();
 world.step(1 / 60);
 ```
 
+Systems: movement and AI (monsters chase, wander, flee, hide, breed, evolve, throw), combat, throwables and
+blasts, vehicles (handling, ramming, wrecks), catching and the team (allies that fight and evolve), hideouts, objects
+(solid, hiding, damaging, touch effects), triggers, spawn rules, waves and levels.
+
 Stats: damage = attack · power · 100 / (100 + defense); crit chance = luck / (luck + 200) and doubles damage;
 evade chance = dex / (dex + 300); cooldowns shrink by `1 + dex / 100`.

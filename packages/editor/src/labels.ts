@@ -2,6 +2,7 @@
 export type Lang = 'de' | 'en';
 
 const en = {
+	coffee: 'Buy me a coffee',
 	rawJson: 'Raw JSON',
 	problems: 'Problems (corrected when the game loads)',
 	noProblems: 'No problems found.',
@@ -140,6 +141,7 @@ const en = {
 export type Labels = typeof en;
 
 const de: Labels = {
+	coffee: 'Kaffee spendieren',
 	rawJson: 'Roh-JSON',
 	problems: 'Probleme (werden beim Laden des Spiels korrigiert)',
 	noProblems: 'Keine Probleme gefunden.',

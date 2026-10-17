@@ -33,6 +33,11 @@ export interface EditorOptions {
 	 * vanilla build makes one itself when no `previewUrl` is given; see `previewDocument`.
 	 */
 	previewHtml?: string;
+	/**
+	 * A "Buy me a coffee" page (or any support link, http or https only), shown in the toolbar.
+	 * Without it no link is shown.
+	 */
+	supportUrl?: string;
 	/** A page with the complete reference; linked from the guide. */
 	referenceUrl?: string;
 }

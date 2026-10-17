@@ -26,7 +26,9 @@ import {
 	GOALS,
 	ITEM_LOOKS,
 	LOOKS,
+	HIDEOUT_LOOKS,
 	POSES,
+	THROWABLE_LOOKS,
 	VIEW_MODES
 } from './types.js';
 
@@ -153,6 +155,46 @@ export const ACTION: UnionNode = {
 			label: t('Gegenstand fallen lassen', 'Drop an item'),
 			fields: { item: ref(t('Gegenstand', 'Item'), 'items') }
 		},
+		ammo: {
+			label: t('Wurfobjekte geben', 'Give throwables'),
+			fields: {
+				throwable: ref(t('Wurfobjekt', 'Throwable'), 'throwables'),
+				amount: int(t('Anzahl (minus = abziehen)', 'Amount (negative = take away)'), 3, -999, 999)
+			}
+		},
+		recruit: {
+			label: t('Monster ins Team aufnehmen', 'Add a monster to the team'),
+			fields: { entity: ref(t('Monster', 'Monster'), 'entities') }
+		},
+		healParty: {
+			label: t('Team heilen', 'Heal the team'),
+			fields: {
+				amount: num(
+					t('Prozent der Lebenspunkte (100 belebt auch)', 'Percent of health (100 also revives)'),
+					100,
+					1,
+					100
+				)
+			}
+		},
+		callTeam: {
+			label: t('Nächstes Teammitglied rufen', 'Call the next team member'),
+			fields: {}
+		},
+		hazard: {
+			label: t('Wurfobjekt auslösen (Falle)', 'Set off a throwable (trap)'),
+			fields: {
+				throwable: ref(t('Wurfobjekt', 'Throwable'), 'throwables'),
+				where: select(t('Wo', 'Where'), ['figure', 'near', 'edge'], 'near', {
+					optionLabels: {
+						figure: t('Bei der Figur', 'At the figure'),
+						near: t('Nahe der Figur', 'Near the figure'),
+						edge: t('Am Rand', 'At the edge')
+					}
+				}),
+				count: int(t('Anzahl', 'Count'), 1, 1, 20)
+			}
+		},
 		nextLevel: { label: t('Nächstes Level', 'Next level'), fields: {} },
 		message: {
 			label: t('Meldung zeigen', 'Show a message'),
@@ -194,6 +236,23 @@ export const CONDITION: UnionNode = {
 			label: t('Zufall', 'Chance'),
 			fields: { percent: num(t('Chance (%)', 'Chance (%)'), 50, 0, 100) }
 		},
+		ammo: {
+			label: t('Munition', 'Ammo'),
+			fields: {
+				throwable: ref(t('Wurfobjekt', 'Throwable'), 'throwables'),
+				min: int(t('Mindestens', 'At least'), 1, 0, 999)
+			}
+		},
+		team: {
+			label: t('Teamgrösse', 'Team size'),
+			fields: { min: int(t('Mindestens', 'At least'), 1, 0, 100) }
+		},
+		riding: {
+			label: t('Im Fahrzeug', 'In a vehicle'),
+			fields: {
+				entity: ref(t('Welches (leer: irgendeins)', 'Which (empty: any)'), 'entities', true)
+			}
+		},
 		kills: {
 			label: t('Besiegte Monster', 'Monsters beaten'),
 			fields: {
@@ -219,7 +278,18 @@ const TRIGGER = object(t('Auslöser', 'Trigger'), {
 			enterVehicle: t('Die Figur einsteigt', 'The figure gets in'),
 			exitVehicle: t('Die Figur aussteigt', 'The figure gets out'),
 			viewChange: t('Die Ansicht wechselt', 'The view switches'),
-			key: t('Eine Taste gedrückt wird', 'A key is pressed')
+			key: t('Eine Taste gedrückt wird', 'A key is pressed'),
+			catch: t('Ein Monster gefangen wird', 'A monster is caught'),
+			escape: t('Ein Monster sich befreit', 'A monster breaks free'),
+			encounter: t('Ein Monster aus dem Versteck springt', 'A monster jumps out of hiding'),
+			evolve: t('Ein Monster sich entwickelt', 'A monster evolves'),
+			faint: t('Ein Teammitglied ohnmächtig wird', 'A team member faints'),
+			throw: t('Ein Wurfobjekt geworfen wird', 'A throwable is thrown'),
+			explode: t('Ein Wurfobjekt explodiert', 'A throwable goes off'),
+			breed: t('Ein Monster Junge bekommt', 'A monster has young'),
+			wreck: t('Ein Fahrzeug zerstört wird', 'A vehicle is wrecked'),
+			summon: t('Ein Teammitglied gerufen wird', 'A team member is called'),
+			touch: t('Ein Objekt berührt wird', 'An object is touched')
 		}
 	}),
 	only: str(
@@ -300,7 +370,61 @@ const SPRITE = object(t('Bild', 'Picture'), {
 			left: t('Links', 'Left'),
 			up: t('Oben', 'Up')
 		}
-	})
+	}),
+	rotate: bool(
+		t('Dreht sich in Laufrichtung (Vogelperspektive)', 'Turns to where it goes (top-down)'),
+		true,
+		{
+			help: t(
+				'Aus: das Bild bleibt aufrecht und spiegelt sich nur nach links und rechts (für Figuren von vorn).',
+				'Off: the picture stays upright and only mirrors left and right (for characters seen from the front).'
+			)
+		}
+	)
+});
+
+/** How a vehicle handles; the defaults are the car's. */
+export const DRIVE = object(
+	t('Fahrverhalten (Fahrzeuge)', 'Handling (vehicles)'),
+	{
+		reverse: num(t('Rückwärts höchstens (px/s)', 'Top speed in reverse (px/s)'), 160, 0, 2000),
+		brake: num(t('Bremsen (px/s²)', 'Braking (px/s²)'), 900, 10, 20_000),
+		roll: num(t('Ausrollen (px/s²)', 'Rolling out (px/s²)'), 320, 0, 20_000),
+		grip: num(t('Haftung (1/s)', 'Grip (1/s)'), 30, 0.1, 100),
+		slideGrip: num(
+			t('Haftung mit Handbremse (1/s)', 'Grip with the handbrake (1/s)'),
+			1.2,
+			0.1,
+			100
+		),
+		maxDrift: num(t('Grösster Driftwinkel (rad)', 'Largest drift angle (rad)'), 1.2, 0, 3),
+		handbrakeTurn: num(
+			t('Handbremse: engere Kurven (mal)', 'Handbrake: tighter turns (×)'),
+			1.8,
+			0.1,
+			10
+		),
+		handbrakeDrag: num(
+			t('Handbremse: bremst (px/s²)', 'Handbrake: slows down (px/s²)'),
+			160,
+			0,
+			20_000
+		)
+	},
+	t(
+		'Wie sich das Fahrzeug anfühlt. Tempo, Beschleunigung und Lenkung stehen bei den Werten.',
+		'How the vehicle feels. Speed, acceleration and steering are set under stats.'
+	)
+);
+
+const RAM = object(t('Rammen (Fahrzeuge)', 'Ramming (vehicles)'), {
+	power: num(t('Stärke (mal Angriff)', 'Power (× attack)'), 1, 0, 100),
+	minSpeed: num(
+		t('Verletzt ab (px/s, 0 = Spielregel)', 'Hurts from (px/s, 0 = game rule)'),
+		0,
+		0,
+		5000
+	)
 });
 
 const ENTITY = object(t('Figur, Monster oder Fahrzeug', 'Figure, monster or vehicle'), {
@@ -382,7 +506,124 @@ const ENTITY = object(t('Figur, Monster oder Fahrzeug', 'Figure, monster or vehi
 			},
 			do: ACTIONS(t('Dann', 'Then'))
 		})
-	}
+	},
+	throws: {
+		type: 'list',
+		label: t('Wirft (Monster)', 'Throws (monsters)'),
+		help: t(
+			'Bomben, Steine oder Minen, die das Monster auf die Figur wirft. Sie verletzen die Figur, nie andere Monster, und brauchen keine Munition.',
+			'Bombs, rocks or mines the monster throws at the figure. They hurt the figure, never other monsters, and need no ammo.'
+		),
+		maxItems: 5,
+		of: object(t('Wurf', 'Throw'), {
+			throwable: ref(t('Wurfobjekt', 'Throwable'), 'throwables'),
+			range: num(t('Wirft ab Abstand (px)', 'Throws within (px)'), 350, 20, 3000),
+			cooldown: num(t('Pause (Sekunden)', 'Cooldown (seconds)'), 4, 0.2, 600)
+		})
+	},
+	catchRate: num(
+		t('Fangbarkeit (%, 0 = nicht fangbar)', 'Catchability (%, 0 = cannot be caught)'),
+		100,
+		0,
+		100
+	),
+	hideIn: ref(t('Versteckt sich in (Monster)', 'Hides in (monsters)'), 'hideouts', true, ''),
+	breed: object(
+		t('Vermehrt sich (Monster)', 'Breeds (monsters)'),
+		{
+			every: range(
+				t('Abstand zwischen Würfen (Sekunden, 0 = nie)', 'Between litters (seconds, 0 = never)'),
+				0,
+				0,
+				{ min: 0, max: 3600 }
+			),
+			count: range(
+				t('Junge pro Wurf', 'Young per litter'),
+				1,
+				1,
+				{ min: 1, max: 20 },
+				{ int: true }
+			),
+			max: int(
+				t('Kein Wurf ab so vielen gleichzeitig', 'No litter once this many exist'),
+				10,
+				1,
+				200
+			),
+			into: ref(
+				t('Junge sind (leer: gleiche Art)', 'Young are (empty: same kind)'),
+				'entities',
+				true
+			)
+		},
+		t(
+			'Das Monster bekommt von selbst Junge in seiner Nähe. Ohne Grenze würde die Seite überrannt: „Kein Wurf ab …“ zählt alle der Art der Jungen.',
+			'The monster has young next to it by itself. “No litter once …” counts all of the young’s kind, so the page is not overrun.'
+		)
+	),
+	evolve: object(
+		t('Entwickelt sich (Monster)', 'Evolves (monsters)'),
+		{
+			every: num(
+				t('Neues Level alle (Sekunden, 0 = nie)', 'New level every (seconds, 0 = never)'),
+				0,
+				0,
+				3600
+			),
+			kills: int(
+				t(
+					'Neues Level nach besiegten Monstern (0 = nie)',
+					'New level after monsters beaten (0 = never)'
+				),
+				0,
+				0,
+				1000
+			),
+			hits: int(
+				t(
+					'Neues Level nach Treffern auf die Figur (0 = nie)',
+					'New level after hits on the figure (0 = never)'
+				),
+				0,
+				0,
+				1000
+			),
+			maxLevel: int(t('Höchstes Level', 'Top level'), 3, 1, 50),
+			stats: {
+				type: 'record',
+				label: t('Werte pro Level', 'Stats per level'),
+				idLabel: t('Wert', 'Stat'),
+				of: num(t('Menge', 'Amount'), 0, -100_000, 100_000),
+				default: {},
+				maxItems: 30
+			},
+			size: num(t('Grösser pro Level (px)', 'Bigger per level (px)'), 0, 0, 200),
+			into: ref(
+				t(
+					'Wird auf dem höchsten Level zu (leer: bleibt)',
+					'Becomes at the top level (empty: stays)'
+				),
+				'entities',
+				true
+			)
+		},
+		t(
+			'Das Monster wird mit der Zeit oder durch Treffer stärker, grösser und kann sich am Ende in eine andere Art verwandeln.',
+			'The monster grows stronger and bigger over time or by hitting, and can turn into another kind at the end.'
+		)
+	),
+	drive: DRIVE,
+	ram: RAM,
+	absorbs: bool(
+		t('Fängt Treffer für die Figur ab (Fahrzeug)', 'Takes the hits for the figure (vehicle)'),
+		false,
+		{
+			help: t(
+				'Sitzt die Figur drin, verliert das Fahrzeug Leben statt der Figur. Bei 0 ist es kaputt und die Figur steigt aus.',
+				'While the figure sits inside, the vehicle loses health instead. At 0 it is wrecked and the figure gets out.'
+			)
+		}
+	)
 });
 
 const MOVE = object(t('Angriff', 'Move'), {
@@ -410,10 +651,11 @@ const ITEM = object(t('Gegenstand', 'Item'), {
 	sprite: ref(t('Bild', 'Picture'), 'sprites', true),
 	look: select(t('Eingebautes Aussehen', 'Built-in look'), ITEM_LOOKS, 'star'),
 	size: num(t('Grösse (px)', 'Size (px)'), 30, 8, 200),
-	pickup: select(t('Einsammeln', 'Pick up'), ['touch', 'use'], 'touch', {
+	pickup: select(t('Einsammeln', 'Pick up'), ['touch', 'use', 'none'], 'touch', {
 		optionLabels: {
 			touch: t('Drüberlaufen', 'Walk over it'),
-			use: t('Mit Aktionstaste', 'With the use key')
+			use: t('Mit Aktionstaste', 'With the use key'),
+			none: t('Gar nicht (bleibt als Objekt liegen)', 'Not at all (stays as an object)')
 		}
 	}),
 	lifetime: num(
@@ -422,8 +664,168 @@ const ITEM = object(t('Gegenstand', 'Item'), {
 		0,
 		3600
 	),
+	solid: bool(t('Versperrt den Weg', 'Blocks the way'), false, {
+		help: t(
+			'Figur, Monster und Fahrzeuge kommen nicht hindurch (Mauer, Baum, Kiste).',
+			'Figures, monsters and vehicles cannot get through (a wall, a tree, a crate).'
+		)
+	}),
+	hides: bool(t('Versteckt, was darin steht', 'Hides what stands in it'), false, {
+		help: t(
+			'Monster darin sind unsichtbar, die Figur darin sehen Monster nicht mehr (Busch, Zelt).',
+			'Monsters inside are invisible, and monsters can no longer see a figure inside (a bush, a tent).'
+		)
+	}),
+	every: num(
+		t(
+			'Wirkung alle … Sekunden beim Berühren (Objekte)',
+			'Effect every … seconds on touch (objects)'
+		),
+		1,
+		0.1,
+		3600,
+		{
+			help: t(
+				'Bei Objekten (Einsammeln: gar nicht) läuft die Wirkung, wenn die Figur sie berührt, höchstens so oft.',
+				'For objects (pick up: not at all) the effect runs when the figure touches them, at most this often.'
+			)
+		}
+	),
+	damage: num(
+		t(
+			'Schaden pro Sekunde beim Berühren (minus = heilt)',
+			'Damage per second on touch (negative = heals)'
+		),
+		0,
+		-1000,
+		1000,
+		{
+			help: t(
+				'Stacheln, Lava, eine Heilquelle: wer das Objekt berührt, verliert (oder gewinnt) Leben.',
+				'Spikes, lava, a healing spring: whoever touches the object loses (or gains) health.'
+			)
+		}
+	),
+	damageWho: select(t('Wirkt auf', 'Affects'), ['figure', 'monsters', 'all'], 'figure', {
+		optionLabels: {
+			figure: t('Figur und Team', 'The figure and its team'),
+			monsters: t('Monster', 'Monsters'),
+			all: t('Alle', 'Everyone')
+		}
+	}),
 	do: ACTIONS(t('Wirkung', 'Effect'))
 });
+
+const THROWABLE = object(
+	t('Wurfobjekt', 'Throwable'),
+	{
+		label: str(t('Name', 'Name')),
+		sprite: ref(t('Bild', 'Picture'), 'sprites', true),
+		look: select(t('Eingebautes Aussehen', 'Built-in look'), THROWABLE_LOOKS, 'bomb', {
+			optionLabels: {
+				bomb: t('Bombe', 'Bomb'),
+				rock: t('Stein', 'Rock'),
+				mine: t('Mine', 'Mine'),
+				ball: t('Ball (zum Fangen)', 'Ball (for catching)')
+			}
+		}),
+		size: num(t('Grösse (px)', 'Size (px)'), 24, 8, 200),
+		keys: keys(t('Tasten', 'Keys'), []),
+		where: select(t('Wo einsetzbar', 'Usable'), ['foot', 'vehicle', 'both'], 'both', {
+			optionLabels: {
+				foot: t('Zu Fuss', 'On foot'),
+				vehicle: t('Im Fahrzeug', 'In a vehicle'),
+				both: t('Beides', 'Both')
+			}
+		}),
+		direction: select(t('Aus dem Fahrzeug', 'From a vehicle'), ['front', 'back'], 'front', {
+			optionLabels: { front: t('Nach vorn', 'To the front'), back: t('Nach hinten', 'To the back') }
+		}),
+		speed: num(
+			t('Wurftempo (px/s, 0 = fallen lassen)', 'Throw speed (px/s, 0 = drop)'),
+			420,
+			0,
+			3000,
+			{
+				help: t(
+					'Aus einem fahrenden Fahrzeug kommt dessen Tempo dazu. Von oben fliegt es etwa Tempo ÷ 3 Pixel weit.',
+					'A moving vehicle adds its own speed. From above it flies about speed ÷ 3 pixels.'
+				)
+			}
+		),
+		fuse: num(
+			t('Zündschnur (Sekunden, 0 = bei Berührung)', 'Fuse (seconds, 0 = on contact)'),
+			2,
+			0,
+			60,
+			{
+				help: t(
+					'0: geht los, wenn es ein Monster berührt, landet oder liegen bleibt (eine fallen gelassene Mine nur bei einem Monster).',
+					'0: goes off when it touches a monster, lands or comes to rest (a dropped mine only for a monster).'
+				)
+			}
+		),
+		bounce: num(t('Abprallen (0–1, Sidescroller)', 'Bounce (0–1, side-scroller)'), 0.4, 0, 1),
+		power: num(t('Stärke (mal Angriff)', 'Power (× attack)'), 5, 0, 1000),
+		radius: num(t('Explosionsradius (px)', 'Blast radius (px)'), 110, 0, 1000),
+		push: num(t('Rückstoss (px/s)', 'Knockback (px/s)'), 480, 0, 5000),
+		breaks: bool(t('Zerschlägt Seitenelemente', 'Breaks page elements'), true),
+		hurtsFigure: bool(t('Verletzt auch die Figur', 'Also hurts the figure'), false),
+		cooldown: num(t('Pause (Sekunden)', 'Cooldown (seconds)'), 0.6, 0, 60),
+		catch: num(
+			t('Ball: Fangstärke (1–100, 0 = kein Ball)', 'Ball: catch strength (1–100, 0 = not a ball)'),
+			0,
+			0,
+			100,
+			{
+				help: t(
+					'Ein Ball verletzt nicht: er versucht das Monster zu fangen, das er trifft. Je weniger Leben es hat und je fangbarer es ist, desto eher gelingt es. Gefangene kommen ins Team.',
+					'A ball does not hurt: it tries to catch the monster it touches. The less health it has and the more catchable it is, the likelier it works. Caught monsters join the team.'
+				)
+			}
+		),
+		ammo: int(t('Start-Vorrat', 'Starting supply'), 5, 0, 999),
+		maxAmmo: int(t('Höchstens tragbar', 'Most it can carry'), 20, 1, 999),
+		unlimited: bool(t('Unbegrenzt', 'Unlimited'), false),
+		sound: ref(t('Ton beim Werfen', 'Sound when thrown'), 'audio.sounds', true),
+		explodeSound: ref(t('Ton bei der Explosion', 'Sound on the blast'), 'audio.sounds', true)
+	},
+	t(
+		'Bomben, Steine, Minen: die Figur wirft oder legt sie, sie gehen los und verletzen Monster. Munition gibt es als Start-Vorrat und über die Aktion „Wurfobjekte geben“.',
+		'Bombs, rocks, mines: the figure throws or drops them, they go off and hurt monsters. Ammo comes as a starting supply and through the “Give throwables” action.'
+	)
+);
+
+const HIDEOUT = object(
+	t('Versteck', 'Hideout'),
+	{
+		label: str(t('Name', 'Name')),
+		sprite: ref(t('Bild (statt Aussehen)', 'Picture (instead of the look)'), 'sprites', true),
+		look: select(t('Aussehen', 'Look'), HIDEOUT_LOOKS, 'grass', {
+			optionLabels: {
+				grass: t('Hohes Gras', 'Tall grass'),
+				bush: t('Busch', 'Bush'),
+				water: t('Teich', 'Pond'),
+				rocks: t('Felsen', 'Rocks')
+			}
+		}),
+		count: int(t('Anzahl Flächen auf der Seite', 'Patches on the page'), 12, 1, 200),
+		radius: range(t('Grösse (Radius, px)', 'Size (radius, px)'), 50, 110, { min: 20, max: 400 }),
+		encounter: num(
+			t(
+				'Begegnung (% pro Sekunde beim Durchlaufen)',
+				'Encounter (% per second while walking through)'
+			),
+			45,
+			0,
+			100
+		)
+	},
+	t(
+		'Flächen auf der Seite, in denen sich Monster verstecken (Vogelperspektive). Ein Monster mit „Versteckt sich in“ erscheint unsichtbar darin, bis die Figur hindurchläuft.',
+		'Patches on the page where monsters hide (top-down). A monster with “Hides in” appears invisible inside until the figure walks through.'
+	)
+);
 
 const UPGRADE = object(t('Upgrade', 'Upgrade'), {
 	label: str(t('Name', 'Name')),
@@ -459,6 +861,12 @@ const SPAWN = object(t('Monster-Regel', 'Monster rule'), {
 
 const ITEM_SPAWN = object(t('Gegenstand-Regel', 'Item rule'), {
 	item: ref(t('Gegenstand', 'Item'), 'items'),
+	initial: int(t('Am Rundenstart verteilt (Anzahl)', 'Scattered at the start (count)'), 0, 0, 200, {
+		help: t(
+			'So viele liegen von Anfang an über die ganze Seite verteilt (für Bäume, Mauern, Stacheln).',
+			'This many lie spread over the whole page from the start (for trees, walls, spikes).'
+		)
+	}),
 	every: range(t('Abstand (Sekunden)', 'Interval (seconds)'), 20, 40, { min: 0.5, max: 3600 }),
 	max: int(t('Höchstens gleichzeitig', 'At most at once'), 2, 1, 100),
 	...level(1)
@@ -593,7 +1001,8 @@ const FIELDS: Record<string, Node> = {
 			10,
 			0,
 			POINTS.max
-		)
+		),
+		partySize: int(t('Grösse des Teams', 'Team size'), 6, 1, 100)
 	}),
 	stats: {
 		type: 'record',
@@ -677,6 +1086,22 @@ const FIELDS: Record<string, Node> = {
 		default: {},
 		maxItems: 100
 	},
+	throwables: {
+		type: 'record',
+		label: t('Wurfobjekte', 'Throwables'),
+		idLabel: t('Wurfobjekt', 'Throwable'),
+		of: THROWABLE,
+		default: {},
+		maxItems: 50
+	},
+	hideouts: {
+		type: 'record',
+		label: t('Verstecke', 'Hideouts'),
+		idLabel: t('Versteck', 'Hideout'),
+		of: HIDEOUT,
+		default: {},
+		maxItems: 20
+	},
 	upgrades: {
 		type: 'record',
 		label: t('Upgrades', 'Upgrades'),
@@ -745,7 +1170,8 @@ const FIELDS: Record<string, Node> = {
 		drift: keys(t('Driften', 'Drift'), ['Space', 'ShiftLeft', 'ShiftRight']),
 		honk: keys(t('Hupen', 'Honk'), ['Enter', 'KeyH']),
 		use: keys(t('Ein- und Aussteigen, Aufheben', 'Get in/out, pick up'), ['KeyF']),
-		shop: keys(t('Upgrades öffnen', 'Open upgrades'), ['KeyU'])
+		shop: keys(t('Upgrades öffnen', 'Open upgrades'), ['KeyU']),
+		party: keys(t('Nächstes Teammitglied rufen', 'Call the next team member'), ['KeyR'])
 	}),
 	hint: object(t('Anleitung', 'Instructions'), {
 		hideAfter: num(
@@ -753,6 +1179,19 @@ const FIELDS: Record<string, Node> = {
 			4,
 			0,
 			3600
+		),
+		pauseWhileOpen: bool(
+			t(
+				'Spiel pausiert, solange die Anleitung ausgeklappt ist',
+				'Pause the game while the instructions are open'
+			),
+			false,
+			{
+				help: t(
+					'Die Anleitung steht beim Start offen: das Spiel beginnt, wenn sie eingeklappt wird (von Hand oder nach „Klappt ein nach“; 0 = bis du sie schliesst).',
+					'The instructions are open at the start: the game begins when they fold away (by hand or after “Folds away after”; 0 = until you close them).'
+				)
+			}
 		)
 	}),
 	audio: object(t('Ton', 'Audio'), {

@@ -1,5 +1,5 @@
 /** Bots: simple players that fill the world's controls, so rounds can be simulated without a person. */
-import { statOf, type Body, type World } from '@hello-eme/play-core';
+import { hostile, statOf, type Body, type World } from '@hello-eme/play-core';
 
 export type Bot = (world: World, dt: number) => void;
 
@@ -52,7 +52,7 @@ const brawler: Bot = (world) => {
 	const { controls, player } = world;
 	controls.held.clear();
 	shop(world);
-	const monsters = world.bodies.filter((body) => body.kind === 'monster');
+	const monsters = world.bodies.filter((body) => hostile(body));
 	const monster = near(player, monsters);
 	const item = near(player, world.pickups);
 	if (monster && Math.hypot(monster.x - player.x, monster.y - player.y) < 400) {
@@ -76,7 +76,7 @@ const runner: Bot = (world) => {
 	controls.held.clear();
 	const monster = near(
 		player,
-		world.bodies.filter((body) => body.kind === 'monster')
+		world.bodies.filter((body) => hostile(body))
 	);
 	if (!monster) {
 		controls.axis.x = 0;

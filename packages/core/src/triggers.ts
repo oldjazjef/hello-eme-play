@@ -3,8 +3,10 @@
  * new kind (declared in the schema) is one function here.
  */
 import type { Action, Condition, EventName } from '@hello-eme/play-schema';
+import { hostile } from './bodies.js';
 import { addPoints, heal } from './combat.js';
 import { stateOf } from './state.js';
+import { placeHazard } from './throwables.js';
 import type { Body, World } from './types.js';
 
 type ActionRunners = {
@@ -18,7 +20,7 @@ function changeStat(world: World, action: Extract<Action, { do: 'stat' }>): void
 		action.target === 'figure'
 			? [world.player]
 			: action.target === 'monsters'
-				? world.bodies.filter((body) => body.kind === 'monster')
+				? world.bodies.filter((body) => hostile(body))
 				: world.bodies.filter((body) => body.kind === 'vehicle');
 	if (action.target === 'vehicle' && action.seconds === 0) {
 		state.vehicleBonus[action.stat] = (state.vehicleBonus[action.stat] ?? 0) + action.amount;
@@ -42,6 +44,11 @@ export const ACTION_RUNNERS: ActionRunners = {
 			world.player.x + (world.random() - 0.5) * 120,
 			world.player.y - 20
 		),
+	ammo: (world, action) => world.giveAmmo(action.throwable, action.amount),
+	recruit: (world, action) => void world.recruit(action.entity),
+	callTeam: (world) => world.cycleParty(),
+	hazard: (world, action) => placeHazard(world, action.throwable, action.where, action.count),
+	healParty: (world, action) => world.healParty(action.amount),
 	nextLevel: (world) => world.nextLevel(),
 	message: (world, action) => action.text && world.events.emit('message', { text: action.text }),
 	sound: (world, action) => action.sound && world.events.emit('sound', { id: action.sound }),
@@ -79,6 +86,15 @@ export function holds(world: World, condition: Condition): boolean {
 			return world.player.hp <= (world.maxHp(world.player) * condition.below) / 100;
 		case 'chance':
 			return world.random() * 100 < condition.percent;
+		case 'ammo':
+			return world.ammoOf(condition.throwable) >= condition.min;
+		case 'team':
+			return world.party.length >= condition.min;
+		case 'riding':
+			return (
+				world.riding !== undefined &&
+				(condition.entity === '' || world.riding.def === condition.entity)
+			);
 		case 'kills': {
 			const total = condition.entity
 				? (state.kills[condition.entity] ?? 0)
@@ -96,8 +112,17 @@ function subject(name: EventName, data: unknown): string | undefined {
 	};
 	const body = (data as { body?: Body } | undefined)?.body;
 	const item = (data as { item?: { def: string } } | undefined)?.item;
-	if (name === 'kill') return body?.def;
-	if (name === 'pickup') return item?.def;
+	const parent = (data as { parent?: Body } | undefined)?.parent;
+	const vehicle = (data as { vehicle?: Body } | undefined)?.vehicle;
+	if (name === 'kill' || name === 'catch' || name === 'escape' || name === 'encounter')
+		return body?.def;
+	if (name === 'evolve' || name === 'faint') return body?.def;
+	if (name === 'pickup' || name === 'touch') return item?.def;
+	if (name === 'throw') return read('id');
+	if (name === 'explode') return read('throwable');
+	if (name === 'breed') return parent?.def;
+	if (name === 'wreck') return vehicle?.def;
+	if (name === 'summon') return body?.def;
 	if (name === 'upgrade') return read('id');
 	return undefined;
 }

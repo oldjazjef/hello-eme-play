@@ -21,8 +21,23 @@ export type Behavior = (typeof BEHAVIORS)[number];
 export const LOOKS = ['figure', 'enemy', 'car'] as const;
 export type Look = (typeof LOOKS)[number];
 
-export const ITEM_LOOKS = ['heart', 'star', 'gem', 'bolt'] as const;
+export const ITEM_LOOKS = [
+	'heart',
+	'star',
+	'gem',
+	'bolt',
+	'wall',
+	'spikes',
+	'bush',
+	'puddle'
+] as const;
 export type ItemLook = (typeof ITEM_LOOKS)[number];
+
+export const THROWABLE_LOOKS = ['bomb', 'rock', 'mine', 'ball'] as const;
+export type ThrowableLook = (typeof THROWABLE_LOOKS)[number];
+
+export const HIDEOUT_LOOKS = ['grass', 'bush', 'water', 'rocks'] as const;
+export type HideoutLook = (typeof HIDEOUT_LOOKS)[number];
 
 export const FACINGS = ['right', 'down', 'left', 'up'] as const;
 export type Facing = (typeof FACINGS)[number];
@@ -43,7 +58,18 @@ export const EVENT_NAMES = [
 	'enterVehicle',
 	'exitVehicle',
 	'viewChange',
-	'key'
+	'key',
+	'catch',
+	'escape',
+	'encounter',
+	'evolve',
+	'faint',
+	'throw',
+	'explode',
+	'breed',
+	'wreck',
+	'summon',
+	'touch'
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
@@ -70,6 +96,37 @@ export interface SpriteDefinition {
 	/** Frame numbers by state; empty falls back to `idle`, then to frame 0. */
 	animations: Record<Animation, number[]>;
 	facing: Facing;
+	/** From above: turn the picture to where it goes (false: it stays upright and only mirrors). */
+	rotate: boolean;
+}
+
+/**
+ * How a vehicle handles (seen from above). The vehicle's stats `speed`, `accel` and `handling` say
+ * how fast and how nimble it is; these say how it feels: grip, braking, sliding.
+ */
+export interface DriveDefinition {
+	/** Top speed in reverse, px/s. */
+	reverse: number;
+	/** Braking while going the other way, px/s². */
+	brake: number;
+	/** Rolling out with no pedal pressed, px/s². */
+	roll: number;
+	/** How fast the drift angle fades (1/s) with the tires gripping and with the handbrake. */
+	grip: number;
+	slideGrip: number;
+	/** Largest drift angle, rad. */
+	maxDrift: number;
+	/** Handbrake: how much tighter it turns, and how much speed it takes away (px/s²). */
+	handbrakeTurn: number;
+	handbrakeDrag: number;
+}
+
+/** What a vehicle does to monsters it runs into. */
+export interface RamDefinition {
+	/** Multiplies the vehicle's `attack` (which also grows with its speed). */
+	power: number;
+	/** Hurts from this speed on (px/s); 0: `game.overrunSpeed`. */
+	minSpeed: number;
 }
 
 export interface EntityDefinition {
@@ -90,6 +147,56 @@ export interface EntityDefinition {
 	boss: boolean;
 	/** Bosses: run once each when health drops below `below` percent (any order of listing). */
 	phases: BossPhase[];
+	/** Vehicles: how it handles, what it does to monsters, whether it takes the hits for the driver. */
+	drive: DriveDefinition;
+	ram: RamDefinition;
+	absorbs: boolean;
+	/** Monsters: what it throws or drops at the figure, from how far, and how often. */
+	throws: MonsterThrow[];
+	/** Monsters: how easily a ball catches it, percent of the ball's strength (0: can't be caught). */
+	catchRate: number;
+	/** Monsters: key into `hideouts`; it spawns hidden there until the figure comes close. */
+	hideIn: string;
+	/** Monsters: has offspring now and then. */
+	breed: BreedDefinition;
+	/** Monsters: grows stronger over time or by hitting, and may turn into something else. */
+	evolve: EvolveDefinition;
+}
+
+export interface BreedDefinition {
+	/** Seconds between litters (max 0: never). */
+	every: Range;
+	/** Young per litter. */
+	count: Range;
+	/** No litter while this many of the young's kind are alive. */
+	max: number;
+	/** Key into `entities`; empty: its own kind. */
+	into: string;
+}
+
+export interface EvolveDefinition {
+	/** Seconds until the next level (0: not by time). */
+	every: number;
+	/** Hits on the figure until the next level (0: not by hitting). */
+	hits: number;
+	/** Monsters beaten until the next level (0: not by beating; counts for team members). */
+	kills: number;
+	maxLevel: number;
+	/** Added to its stats for each level (`hp` heals by the same amount). */
+	stats: Record<string, number>;
+	/** Added to its size for each level, px. */
+	size: number;
+	/** Key into `entities`: what it becomes at its top level (empty: stays). */
+	into: string;
+}
+
+export interface MonsterThrow {
+	/** Key into `throwables`. */
+	throwable: string;
+	/** Throws when the figure is closer than this (px). */
+	range: number;
+	/** Seconds until it throws again. */
+	cooldown: number;
 }
 
 export interface BossPhase {
@@ -137,6 +244,8 @@ export interface SpawnRule {
 
 export interface ItemSpawnRule {
 	item: string;
+	/** How many are placed over the page when the round starts. */
+	initial: number;
 	every: Range;
 	max: number;
 	fromLevel: number;
@@ -148,11 +257,77 @@ export interface ItemDefinition {
 	sprite: string;
 	look: ItemLook;
 	size: number;
-	/** `touch`: picked up by walking onto it. `use`: the use key picks it up. */
-	pickup: 'touch' | 'use';
+	/** `touch`: picked up by walking onto it. `use`: the use key picks it up. `none`: an object that stays. */
+	pickup: 'touch' | 'use' | 'none';
 	/** Seconds until it vanishes (0: stays). */
 	lifetime: number;
+	/** Blocks the way: figures, monsters and vehicles can't walk through it. */
+	solid: boolean;
+	/** Whatever stands in it is hidden: invisible monsters, a figure monsters can't see. */
+	hides: boolean;
+	/** Objects (`pickup: none`): seconds between two runs of `do` while the figure touches it. */
+	every: number;
+	/** Health lost per second by whoever touches it (negative: gained). */
+	damage: number;
+	/** Who it hurts (or heals): the figure and its team, the monsters, or everyone. */
+	damageWho: 'figure' | 'monsters' | 'all';
 	do: Action[];
+}
+
+/** Something the figure throws or drops (a bomb, a rock, a mine) and that goes off. */
+export interface ThrowableDefinition {
+	label: string;
+	sprite: string;
+	look: ThrowableLook;
+	size: number;
+	/** Keyboard keys (the touch screen gets a button anyway). */
+	keys: string[];
+	/** Where it can be used. */
+	where: 'foot' | 'vehicle' | 'both';
+	/** From a vehicle: out of the front or the back. */
+	direction: 'front' | 'back';
+	/** Launch speed, px/s (0: dropped on the spot). A vehicle's own speed is added. */
+	speed: number;
+	/** Seconds until it goes off (0: when it touches a monster, or lands, or comes to rest). */
+	fuse: number;
+	/** Side view, with a fuse: how much of its speed it keeps bouncing off the ground (0..1). */
+	bounce: number;
+	/** Multiplies the thrower's `attack`. */
+	power: number;
+	/** Blast radius, px (0: only the monster it touches). */
+	radius: number;
+	/** Knockback in px/s. */
+	push: number;
+	/** The blast breaks page elements. */
+	breaks: boolean;
+	/** The blast also hurts the figure (and its vehicle) when close. */
+	hurtsFigure: boolean;
+	/** Seconds until the next one. */
+	cooldown: number;
+	/** A ball: tries to catch the monster it touches instead of hurting it (strength 1–100, 0: no). */
+	catch: number;
+	/** How many the figure starts with, and the most it can carry. */
+	ammo: number;
+	maxAmmo: number;
+	/** Never runs out. */
+	unlimited: boolean;
+	/** Keys into `audio.sounds`. */
+	sound: string;
+	explodeSound: string;
+}
+
+/** Places on the page where monsters can hide: tall grass, bushes, a pond, rocks. */
+export interface HideoutDefinition {
+	label: string;
+	/** Key into `sprites`: drawn instead of the built-in look, several times over the patch. */
+	sprite: string;
+	look: HideoutLook;
+	/** How many patches there are on the page. */
+	count: number;
+	/** Size of a patch, px (radius). */
+	radius: Range;
+	/** Chance (percent per second) that a hidden monster jumps out while the figure walks through. */
+	encounter: number;
 }
 
 export interface UpgradeDefinition {
@@ -183,6 +358,11 @@ export type Action =
 			seconds: number;
 	  }
 	| { do: 'dropItem'; item: string }
+	| { do: 'ammo'; throwable: string; amount: number }
+	| { do: 'recruit'; entity: string }
+	| { do: 'healParty'; amount: number }
+	| { do: 'callTeam' }
+	| { do: 'hazard'; throwable: string; where: 'figure' | 'near' | 'edge'; count: number }
 	| { do: 'nextLevel' }
 	| { do: 'message'; text: string }
 	| { do: 'sound'; sound: string }
@@ -195,7 +375,10 @@ export type Condition =
 	| { if: 'view'; mode: ViewMode }
 	| { if: 'health'; below: number }
 	| { if: 'chance'; percent: number }
-	| { if: 'kills'; entity: string; min: number };
+	| { if: 'kills'; entity: string; min: number }
+	| { if: 'ammo'; throwable: string; min: number }
+	| { if: 'team'; min: number }
+	| { if: 'riding'; entity: string };
 
 export interface Trigger {
 	on: EventName;
@@ -281,12 +464,16 @@ export interface PlayConfig {
 		overrunSpeed: number;
 		/** Points per broken page element. */
 		breakPoints: number;
+		/** How many caught monsters the figure can carry. */
+		partySize: number;
 	};
 	stats: Record<string, StatDefinition>;
 	sprites: Record<string, SpriteDefinition>;
 	entities: Record<string, EntityDefinition>;
 	moves: Record<string, MoveDefinition>;
 	items: Record<string, ItemDefinition>;
+	throwables: Record<string, ThrowableDefinition>;
+	hideouts: Record<string, HideoutDefinition>;
 	upgrades: Record<string, UpgradeDefinition>;
 	spawns: SpawnRule[];
 	itemSpawns: ItemSpawnRule[];
@@ -313,8 +500,10 @@ export interface PlayConfig {
 		honk: string[];
 		use: string[];
 		shop: string[];
+		/** Sends out the next team member (and calls the one out back). */
+		party: string[];
 	};
-	hint: { hideAfter: number };
+	hint: { hideAfter: number; pauseWhileOpen: boolean };
 	audio: {
 		enabled: boolean;
 		volume: number;

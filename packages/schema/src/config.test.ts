@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { configProblems, DEFAULT_CONFIG, playJsonSchema, resolveConfig } from './config.js';
+import {
+	configProblems,
+	DEFAULT_CONFIG,
+	DEFAULT_DRIVE,
+	playJsonSchema,
+	resolveConfig
+} from './config.js';
 import { PRESETS } from './presets.js';
 import { SCHEMA_VERSION } from './version.js';
 
@@ -247,5 +253,92 @@ describe('key triggers', () => {
 
 	it('show up in the JSON Schema', () => {
 		expect(JSON.stringify(playJsonSchema())).toContain('"key"');
+	});
+});
+
+describe('throwables and vehicles', () => {
+	it('have defaults for every field, and none in the classic game', () => {
+		expect(DEFAULT_CONFIG.throwables).toEqual({});
+		const config = resolveConfig({ throwables: { bomb: {} } });
+		expect(config.throwables.bomb).toMatchObject({
+			look: 'bomb',
+			where: 'both',
+			direction: 'front',
+			fuse: 2,
+			ammo: 5,
+			maxAmmo: 20,
+			unlimited: false,
+			hurtsFigure: false
+		});
+	});
+
+	it("keep every vehicle on the car's handling unless it says otherwise", () => {
+		const config = resolveConfig({
+			entities: { bike: { kind: 'vehicle', drive: { grip: 50, reverse: 80 }, ram: { power: 2 } } }
+		});
+		expect(DEFAULT_CONFIG.entities.car?.drive).toEqual(DEFAULT_DRIVE);
+		expect(config.entities.bike?.drive).toEqual({ ...DEFAULT_DRIVE, grip: 50, reverse: 80 });
+		expect(config.entities.bike?.ram).toEqual({ power: 2, minSpeed: 0 });
+		expect(config.entities.bike?.absorbs).toBe(false);
+	});
+
+	it('are corrected when out of bounds, and explained', () => {
+		const json = { throwables: { bomb: { bounce: 4, fuse: -1, look: 'banana' } } };
+		const config = resolveConfig(json);
+		expect(config.throwables.bomb).toMatchObject({ bounce: 1, fuse: 0, look: 'bomb' });
+		expect(configProblems(json).length).toBeGreaterThan(0);
+	});
+
+	it('check the throwable an ammo action refills', () => {
+		const found = configProblems({
+			triggers: [{ on: 'kill', do: [{ do: 'ammo', throwable: 'nothing', amount: 2 }] }]
+		});
+		expect(found.some((message) => message.includes('triggers[0].do[0].throwable'))).toBe(true);
+	});
+});
+
+describe('triggers, objects and hideouts with pictures', () => {
+	it('have defaults for the new conditions, actions and fields', () => {
+		const config = resolveConfig({
+			hideouts: { grass: { sprite: 'bush' } },
+			items: { door: { pickup: 'none' } },
+			triggers: [
+				{
+					on: 'touch',
+					only: 'door',
+					conditions: [{ if: 'ammo', throwable: 'bomb' }, { if: 'team' }, { if: 'riding' }],
+					do: [{ do: 'hazard', throwable: 'bomb' }, { do: 'callTeam' }]
+				}
+			]
+		});
+		expect(config.hideouts.grass?.sprite).toBe('bush');
+		expect(config.items.door).toMatchObject({ every: 1, pickup: 'none', solid: false });
+		expect(config.triggers[0]?.conditions).toEqual([
+			{ if: 'ammo', throwable: 'bomb', min: 1 },
+			{ if: 'team', min: 1 },
+			{ if: 'riding', entity: '' }
+		]);
+		expect(config.triggers[0]?.do[0]).toEqual({
+			do: 'hazard',
+			throwable: 'bomb',
+			where: 'near',
+			count: 1
+		});
+	});
+
+	it('explain a hazard or an ammo condition that points at nothing', () => {
+		const found = configProblems({
+			triggers: [
+				{
+					on: 'explode',
+					conditions: [{ if: 'ammo', throwable: 'ghost' }],
+					do: [{ do: 'hazard', throwable: 'phantom' }]
+				}
+			]
+		});
+		expect(found.some((message) => message.includes('triggers[0].conditions[0].throwable'))).toBe(
+			true
+		);
+		expect(found.some((message) => message.includes('triggers[0].do[0].throwable'))).toBe(true);
 	});
 });

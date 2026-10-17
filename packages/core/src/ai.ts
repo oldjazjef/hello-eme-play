@@ -2,12 +2,17 @@
 import { tickBody } from './bodies.js';
 import { monsterAttack, targetOf } from './combat.js';
 import { advance, fall, radiusOf, sizeOf, spotInView } from './space.js';
-import { statOf } from './stats.js';
-import { autopilot } from './vehicle.js';
+import { distance, statOf } from './stats.js';
+import { tickLife } from './life.js';
+import { foeOf, thinkAlly } from './team.js';
+import { monsterThrow } from './throwables.js';
+import { autopilot, driveOf } from './vehicle.js';
 import type { Body, World } from './types.js';
 
 /** Monsters farther from the figure than this (px) give up; only happens across a page wrap. */
 const GIVE_UP = 5000;
+/** A monster sees a hidden figure only this close (px). */
+const BLIND_RANGE = 90;
 /** How fast knockback fades (1/s). */
 const FRICTION = 5;
 
@@ -20,7 +25,12 @@ export function think(world: World, dt: number): void {
 			if (body !== world.riding) driveAlone(world, body, dt);
 			continue;
 		}
-		if (body.kind !== 'monster') continue;
+		if (body.kind !== 'monster' || body.hidden) continue;
+		if (body.ally) {
+			tickLife(world, body, dt);
+			thinkAlly(world, body, dt);
+			continue;
+		}
 		if (
 			Math.hypot(body.x - target.x, body.y - target.y) > GIVE_UP &&
 			!world.config.entities[body.def]?.boss
@@ -28,8 +38,18 @@ export function think(world: World, dt: number): void {
 			world.bodies.splice(world.bodies.indexOf(body), 1);
 			continue;
 		}
-		moveMonster(world, body, target, dt);
-		attack(world, body, target);
+		tickLife(world, body, dt);
+		// A team member close by draws the monster's attention.
+		const foe = foeOf(world, body);
+		moveMonster(
+			world,
+			body,
+			foe ?? target,
+			dt,
+			!foe && target.covered && distance(body, target) > BLIND_RANGE
+		);
+		attack(world, body, foe ?? target, foe);
+		if (world.phase === 'playing' && !foe) monsterThrow(world, body, target);
 	}
 }
 
@@ -41,7 +61,9 @@ function driveAlone(world: World, vehicle: Body, dt: number): void {
 		if (world.view === 'side') fall(world, vehicle, dt);
 		return;
 	}
-	vehicle.speed = Math.sign(vehicle.speed) * Math.max(0, Math.abs(vehicle.speed) - 320 * dt);
+	vehicle.speed =
+		Math.sign(vehicle.speed) *
+		Math.max(0, Math.abs(vehicle.speed) - driveOf(world, vehicle).roll * dt);
 	if (vehicle.speed !== 0) {
 		advance(
 			world,
@@ -55,7 +77,7 @@ function driveAlone(world: World, vehicle: Body, dt: number): void {
 	if (world.view === 'side') fall(world, vehicle, dt);
 }
 
-function moveMonster(world: World, monster: Body, target: Body, dt: number): void {
+function moveMonster(world: World, monster: Body, target: Body, dt: number, blind = false): void {
 	const definition = world.config.entities[monster.def];
 	const side = world.view === 'side';
 	const speed = statOf(world, monster, 'speed');
@@ -66,7 +88,9 @@ function moveMonster(world: World, monster: Body, target: Body, dt: number): voi
 	const toX = target.x - monster.x;
 	const toY = side ? 0 : target.y - monster.y;
 	const to = Math.hypot(toX, toY);
-	switch (definition?.behavior ?? 'chase') {
+	// A figure hidden in a bush is not seen from afar: the monster wanders instead.
+	const behavior = definition?.behavior ?? 'chase';
+	switch (blind && behavior === 'chase' ? 'wander' : behavior) {
 		case 'chase':
 			// Close enough to hit: stop there instead of pushing into the target.
 			if (to > reach * 0.8 && to > 0) {
@@ -104,7 +128,7 @@ function moveMonster(world: World, monster: Body, target: Body, dt: number): voi
 	// Keep apart from the others, so a wave doesn't turn into one blob.
 	const own = radiusOf(sizeOf(world, monster));
 	for (const other of world.bodies) {
-		if (other === monster || other.kind !== 'monster') continue;
+		if (other === monster || other.kind !== 'monster' || other.hidden) continue;
 		const apartX = monster.x - other.x;
 		const apartY = side ? 0 : monster.y - other.y;
 		const apart = Math.hypot(apartX, apartY);
@@ -131,7 +155,7 @@ function firstReach(world: World, monster: Body): number {
 	return (id ? world.config.moves[id]?.reach : undefined) ?? 30;
 }
 
-function attack(world: World, monster: Body, target: Body): void {
+function attack(world: World, monster: Body, target: Body, foe?: Body): void {
 	const definition = world.config.entities[monster.def];
 	const id = definition?.moves[0];
 	if (!id || monster.cooldown > 0) return;
@@ -140,7 +164,7 @@ function attack(world: World, monster: Body, target: Body): void {
 	const near =
 		Math.hypot(target.x - monster.x, world.view === 'side' ? 0 : target.y - monster.y) <= reach &&
 		dy < 80;
-	if (near) monsterAttack(world, monster, id);
+	if (near) monsterAttack(world, monster, id, foe);
 }
 
 /** A place for a vehicle to park (side view: on the ground). */
