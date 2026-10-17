@@ -26,6 +26,7 @@ import {
 	GOALS,
 	ITEM_LOOKS,
 	LOOKS,
+	HIDEOUT_LOOKS,
 	POSES,
 	THROWABLE_LOOKS,
 	VIEW_MODES
@@ -161,6 +162,21 @@ export const ACTION: UnionNode = {
 				amount: int(t('Anzahl (minus = abziehen)', 'Amount (negative = take away)'), 3, -999, 999)
 			}
 		},
+		recruit: {
+			label: t('Monster ins Team aufnehmen', 'Add a monster to the team'),
+			fields: { entity: ref(t('Monster', 'Monster'), 'entities') }
+		},
+		healParty: {
+			label: t('Team heilen', 'Heal the team'),
+			fields: {
+				amount: num(
+					t('Prozent der Lebenspunkte (100 belebt auch)', 'Percent of health (100 also revives)'),
+					100,
+					1,
+					100
+				)
+			}
+		},
 		nextLevel: { label: t('Nächstes Level', 'Next level'), fields: {} },
 		message: {
 			label: t('Meldung zeigen', 'Show a message'),
@@ -227,7 +243,12 @@ const TRIGGER = object(t('Auslöser', 'Trigger'), {
 			enterVehicle: t('Die Figur einsteigt', 'The figure gets in'),
 			exitVehicle: t('Die Figur aussteigt', 'The figure gets out'),
 			viewChange: t('Die Ansicht wechselt', 'The view switches'),
-			key: t('Eine Taste gedrückt wird', 'A key is pressed')
+			key: t('Eine Taste gedrückt wird', 'A key is pressed'),
+			catch: t('Ein Monster gefangen wird', 'A monster is caught'),
+			escape: t('Ein Monster sich befreit', 'A monster breaks free'),
+			encounter: t('Ein Monster aus dem Versteck springt', 'A monster jumps out of hiding'),
+			evolve: t('Ein Monster sich entwickelt', 'A monster evolves'),
+			faint: t('Ein Teammitglied ohnmächtig wird', 'A team member faints')
 		}
 	}),
 	only: str(
@@ -449,6 +470,13 @@ const ENTITY = object(t('Figur, Monster oder Fahrzeug', 'Figure, monster or vehi
 			cooldown: num(t('Pause (Sekunden)', 'Cooldown (seconds)'), 4, 0.2, 600)
 		})
 	},
+	catchRate: num(
+		t('Fangbarkeit (%, 0 = nicht fangbar)', 'Catchability (%, 0 = cannot be caught)'),
+		100,
+		0,
+		100
+	),
+	hideIn: ref(t('Versteckt sich in (Monster)', 'Hides in (monsters)'), 'hideouts', true, ''),
 	breed: object(
 		t('Vermehrt sich (Monster)', 'Breeds (monsters)'),
 		{
@@ -490,6 +518,15 @@ const ENTITY = object(t('Figur, Monster oder Fahrzeug', 'Figure, monster or vehi
 				0,
 				0,
 				3600
+			),
+			kills: int(
+				t(
+					'Neues Level nach besiegten Monstern (0 = nie)',
+					'New level after monsters beaten (0 = never)'
+				),
+				0,
+				0,
+				1000
 			),
 			hits: int(
 				t(
@@ -584,7 +621,12 @@ const THROWABLE = object(
 		label: str(t('Name', 'Name')),
 		sprite: ref(t('Bild', 'Picture'), 'sprites', true),
 		look: select(t('Eingebautes Aussehen', 'Built-in look'), THROWABLE_LOOKS, 'bomb', {
-			optionLabels: { bomb: t('Bombe', 'Bomb'), rock: t('Stein', 'Rock'), mine: t('Mine', 'Mine') }
+			optionLabels: {
+				bomb: t('Bombe', 'Bomb'),
+				rock: t('Stein', 'Rock'),
+				mine: t('Mine', 'Mine'),
+				ball: t('Ball (zum Fangen)', 'Ball (for catching)')
+			}
 		}),
 		size: num(t('Grösse (px)', 'Size (px)'), 24, 8, 200),
 		keys: keys(t('Tasten', 'Keys'), []),
@@ -629,6 +671,18 @@ const THROWABLE = object(
 		breaks: bool(t('Zerschlägt Seitenelemente', 'Breaks page elements'), true),
 		hurtsFigure: bool(t('Verletzt auch die Figur', 'Also hurts the figure'), false),
 		cooldown: num(t('Pause (Sekunden)', 'Cooldown (seconds)'), 0.6, 0, 60),
+		catch: num(
+			t('Ball: Fangstärke (1–100, 0 = kein Ball)', 'Ball: catch strength (1–100, 0 = not a ball)'),
+			0,
+			0,
+			100,
+			{
+				help: t(
+					'Ein Ball verletzt nicht: er versucht das Monster zu fangen, das er trifft. Je weniger Leben es hat und je fangbarer es ist, desto eher gelingt es. Gefangene kommen ins Team.',
+					'A ball does not hurt: it tries to catch the monster it touches. The less health it has and the more catchable it is, the likelier it works. Caught monsters join the team.'
+				)
+			}
+		),
 		ammo: int(t('Start-Vorrat', 'Starting supply'), 5, 0, 999),
 		maxAmmo: int(t('Höchstens tragbar', 'Most it can carry'), 20, 1, 999),
 		unlimited: bool(t('Unbegrenzt', 'Unlimited'), false),
@@ -638,6 +692,36 @@ const THROWABLE = object(
 	t(
 		'Bomben, Steine, Minen: die Figur wirft oder legt sie, sie gehen los und verletzen Monster. Munition gibt es als Start-Vorrat und über die Aktion „Wurfobjekte geben“.',
 		'Bombs, rocks, mines: the figure throws or drops them, they go off and hurt monsters. Ammo comes as a starting supply and through the “Give throwables” action.'
+	)
+);
+
+const HIDEOUT = object(
+	t('Versteck', 'Hideout'),
+	{
+		label: str(t('Name', 'Name')),
+		look: select(t('Aussehen', 'Look'), HIDEOUT_LOOKS, 'grass', {
+			optionLabels: {
+				grass: t('Hohes Gras', 'Tall grass'),
+				bush: t('Busch', 'Bush'),
+				water: t('Teich', 'Pond'),
+				rocks: t('Felsen', 'Rocks')
+			}
+		}),
+		count: int(t('Anzahl Flächen auf der Seite', 'Patches on the page'), 12, 1, 200),
+		radius: range(t('Grösse (Radius, px)', 'Size (radius, px)'), 50, 110, { min: 20, max: 400 }),
+		encounter: num(
+			t(
+				'Begegnung (% pro Sekunde beim Durchlaufen)',
+				'Encounter (% per second while walking through)'
+			),
+			45,
+			0,
+			100
+		)
+	},
+	t(
+		'Flächen auf der Seite, in denen sich Monster verstecken (Vogelperspektive). Ein Monster mit „Versteckt sich in“ erscheint unsichtbar darin, bis die Figur hindurchläuft.',
+		'Patches on the page where monsters hide (top-down). A monster with “Hides in” appears invisible inside until the figure walks through.'
 	)
 );
 
@@ -809,7 +893,8 @@ const FIELDS: Record<string, Node> = {
 			10,
 			0,
 			POINTS.max
-		)
+		),
+		partySize: int(t('Grösse des Teams', 'Team size'), 6, 1, 20)
 	}),
 	stats: {
 		type: 'record',
@@ -901,6 +986,14 @@ const FIELDS: Record<string, Node> = {
 		default: {},
 		maxItems: 50
 	},
+	hideouts: {
+		type: 'record',
+		label: t('Verstecke', 'Hideouts'),
+		idLabel: t('Versteck', 'Hideout'),
+		of: HIDEOUT,
+		default: {},
+		maxItems: 20
+	},
 	upgrades: {
 		type: 'record',
 		label: t('Upgrades', 'Upgrades'),
@@ -969,7 +1062,8 @@ const FIELDS: Record<string, Node> = {
 		drift: keys(t('Driften', 'Drift'), ['Space', 'ShiftLeft', 'ShiftRight']),
 		honk: keys(t('Hupen', 'Honk'), ['Enter', 'KeyH']),
 		use: keys(t('Ein- und Aussteigen, Aufheben', 'Get in/out, pick up'), ['KeyF']),
-		shop: keys(t('Upgrades öffnen', 'Open upgrades'), ['KeyU'])
+		shop: keys(t('Upgrades öffnen', 'Open upgrades'), ['KeyU']),
+		party: keys(t('Nächstes Teammitglied rufen', 'Call the next team member'), ['KeyR'])
 	}),
 	hint: object(t('Anleitung', 'Instructions'), {
 		hideAfter: num(

@@ -40,7 +40,8 @@ export const TEXT_KEYS = [
 	'shopClose',
 	'buy',
 	'bought',
-	'cost'
+	'cost',
+	'team'
 ] as const;
 
 export type TextKey = (typeof TEXT_KEYS)[number];
@@ -95,7 +96,8 @@ export const DEFAULT_TEXTS: Record<Locale, GameTexts> = {
 		shopClose: 'Upgrades schliessen',
 		buy: 'Kaufen',
 		bought: 'Gekauft',
-		cost: '{points} Punkte'
+		cost: '{points} Punkte',
+		team: 'Team'
 	},
 	en: {
 		toggle: 'Game mode',
@@ -141,7 +143,8 @@ export const DEFAULT_TEXTS: Record<Locale, GameTexts> = {
 		shopClose: 'Close upgrades',
 		buy: 'Buy',
 		bought: 'Bought',
-		cost: '{points} points'
+		cost: '{points} points',
+		team: 'Team'
 	}
 };
 

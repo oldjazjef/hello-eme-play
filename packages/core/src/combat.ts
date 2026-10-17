@@ -1,5 +1,7 @@
 /** Moves, damage, defeat, rewards. */
-import { noteHit } from './life.js';
+import { hostile } from './bodies.js';
+import { noteHit, noteKill } from './life.js';
+import { hurtAlly } from './team.js';
 import { stateOf } from './state.js';
 import { cooldownOf, distance, distanceToSegment, hitOf, statOf } from './stats.js';
 import { radiusOf, sizeOf } from './space.js';
@@ -7,8 +9,6 @@ import type { Body, DefeatSource, World } from './types.js';
 
 /** Seconds a hurt figure blinks and can't be hit again. */
 export const HURT_SECONDS = 0.5;
-
-const isMonster = (body: Body) => body.kind === 'monster';
 
 /** Adds (or takes) points. */
 export function addPoints(world: World, amount: number): void {
@@ -69,7 +69,7 @@ export function useMove(world: World, moveId: string): boolean {
 	if (move.sound) world.events.emit('sound', { id: move.sound });
 	let hits = 0;
 	for (const target of [...world.bodies]) {
-		if (!isMonster(target)) continue;
+		if (!hostile(target)) continue;
 		const reach = radiusOf(sizeOf(world, target)) + 8;
 		if (distanceToSegment(target, from, at) > reach) continue;
 		const hit = hitOf(world, body, move.power, target);
@@ -90,11 +90,17 @@ export function useMove(world: World, moveId: string): boolean {
 }
 
 /** A monster uses a move on its target (the figure, or the vehicle it sits in). */
-export function monsterAttack(world: World, monster: Body, moveId: string): boolean {
+export function monsterAttack(world: World, monster: Body, moveId: string, foe?: Body): boolean {
 	const move = world.config.moves[moveId];
 	if (!move || monster.cooldown > 0) return false;
 	monster.cooldown = cooldownOf(world, monster, move.cooldown);
 	monster.pose = { pose: move.pose, left: move.seconds };
+	if (foe) {
+		// A team member is in the way: the monster fights it instead of the figure.
+		const blow = hitOf(world, monster, move.power, foe);
+		if (!blow.evaded) world.damage(foe, blow.amount, monster);
+		return true;
+	}
 	const victim = victimOf(world);
 	const hit = hitOf(world, monster, move.power, victim);
 	if (!hit.evaded) {
@@ -115,9 +121,13 @@ export function damage(
 	if (world.phase !== 'playing' || amount <= 0) return;
 	if (target === world.player) return hurtPlayer(world, amount, from);
 	if (target.kind === 'vehicle') return hurtVehicle(world, target, amount, from);
+	if (target.ally) return hurtAlly(world, target, amount);
 	target.hp -= amount;
 	target.hurt = 0.25;
-	if (target.hp <= 0) defeat(world, target, source);
+	if (target.hp > 0) return;
+	defeat(world, target, source);
+	// A team member that beat it gets experience.
+	if (from?.ally) noteKill(world, from);
 }
 
 /** A vehicle that takes hits for its driver blinks, and is wrecked when its health is gone. */
@@ -189,7 +199,7 @@ export function overrun(world: World, vehicle: Body): void {
 	const ram = world.config.entities[vehicle.def]?.ram;
 	const fast = speed >= (ram?.minSpeed || world.config.game.overrunSpeed);
 	for (const monster of [...world.bodies]) {
-		if (!isMonster(monster) || monster.runOver > 0) continue;
+		if (!hostile(monster) || monster.runOver > 0) continue;
 		if (distance(monster, vehicle) > reach) continue;
 		if (fast) {
 			monster.runOver = 0.5;

@@ -83,7 +83,9 @@ export function ThrowableLookPreview(props: { look: ThrowableLook }) {
 							? SPRITE_COLORS.b
 							: props.look === 'mine'
 								? SPRITE_COLORS.e
-								: SPRITE_COLORS.shadow
+								: props.look === 'ball'
+									? SPRITE_COLORS.itemAlt
+									: SPRITE_COLORS.shadow
 				}}
 			/>
 		</svg>

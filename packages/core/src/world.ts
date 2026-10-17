@@ -5,6 +5,7 @@ import { createBody, tickBody } from './bodies.js';
 import { addPoints, damage as applyDamage, overrun, targetOf, useMove } from './combat.js';
 import { createEventBus } from './events.js';
 import { createPickup, spawnItems, updatePickups, usePickup } from './items.js';
+import { cycleParty, healParty, hidingSpot, placeHideouts, recruit, tickHideouts } from './team.js';
 import { ammoOf, giveAmmo, throwItem, updateProjectiles } from './throwables.js';
 import { buy, canBuy, checkGoal, spawnMonsters, startLevel, vehicleVisit } from './progress.js';
 import { checkPhases } from './phases.js';
@@ -21,7 +22,7 @@ import {
 } from './space.js';
 import { between, distance, statOf } from './stats.js';
 import { installTriggers, runActions, tickIntervals } from './triggers.js';
-import type { Body, Controls, Host, Stats, World, WorldEvents } from './types.js';
+import type { Body, Controls, Hideout, Host, Stats, World, WorldEvents } from './types.js';
 import { autopilot, CAR, doorSide, drive } from './vehicle.js';
 import { tickWaves } from './waves.js';
 import { startJump, walk } from './walk.js';
@@ -49,6 +50,7 @@ const emptyStats = (): Stats => ({
 	jumps: 0,
 	honks: 0,
 	thrown: 0,
+	caught: 0,
 	pickups: 0,
 	upgrades: 0,
 	earned: 0,
@@ -72,6 +74,7 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 		spawnDue: [],
 		waves: [],
 		itemDue: [],
+		encounterDue: 0,
 		ammo: Object.fromEntries(
 			Object.entries(config.throwables).map(([id, throwable]) => [id, throwable.ammo])
 		),
@@ -102,6 +105,7 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 	);
 	player.cooldown = 0;
 
+	const hideouts: Hideout[] = [];
 	const world: World = {
 		config,
 		events,
@@ -119,6 +123,9 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 		bodies: [],
 		pickups: [],
 		projectiles: [],
+		party: [],
+		ally: undefined,
+		hideouts,
 		upgrades: {},
 		stats: emptyStats(),
 
@@ -143,6 +150,7 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 			think(world, seconds);
 			updatePickups(world, seconds);
 			updateProjectiles(world, seconds);
+			tickHideouts(world, seconds);
 			spawnMonsters(world);
 			spawnItems(world);
 			vehicleVisit(world);
@@ -187,7 +195,15 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 					spot.x = Math.min(Math.max(spot.x, HARD_EDGE), pg.width - HARD_EDGE);
 					spot.y = Math.min(Math.max(spot.y, HARD_EDGE), pg.height - HARD_EDGE);
 				}
-				return world.spawn(def, spot.x, spot.y);
+				const hideIn = config.entities[def]?.hideIn;
+				const hiding = hideIn ? hidingSpot(world, hideIn) : undefined;
+				if (!hiding) return world.spawn(def, spot.x, spot.y);
+				const hidden = world.spawn(def, hiding.x, hiding.y);
+				if (hidden) {
+					hidden.hidden = true;
+					hidden.hideout = hiding.index;
+				}
+				return hidden;
 			}).filter((body): body is Body => body !== undefined);
 		},
 
@@ -258,6 +274,9 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 		stat: (body, id) => statOf(world, body, id),
 		maxHp: (body) => statOf(world, body, 'hp'),
 
+		cycleParty: () => cycleParty(world),
+		recruit: (def) => recruit(world, def),
+		healParty: (percent) => healParty(world, percent),
 		throwItem: (id) => throwItem(world, id),
 		ammoOf: (id) => ammoOf(world, id),
 		giveAmmo: (id, amount) => giveAmmo(world, id, amount),
@@ -328,6 +347,7 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 				jumps: stats.jumps,
 				honks: stats.honks,
 				thrown: stats.thrown,
+				caught: stats.caught,
 				pickups: stats.pickups,
 				upgrades: stats.upgrades,
 				score: stats.earned,
@@ -339,6 +359,7 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 	};
 
 	setState(world, state);
+	hideouts.push(...placeHideouts(world));
 	installTriggers(world);
 	if (world.phase === 'playing') startRound(world);
 	return world;
@@ -385,6 +406,7 @@ function handleActions(world: World): void {
 	for (const id of world.controls.throws) world.throwItem(id);
 	world.controls.throws.clear();
 	if (pressed.has('use')) world.use();
+	if (pressed.has('party')) world.cycleParty();
 	if (pressed.has('jump')) {
 		if (world.riding) honk(world);
 		else if (startJump(world, world.player)) world.stats.jumps += 1;

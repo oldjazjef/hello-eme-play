@@ -17,6 +17,8 @@ export { ACTION_RUNNERS } from './triggers.js';
 export { upgradePrice } from './progress.js';
 export { CAR, driveOf, isSkidding, rearWheels } from './vehicle.js';
 export { victimOf } from './combat.js';
+export { hostile } from './bodies.js';
+export { catchChance } from './team.js';
 export { JUMP_SECONDS, jumpHeight, STRIDE, walkFrame } from './walk.js';
 export { createWorld, type WorldOptions } from './world.js';
 export type {
@@ -26,6 +28,8 @@ export type {
 	Host,
 	Mod,
 	Phase,
+	Hideout,
+	PartyMember,
 	Pickup,
 	Platform,
 	Projectile,

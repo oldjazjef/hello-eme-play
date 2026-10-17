@@ -18,6 +18,7 @@ import type {
 	ItemLook,
 	Look,
 	PlayConfig,
+	HideoutLook,
 	ThrowableLook,
 	ThrowableDefinition
 } from '@hello-eme/play-schema';
@@ -196,22 +197,28 @@ export type SpritePart = 'h' | 's' | 'b' | 'f' | 'c' | 'w' | 'l' | 'e' | 'x';
  * tokens, which then follow its theme and light/dark mode) and a fallback. `outline` separates
  * the sprites from whatever they walk over.
  */
-export const SPRITE_COLORS: Record<SpritePart | 'shadow' | 'outline' | 'item' | 'itemAlt', string> =
-	{
-		h: 'var(--play-hair, #1e1b4b)',
-		s: 'var(--play-skin, #f6b98f)',
-		b: 'var(--play-body, #6d28d9)',
-		f: 'var(--play-feet, #1e1b4b)',
-		c: 'var(--play-car, #5eead4)',
-		w: 'var(--play-window, #1e1b4b)',
-		l: 'var(--play-light, #fcd34d)',
-		e: 'var(--play-enemy, #dc2626)',
-		x: 'var(--play-enemy-eyes, #ffffff)',
-		shadow: 'var(--play-shadow, #1e1b4b)',
-		outline: 'var(--play-outline, #ffffff)',
-		item: 'var(--play-item, #f59e0b)',
-		itemAlt: 'var(--play-item-alt, #dc2626)'
-	};
+export const SPRITE_COLORS: Record<
+	SpritePart | 'shadow' | 'outline' | 'item' | 'itemAlt' | 'grass' | 'grassAlt' | 'water' | 'rock',
+	string
+> = {
+	h: 'var(--play-hair, #1e1b4b)',
+	s: 'var(--play-skin, #f6b98f)',
+	b: 'var(--play-body, #6d28d9)',
+	f: 'var(--play-feet, #1e1b4b)',
+	c: 'var(--play-car, #5eead4)',
+	w: 'var(--play-window, #1e1b4b)',
+	l: 'var(--play-light, #fcd34d)',
+	e: 'var(--play-enemy, #dc2626)',
+	x: 'var(--play-enemy-eyes, #ffffff)',
+	shadow: 'var(--play-shadow, #1e1b4b)',
+	outline: 'var(--play-outline, #ffffff)',
+	item: 'var(--play-item, #f59e0b)',
+	itemAlt: 'var(--play-item-alt, #dc2626)',
+	grass: 'var(--play-grass, #4ade80)',
+	grassAlt: 'var(--play-grass-dark, #16a34a)',
+	water: 'var(--play-water, #38bdf8)',
+	rock: 'var(--play-rock, #94a3b8)'
+};
 
 export type SpriteColors = Record<keyof typeof SPRITE_COLORS, string>;
 
@@ -242,7 +249,8 @@ export const ITEM_LOOK_PATHS: Record<ItemLook, string> = {
 export const THROWABLE_LOOK_PATHS: Record<ThrowableLook, string> = {
 	bomb: 'M-38 8 A38 38 0 1 0 38 8 A38 38 0 1 0 -38 8 Z M-4 -24 L14 -44 L22 -36 L6 -20 Z',
 	rock: 'M46.0 0.0 L22.4 28.1 L-10.2 44.8 L-32.4 15.6 L-41.4 -20.0 L-8.0 -35.1 L28.7 -36.0 Z',
-	mine: 'M-46 0 A46 46 0 1 0 46 0 A46 46 0 1 0 -46 0 Z'
+	mine: 'M-46 0 A46 46 0 1 0 46 0 A46 46 0 1 0 -46 0 Z',
+	ball: 'M-44 0 A44 44 0 1 0 44 0 A44 44 0 1 0 -44 0 Z'
 };
 
 const isPart = (char: string): char is SpritePart =>
@@ -633,7 +641,13 @@ export function drawProjectile(
 	ctx.lineWidth = 3;
 	ctx.strokeStyle = colors.outline;
 	ctx.fillStyle =
-		definition.look === 'rock' ? colors.b : definition.look === 'mine' ? colors.e : colors.shadow;
+		definition.look === 'rock'
+			? colors.b
+			: definition.look === 'mine'
+				? colors.e
+				: definition.look === 'ball'
+					? colors.itemAlt
+					: colors.shadow;
 	ctx.beginPath();
 	if (definition.look === 'rock') {
 		for (let i = 0; i < 7; i++) {
@@ -661,12 +675,153 @@ export function drawProjectile(
 			ctx.arc(r * 0.35, -r * 1.25, r * 0.25, 0, Math.PI * 2);
 			ctx.fill();
 		}
+	} else if (definition.look === 'ball') {
+		// A ball for catching: red above, white below, a band and a button.
+		const radius = r * 0.85;
+		ctx.fillStyle = colors.x;
+		ctx.beginPath();
+		ctx.arc(0, 0, radius, 0, Math.PI);
+		ctx.fill();
+		ctx.lineWidth = 3;
+		ctx.strokeStyle = colors.shadow;
+		ctx.beginPath();
+		ctx.moveTo(-radius, 0);
+		ctx.lineTo(radius, 0);
+		ctx.stroke();
+		ctx.fillStyle = colors.x;
+		ctx.beginPath();
+		ctx.arc(0, 0, radius * 0.28, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.stroke();
 	} else if (definition.look === 'mine' && blink) {
 		ctx.fillStyle = colors.l;
 		ctx.beginPath();
 		ctx.arc(0, 0, r * 0.3, 0, Math.PI * 2);
 		ctx.fill();
 	}
+	ctx.restore();
+}
+
+/** A deterministic number from 0 to 1 for a seed (the same blades of grass every frame). */
+function noise(seed: number): number {
+	const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+	return x - Math.floor(x);
+}
+
+/**
+ * A hideout: tall grass, a bush, a pond or rocks. `rustle` (0..1) makes it sway and shake: the
+ * figure walks through it, or something is hiding in it.
+ */
+export function drawHideout(
+	ctx: CanvasRenderingContext2D,
+	place: { x: number; y: number; radius: number },
+	look: HideoutLook,
+	index: number,
+	rustle: number,
+	scene: Scene
+): void {
+	const x = place.x - scene.scroll.x;
+	const y = place.y - scene.scroll.y;
+	const r = place.radius;
+	if (x + r < 0 || y + r < 0 || x - r > 1e5 || y - r > 1e5) return;
+	const { colors } = scene;
+	const moving = scene.reducedMotion ? 0 : rustle;
+	ctx.save();
+	ctx.translate(x, y);
+	if (look === 'water') {
+		ctx.fillStyle = colors.water;
+		ctx.strokeStyle = colors.outline;
+		ctx.lineWidth = 3;
+		ctx.beginPath();
+		ctx.ellipse(0, 0, r, r * 0.7, 0, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.stroke();
+		ctx.strokeStyle = colors.outline;
+		ctx.globalAlpha = 0.6;
+		for (let i = 0; i < 3; i++) {
+			const wave = (scene.reducedMotion ? 0 : Math.sin(scene.time * 2 + i + index)) * 4;
+			ctx.beginPath();
+			ctx.ellipse(wave, (i - 1) * r * 0.25, r * 0.4, r * 0.1, 0, 0, Math.PI * 2);
+			ctx.stroke();
+		}
+	} else if (look === 'rocks') {
+		const stones = Math.max(3, Math.round(r / 14));
+		for (let i = 0; i < stones; i++) {
+			const angle = noise(index * 31 + i) * Math.PI * 2;
+			const away = Math.sqrt(noise(index * 17 + i * 5)) * r * 0.75;
+			const size = r * (0.18 + noise(index * 7 + i) * 0.16);
+			const shake = moving * Math.sin(scene.time * 30 + i) * 2;
+			ctx.fillStyle = i % 2 === 0 ? colors.rock : colors.shadow;
+			ctx.strokeStyle = colors.outline;
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			ctx.ellipse(
+				Math.cos(angle) * away + shake,
+				Math.sin(angle) * away * 0.7,
+				size,
+				size * 0.75,
+				0,
+				0,
+				Math.PI * 2
+			);
+			ctx.fill();
+			ctx.stroke();
+		}
+	} else if (look === 'bush') {
+		const blobs = Math.max(4, Math.round(r / 12));
+		for (let i = 0; i < blobs; i++) {
+			const angle = noise(index * 13 + i) * Math.PI * 2;
+			const away = Math.sqrt(noise(index * 19 + i * 3)) * r * 0.6;
+			const size = r * (0.28 + noise(index * 5 + i) * 0.14);
+			const shake = moving * Math.sin(scene.time * 24 + i * 2) * 3;
+			ctx.fillStyle = i % 2 === 0 ? colors.grassAlt : colors.grass;
+			ctx.strokeStyle = colors.outline;
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			ctx.arc(Math.cos(angle) * away + shake, Math.sin(angle) * away * 0.7, size, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.stroke();
+		}
+	} else {
+		// Tall grass: many blades from the ground, swaying with a gentle wind and a shake when disturbed.
+		const blades = Math.max(14, Math.round((r * r) / 90));
+		ctx.lineCap = 'round';
+		for (let i = 0; i < blades; i++) {
+			const angle = noise(index * 11 + i) * Math.PI * 2;
+			const away = Math.sqrt(noise(index * 23 + i * 7)) * r;
+			const bx = Math.cos(angle) * away;
+			const by = Math.sin(angle) * away * 0.7;
+			const height = 10 + noise(index * 3 + i) * 12;
+			const sway = scene.reducedMotion
+				? 0
+				: Math.sin(scene.time * (1.6 + moving * 14) + i * 0.7 + index) * (2 + moving * 6);
+			ctx.strokeStyle = i % 3 === 0 ? colors.grass : colors.grassAlt;
+			ctx.lineWidth = 3;
+			ctx.beginPath();
+			ctx.moveTo(bx, by);
+			ctx.quadraticCurveTo(bx + sway * 0.5, by - height * 0.5, bx + sway, by - height);
+			ctx.stroke();
+		}
+	}
+	ctx.restore();
+}
+
+/** A ring under a team member, so it can be told from the wild ones. */
+export function drawTeamRing(
+	ctx: CanvasRenderingContext2D,
+	body: Body,
+	size: number,
+	scene: Scene
+): void {
+	const x = body.x - scene.scroll.x;
+	const y = body.y - scene.scroll.y + (scene.side ? 0 : size * 0.18);
+	ctx.save();
+	ctx.strokeStyle = scene.colors.l;
+	ctx.lineWidth = 3;
+	ctx.globalAlpha = 0.9;
+	ctx.beginPath();
+	ctx.ellipse(x, y, size * 0.42, size * 0.18, 0, 0, Math.PI * 2);
+	ctx.stroke();
 	ctx.restore();
 }
 

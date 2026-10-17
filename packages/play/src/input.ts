@@ -31,7 +31,7 @@ export class Input {
 	readonly #moves = new Map<string, Set<string>>();
 	/** Moves pressed since the last frame, so a tap that ends within one frame still counts. */
 	readonly #tapped = new Set<string>();
-	readonly #pressed = new Set<'jump' | 'honk' | 'use'>();
+	readonly #pressed = new Set<'jump' | 'honk' | 'use' | 'party'>();
 	/** Throwables asked for since the last frame (a key or a touch button). */
 	readonly #throws = new Set<string>();
 	readonly #hooks: InputHooks;
@@ -62,7 +62,7 @@ export class Input {
 		this.#moves.set(move, sources);
 	}
 
-	request(action: 'jump' | 'honk' | 'use'): void {
+	request(action: 'jump' | 'honk' | 'use' | 'party'): void {
 		this.#pressed.add(action);
 	}
 
@@ -139,6 +139,11 @@ export class Input {
 		if (keys.use.includes(event.code)) {
 			event.preventDefault();
 			if (!event.repeat) this.request('use');
+			return;
+		}
+		if (keys.party.includes(event.code) && !inGameUi(event)) {
+			event.preventDefault();
+			if (!event.repeat) this.request('party');
 			return;
 		}
 		if (keys.shop.includes(event.code) && !inGameUi(event)) {

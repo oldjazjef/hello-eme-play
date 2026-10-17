@@ -1,7 +1,9 @@
 /** Bombs, rocks, mines: thrown or dropped by the figure, flying, waiting, going off. */
 import type { ThrowableDefinition } from '@hello-eme/play-schema';
+import { hostile } from './bodies.js';
 import { direction, targetOf, victimOf } from './combat.js';
 import { advance, fall, radiusOf, sizeOf } from './space.js';
+import { attemptCatch, hurtAlly } from './team.js';
 import { stateOf } from './state.js';
 import { cooldownOf, distance, reduced, statOf } from './stats.js';
 import type { Body, Projectile, World } from './types.js';
@@ -147,8 +149,7 @@ function triggered(
 	}
 	return world.bodies.some(
 		(body) =>
-			body.kind === 'monster' &&
-			distance(body, p) <= radiusOf(sizeOf(world, body)) + definition.size / 2
+			hostile(body) && distance(body, p) <= radiusOf(sizeOf(world, body)) + definition.size / 2
 	);
 }
 
@@ -160,6 +161,7 @@ function remove(world: World, projectile: Projectile): void {
 /** The blast: monsters in range are hurt and pushed away, page elements break, the figure may be hurt. */
 function explode(world: World, p: Projectile, definition: ThrowableDefinition): void {
 	remove(world, p);
+	if (definition.catch > 0 && p.owner === 'figure') return throwBall(world, p, definition);
 	const base = p.attack * definition.power;
 	world.events.emit('explode', {
 		throwable: p.def,
@@ -169,7 +171,7 @@ function explode(world: World, p: Projectile, definition: ThrowableDefinition): 
 	});
 	if (definition.explodeSound) world.events.emit('sound', { id: definition.explodeSound });
 	for (const monster of p.owner === 'figure' ? [...world.bodies] : []) {
-		if (monster.kind !== 'monster') continue;
+		if (!hostile(monster)) continue;
 		const near = distance(monster, p);
 		const reach =
 			Math.max(definition.radius, definition.size / 2) + radiusOf(sizeOf(world, monster));
@@ -188,7 +190,30 @@ function explode(world: World, p: Projectile, definition: ThrowableDefinition): 
 			world.damage(victim, reduced(base, statOf(world, victim, 'defense')), undefined, 'blast');
 		}
 	}
+	const ally = world.ally;
+	if (
+		p.owner === 'monster' &&
+		ally &&
+		distance(ally, p) <= definition.radius + radiusOf(sizeOf(world, ally))
+	) {
+		hurtAlly(world, ally, reduced(base, statOf(world, ally, 'defense')));
+	}
 	if (definition.breaks) strikePage(world, p, definition);
+}
+
+/** A ball lands: it tries to catch the nearest monster it touches. */
+function throwBall(world: World, p: Projectile, definition: ThrowableDefinition): void {
+	let nearest: Body | undefined;
+	let best = Infinity;
+	for (const body of world.bodies) {
+		if (!hostile(body)) continue;
+		const near = distance(body, p);
+		if (near <= radiusOf(sizeOf(world, body)) + definition.size / 2 + 10 && near < best) {
+			nearest = body;
+			best = near;
+		}
+	}
+	if (nearest) attemptCatch(world, nearest, definition, p.def);
 }
 
 /** Tells the page layer where the blast hit: the middle and four spots around it. */

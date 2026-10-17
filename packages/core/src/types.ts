@@ -79,6 +79,14 @@ export interface Body {
 	wander: { angle: number; left: number };
 	/** Vehicles driving by themselves (arriving, leaving). */
 	pilot: { targets: { x: number; y: number }[]; pause: number; leaving: boolean } | undefined;
+	/** A caught monster fighting for the figure, and the team member it is. */
+	ally: boolean;
+	member: number;
+	/** Hiding in a hideout (index into `world.hideouts`): invisible and out of the fight until it jumps out. */
+	hidden: boolean;
+	hideout: number;
+	/** Monsters beaten, towards the next level. */
+	kills: number;
 	/** Monsters: level (evolving), seconds and hits towards the next, seconds until the next litter (-1: not set). */
 	level: number;
 	levelTime: number;
@@ -92,6 +100,26 @@ export interface Body {
 	parked: boolean;
 	/** Boss phases already started. */
 	phase: number;
+}
+
+/** A caught monster the figure carries. */
+export interface PartyMember {
+	id: number;
+	/** Key into `config.entities`. */
+	def: string;
+	level: number;
+	hp: number;
+	stats: Record<string, number>;
+	kills: number;
+}
+
+/** A patch of the page where monsters can hide (page coordinates). */
+export interface Hideout {
+	/** Key into `config.hideouts`. */
+	def: string;
+	x: number;
+	y: number;
+	radius: number;
 }
 
 /** A bomb, rock or mine in flight, on the ground or about to go off. */
@@ -140,7 +168,7 @@ export interface Controls {
 	/** Moves held down (ids of `config.moves`); they repeat while their cooldown allows. */
 	held: Set<string>;
 	/** One-shot actions since the last step. */
-	pressed: Set<'jump' | 'honk' | 'use'>;
+	pressed: Set<'jump' | 'honk' | 'use' | 'party'>;
 	/** Throwables (ids of `config.throwables`) asked for since the last step. */
 	throws: Set<string>;
 }
@@ -177,6 +205,16 @@ export interface WorldEvents extends Record<string, unknown> {
 	throw: { id: string; projectile: Projectile };
 	/** A throwable (or a wrecked vehicle: `throwable` is empty) went off at (x, y). */
 	explode: { throwable: string; x: number; y: number; radius: number };
+	/** A ball caught a monster: it is in the team now. */
+	catch: { body: Body; throwable: string; member: PartyMember };
+	/** A ball missed: the monster broke free (or the team is full). */
+	escape: { body: Body; throwable: string };
+	/** A hidden monster jumped out. */
+	encounter: { body: Body };
+	/** A team member is out of health and goes back into the team. */
+	faint: { body: Body; member: PartyMember };
+	/** A team member was sent out, or called back (`body` is its body either way). */
+	summon: { body: Body; out: boolean };
 	/** A monster got a level (`into` empty) or turned into another kind (`level` 0). */
 	evolve: { body: Body; level: number; into: string };
 	/** A monster had young. */
@@ -206,6 +244,7 @@ export interface Stats {
 	jumps: number;
 	honks: number;
 	thrown: number;
+	caught: number;
 	pickups: number;
 	upgrades: number;
 	/** Points earned (spending on upgrades doesn't lower it). */
@@ -233,6 +272,10 @@ export interface World {
 	readonly bodies: Body[];
 	readonly pickups: Pickup[];
 	readonly projectiles: Projectile[];
+	/** Caught monsters, and the one of them that is out fighting. */
+	readonly party: PartyMember[];
+	ally: Body | undefined;
+	readonly hideouts: readonly Hideout[];
 	readonly upgrades: Record<string, number>;
 	readonly stats: Stats;
 
@@ -262,6 +305,12 @@ export interface World {
 	ammoOf(id: string): number;
 	/** Adds (or takes) ammo, within 0 and the throwable's maximum. */
 	giveAmmo(id: string, amount: number): void;
+	/** Sends out the next healthy team member (calling the one out back); after the last, none is out. */
+	cycleParty(): void;
+	/** Adds a monster of this kind to the team. Returns it (undefined: unknown kind or team full). */
+	recruit(def: string): PartyMember | undefined;
+	/** Heals every team member by a percent of its health; 100 also revives the fainted. */
+	healParty(percent: number): void;
 	/** A vehicle is destroyed; the figure sitting in it gets out. */
 	wreck(vehicle: Body): void;
 	/** Gets in or out of the vehicle nearby. */

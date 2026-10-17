@@ -14,6 +14,7 @@ export function levelUp(world: World, body: Body): void {
 	body.level += 1;
 	body.levelTime = 0;
 	body.hits = 0;
+	body.kills = 0;
 	for (const [stat, amount] of Object.entries(stats)) {
 		body.stats[stat] = (body.stats[stat] ?? 0) + amount;
 		if (stat === 'hp') body.hp += amount;
@@ -35,6 +36,7 @@ function becomes(world: World, body: Body, def: string): void {
 	body.level = 0;
 	body.levelTime = 0;
 	body.hits = 0;
+	body.kills = 0;
 	body.breedIn = -1;
 	body.mods = [];
 	world.events.emit('evolve', { body, level: 0, into: def });
@@ -48,6 +50,14 @@ export function noteHit(world: World, body: Body): void {
 	if (body.hits >= definition.evolve.hits) levelUp(world, body);
 }
 
+/** A fighter beat a monster: counts towards its next level. */
+export function noteKill(world: World, body: Body): void {
+	const definition = world.config.entities[body.def];
+	if (!definition || definition.evolve.kills <= 0) return;
+	body.kills += 1;
+	if (body.kills >= definition.evolve.kills) levelUp(world, body);
+}
+
 /** Time passes for a monster: levels by time, litters. */
 export function tickLife(world: World, body: Body, dt: number): void {
 	const definition = world.config.entities[body.def];
@@ -57,7 +67,7 @@ export function tickLife(world: World, body: Body, dt: number): void {
 		body.levelTime += dt;
 		if (body.levelTime >= evolve.every) levelUp(world, body);
 	}
-	if (breed.every.max <= 0) return;
+	if (breed.every.max <= 0 || body.ally) return;
 	if (body.breedIn < 0) body.breedIn = between(world, breed.every);
 	body.breedIn -= dt;
 	if (body.breedIn > 0) return;

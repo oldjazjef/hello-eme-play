@@ -24,8 +24,11 @@ export type Look = (typeof LOOKS)[number];
 export const ITEM_LOOKS = ['heart', 'star', 'gem', 'bolt'] as const;
 export type ItemLook = (typeof ITEM_LOOKS)[number];
 
-export const THROWABLE_LOOKS = ['bomb', 'rock', 'mine'] as const;
+export const THROWABLE_LOOKS = ['bomb', 'rock', 'mine', 'ball'] as const;
 export type ThrowableLook = (typeof THROWABLE_LOOKS)[number];
+
+export const HIDEOUT_LOOKS = ['grass', 'bush', 'water', 'rocks'] as const;
+export type HideoutLook = (typeof HIDEOUT_LOOKS)[number];
 
 export const FACINGS = ['right', 'down', 'left', 'up'] as const;
 export type Facing = (typeof FACINGS)[number];
@@ -46,7 +49,12 @@ export const EVENT_NAMES = [
 	'enterVehicle',
 	'exitVehicle',
 	'viewChange',
-	'key'
+	'key',
+	'catch',
+	'escape',
+	'encounter',
+	'evolve',
+	'faint'
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
@@ -128,6 +136,10 @@ export interface EntityDefinition {
 	absorbs: boolean;
 	/** Monsters: what it throws or drops at the figure, from how far, and how often. */
 	throws: MonsterThrow[];
+	/** Monsters: how easily a ball catches it, percent of the ball's strength (0: can't be caught). */
+	catchRate: number;
+	/** Monsters: key into `hideouts`; it spawns hidden there until the figure comes close. */
+	hideIn: string;
 	/** Monsters: has offspring now and then. */
 	breed: BreedDefinition;
 	/** Monsters: grows stronger over time or by hitting, and may turn into something else. */
@@ -150,6 +162,8 @@ export interface EvolveDefinition {
 	every: number;
 	/** Hits on the figure until the next level (0: not by hitting). */
 	hits: number;
+	/** Monsters beaten until the next level (0: not by beating; counts for team members). */
+	kills: number;
 	maxLevel: number;
 	/** Added to its stats for each level (`hp` heals by the same amount). */
 	stats: Record<string, number>;
@@ -261,6 +275,8 @@ export interface ThrowableDefinition {
 	hurtsFigure: boolean;
 	/** Seconds until the next one. */
 	cooldown: number;
+	/** A ball: tries to catch the monster it touches instead of hurting it (strength 1–100, 0: no). */
+	catch: number;
 	/** How many the figure starts with, and the most it can carry. */
 	ammo: number;
 	maxAmmo: number;
@@ -269,6 +285,18 @@ export interface ThrowableDefinition {
 	/** Keys into `audio.sounds`. */
 	sound: string;
 	explodeSound: string;
+}
+
+/** Places on the page where monsters can hide: tall grass, bushes, a pond, rocks. */
+export interface HideoutDefinition {
+	label: string;
+	look: HideoutLook;
+	/** How many patches there are on the page. */
+	count: number;
+	/** Size of a patch, px (radius). */
+	radius: Range;
+	/** Chance (percent per second) that a hidden monster jumps out while the figure walks through. */
+	encounter: number;
 }
 
 export interface UpgradeDefinition {
@@ -300,6 +328,8 @@ export type Action =
 	  }
 	| { do: 'dropItem'; item: string }
 	| { do: 'ammo'; throwable: string; amount: number }
+	| { do: 'recruit'; entity: string }
+	| { do: 'healParty'; amount: number }
 	| { do: 'nextLevel' }
 	| { do: 'message'; text: string }
 	| { do: 'sound'; sound: string }
@@ -398,6 +428,8 @@ export interface PlayConfig {
 		overrunSpeed: number;
 		/** Points per broken page element. */
 		breakPoints: number;
+		/** How many caught monsters the figure can carry. */
+		partySize: number;
 	};
 	stats: Record<string, StatDefinition>;
 	sprites: Record<string, SpriteDefinition>;
@@ -405,6 +437,7 @@ export interface PlayConfig {
 	moves: Record<string, MoveDefinition>;
 	items: Record<string, ItemDefinition>;
 	throwables: Record<string, ThrowableDefinition>;
+	hideouts: Record<string, HideoutDefinition>;
 	upgrades: Record<string, UpgradeDefinition>;
 	spawns: SpawnRule[];
 	itemSpawns: ItemSpawnRule[];
@@ -431,6 +464,8 @@ export interface PlayConfig {
 		honk: string[];
 		use: string[];
 		shop: string[];
+		/** Sends out the next team member (and calls the one out back). */
+		party: string[];
 	};
 	hint: { hideAfter: number };
 	audio: {

@@ -7,6 +7,7 @@ import {
 	CAR,
 	createWorld,
 	isSkidding,
+	hostile,
 	rearWheels,
 	sizeOf,
 	victimOf,
@@ -25,9 +26,11 @@ import {
 	drawBlast,
 	drawBody,
 	drawHealth,
+	drawHideout,
 	drawPickup,
 	drawProjectile,
 	drawShards,
+	drawTeamRing,
 	drawSkidMarks,
 	loadPictures,
 	monsterShardColors,
@@ -141,6 +144,7 @@ export class Session {
 			jump: () => this.#input.request(this.#world.riding ? 'honk' : 'jump'),
 			move: (id, held) => this.#input.holdMove('pad', id, held),
 			throwItem: (id) => this.#input.throwItem(id),
+			party: () => this.#input.request('party'),
 			handbrake: (held) => (this.#input.handbrake.pad = held),
 			steer: (value) => (this.#input.wheel = value),
 			pedal: (value) => (this.#input.pedal = value),
@@ -225,6 +229,9 @@ export class Session {
 			on('kill', ({ body }) => {
 				this.#burst({ x: body.x - 20, y: body.y - 20, width: 40, height: 40 }, 'monster');
 			}),
+			on('catch', ({ body }) =>
+				this.#blasts.push({ x: body.x, y: body.y, radius: 46, at: performance.now() })
+			),
 			on('explode', ({ x, y, radius }) =>
 				this.#blasts.push({ x, y, radius, at: performance.now() })
 			),
@@ -512,7 +519,11 @@ export class Session {
 			side: world.view === 'side',
 			broken: this.#wrecker.broken,
 			hintHidden: this.#hintHidden,
-			hud: config.spawns.length > 0 || config.levels.length > 0 || upgrades.length > 0,
+			hud:
+				config.spawns.length > 0 ||
+				config.levels.length > 0 ||
+				upgrades.length > 0 ||
+				world.party.length > 0,
 			score: world.score,
 			health: victimOf(world).hp,
 			maxHealth: world.maxHp(victimOf(world)),
@@ -528,6 +539,12 @@ export class Session {
 					}
 				: undefined,
 			moves,
+			team: world.party.map((member) => ({
+				label: config.entities[member.def]?.label || member.def,
+				hp: member.id === world.ally?.member ? (world.ally?.hp ?? member.hp) : member.hp,
+				max: member.stats.hp ?? 1,
+				out: member.id === world.ally?.member
+			})),
 			throwables: Object.entries(config.throwables).flatMap(([id, item]) =>
 				item.where === 'both' || (item.where === 'vehicle') === (world.riding !== undefined)
 					? [
@@ -573,7 +590,7 @@ export class Session {
 		data.driving = String(world.riding !== undefined);
 		data.marks = String(this.#marks.length);
 		data.shards = String(this.#shards.length);
-		const monsters = world.bodies.filter((body) => body.kind === 'monster');
+		const monsters = world.bodies.filter((body) => hostile(body));
 		data.enemies = String(monsters.length);
 		const first = at(monsters[0]);
 		data.enemyX = first.x;
@@ -606,6 +623,16 @@ export class Session {
 		};
 		ctx.clearRect(0, 0, innerWidth, innerHeight);
 		drawSkidMarks(ctx, this.#marks, scene, now);
+		// Hideouts lie on the ground: they sway when something moves in them or hides in them.
+		const walker = world.riding ?? world.player;
+		const walking = world.riding ? Math.abs(world.riding.speed) > 20 : world.player.moving;
+		world.hideouts.forEach((place, index) => {
+			const look = config.hideouts[place.def]?.look;
+			if (!look) return;
+			const inside = walking && Math.hypot(walker.x - place.x, walker.y - place.y) < place.radius;
+			const hiding = world.bodies.some((body) => body.hidden && body.hideout === index);
+			drawHideout(ctx, place, look, index, inside ? 1 : hiding ? 0.25 : 0, scene);
+		});
 		for (const pickup of world.pickups) {
 			const definition = config.items[pickup.def];
 			if (definition) drawPickup(ctx, pickup, definition, scene);
@@ -620,9 +647,10 @@ export class Session {
 		);
 		for (const body of bodies) {
 			const base = config.entities[body.def];
-			if (!base) continue;
+			if (!base || body.hidden) continue;
 			// Evolved monsters are bigger than their definition says.
 			const definition = body.level > 0 ? { ...base, size: sizeOf(world, body) } : base;
+			if (body.ally) drawTeamRing(ctx, body, definition.size, scene);
 			drawBody(ctx, body, definition, scene);
 			if (body.kind === 'monster')
 				drawHealth(ctx, body, body.stats.hp ?? body.hp, scene, definition.size);

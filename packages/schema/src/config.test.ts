@@ -283,7 +283,7 @@ describe('throwables and vehicles', () => {
 	});
 
 	it('are corrected when out of bounds, and explained', () => {
-		const json = { throwables: { bomb: { bounce: 4, fuse: -1, look: 'ball' } } };
+		const json = { throwables: { bomb: { bounce: 4, fuse: -1, look: 'banana' } } };
 		const config = resolveConfig(json);
 		expect(config.throwables.bomb).toMatchObject({ bounce: 1, fuse: 0, look: 'bomb' });
 		expect(configProblems(json).length).toBeGreaterThan(0);
