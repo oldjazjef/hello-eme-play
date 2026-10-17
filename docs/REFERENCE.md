@@ -351,19 +351,20 @@ Which stats exist (health, attack …).
 
 ## Keys
 
-| Setting      | Type  | Default                      | Allowed | What it does              |
-| ------------ | ----- | ---------------------------- | ------- | ------------------------- |
-| `keys`       | group |                              |         | Keys                      |
-| `keys.left`  | keys  | ArrowLeft, KeyA              |         | Left                      |
-| `keys.right` | keys  | ArrowRight, KeyD             |         | Right                     |
-| `keys.up`    | keys  | ArrowUp, KeyW                |         | Up                        |
-| `keys.down`  | keys  | ArrowDown, KeyS              |         | Down                      |
-| `keys.jump`  | keys  | KeyE                         |         | Jump and click            |
-| `keys.drift` | keys  | Space, ShiftLeft, ShiftRight |         | Drift                     |
-| `keys.honk`  | keys  | Enter, KeyH                  |         | Honk                      |
-| `keys.use`   | keys  | KeyF                         |         | Get in/out, pick up       |
-| `keys.shop`  | keys  | KeyU                         |         | Open upgrades             |
-| `keys.party` | keys  | KeyR                         |         | Call the next team member |
+| Setting      | Type  | Default                      | Allowed | What it does                   |
+| ------------ | ----- | ---------------------------- | ------- | ------------------------------ |
+| `keys`       | group |                              |         | Keys                           |
+| `keys.left`  | keys  | ArrowLeft, KeyA              |         | Left                           |
+| `keys.right` | keys  | ArrowRight, KeyD             |         | Right                          |
+| `keys.up`    | keys  | ArrowUp, KeyW                |         | Up                             |
+| `keys.down`  | keys  | ArrowDown, KeyS              |         | Down                           |
+| `keys.jump`  | keys  | KeyE                         |         | Jump and click                 |
+| `keys.drift` | keys  | Space, ShiftLeft, ShiftRight |         | Drift                          |
+| `keys.honk`  | keys  | Enter, KeyH                  |         | Honk                           |
+| `keys.use`   | keys  | KeyF                         |         | Get in/out, pick up            |
+| `keys.shop`  | keys  | KeyU                         |         | Open upgrades                  |
+| `keys.hint`  | keys  | KeyI                         |         | Show and hide the instructions |
+| `keys.party` | keys  | KeyR                         |         | Call the next team member      |
 
 ## Instructions
 
@@ -680,6 +681,7 @@ Leave empty for the default text.
 | `pages[].config.keys.honk`                           | keys           | Enter, KeyH                              |                                                                                                                                                                                                                              | Honk                                                                                                                                                                                                                     |
 | `pages[].config.keys.use`                            | keys           | KeyF                                     |                                                                                                                                                                                                                              | Get in/out, pick up                                                                                                                                                                                                      |
 | `pages[].config.keys.shop`                           | keys           | KeyU                                     |                                                                                                                                                                                                                              | Open upgrades                                                                                                                                                                                                            |
+| `pages[].config.keys.hint`                           | keys           | KeyI                                     |                                                                                                                                                                                                                              | Show and hide the instructions                                                                                                                                                                                           |
 | `pages[].config.keys.party`                          | keys           | KeyR                                     |                                                                                                                                                                                                                              | Call the next team member                                                                                                                                                                                                |
 | `pages[].config.hint`                                | group          |                                          |                                                                                                                                                                                                                              | Instructions                                                                                                                                                                                                             |
 | `pages[].config.hint.hideAfter`                      | number         | 4                                        | 0–3600                                                                                                                                                                                                                       | Folds away after (seconds, 0 = never)                                                                                                                                                                                    |
@@ -941,17 +943,18 @@ Common ones: `KeyA`–`KeyZ`, `Digit0`–`Digit9`, `ArrowUp`, `ArrowDown`, `Arro
 `Enter`, `Tab`, `ShiftLeft`, `ShiftRight`, `ControlLeft`, `AltLeft`. `Escape` always leaves the game.
 In the editor, "Press a key" records one. On touch screens the game shows on-screen controls instead.
 
-| Does                      | Setting            | Default keys                       |
-| ------------------------- | ------------------ | ---------------------------------- |
-| Left                      | `keys.left`        | `ArrowLeft`, `KeyA`                |
-| Right                     | `keys.right`       | `ArrowRight`, `KeyD`               |
-| Up                        | `keys.up`          | `ArrowUp`, `KeyW`                  |
-| Down                      | `keys.down`        | `ArrowDown`, `KeyS`                |
-| Jump and click            | `keys.jump`        | `KeyE`                             |
-| Drift                     | `keys.drift`       | `Space`, `ShiftLeft`, `ShiftRight` |
-| Honk                      | `keys.honk`        | `Enter`, `KeyH`                    |
-| Get in/out, pick up       | `keys.use`         | `KeyF`                             |
-| Open upgrades             | `keys.shop`        | `KeyU`                             |
-| Call the next team member | `keys.party`       | `KeyR`                             |
-| Punch                     | `moves.punch.keys` | `Space`                            |
-| Kick                      | `moves.kick.keys`  | `KeyQ`                             |
+| Does                           | Setting            | Default keys                       |
+| ------------------------------ | ------------------ | ---------------------------------- |
+| Left                           | `keys.left`        | `ArrowLeft`, `KeyA`                |
+| Right                          | `keys.right`       | `ArrowRight`, `KeyD`               |
+| Up                             | `keys.up`          | `ArrowUp`, `KeyW`                  |
+| Down                           | `keys.down`        | `ArrowDown`, `KeyS`                |
+| Jump and click                 | `keys.jump`        | `KeyE`                             |
+| Drift                          | `keys.drift`       | `Space`, `ShiftLeft`, `ShiftRight` |
+| Honk                           | `keys.honk`        | `Enter`, `KeyH`                    |
+| Get in/out, pick up            | `keys.use`         | `KeyF`                             |
+| Open upgrades                  | `keys.shop`        | `KeyU`                             |
+| Show and hide the instructions | `keys.hint`        | `KeyI`                             |
+| Call the next team member      | `keys.party`       | `KeyR`                             |
+| Punch                          | `moves.punch.keys` | `Space`                            |
+| Kick                           | `moves.kick.keys`  | `KeyQ`                             |

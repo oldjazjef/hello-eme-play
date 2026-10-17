@@ -5,28 +5,28 @@ One JSON, every key optional. [REFERENCE.md](REFERENCE.md) lists every setting, 
 `@hello-eme/play-schema/play.schema.json` for autocompletion. The settings below are the top-level keys;
 the Payload form or the JSON Schema list every field with bounds.
 
-| Key                   | What it holds                                                                              |
-| --------------------- | ------------------------------------------------------------------------------------------ |
-| `view`                | `mode` (`topdown` / `side`), gravity, jump speed, platform selector                        |
-| `game`                | played entity, lives, page wrap, overrun speed, points per broken element                  |
-| `stats`               | stat ids (`hp`, `attack`, `defense`, `dex`, `speed`, `luck` …) with label, min, max        |
-| `entities`            | figure, monsters, vehicles: `kind`, stats, `behavior`, `moves`, `reward`, `boss`, sprite   |
-|                       | bosses also `phases`: `below` (% health), `label`, `stats`, `do` actions                   |
-|                       | vehicles also `drive` (handling), `ram` (damage to monsters), `absorbs` (takes the hits)   |
-| `moves`               | attacks: keys, power, reach, cooldown, push, `breaks`, where usable                        |
-| `items`, `itemSpawns` | pickups and when they appear; `do` is a list of actions                                    |
-| `throwables`          | bombs, rocks, mines, balls (`catch`): keys, speed, fuse, radius, power, ammo, where usable |
-| `hideouts`            | tall grass, bushes, a pond, rocks where monsters (`hideIn`) hide until you walk through    |
-| `upgrades`            | shop entries: cost, levels, stats added, optional actions                                  |
-| `spawns`              | which monster, how often (`every`), how many (`count`), `max`, level range, scaling        |
-| `waves`               | timed scripts: level range, `after`, `steps` (`at`, `every`, `repeat`, `do` actions)       |
-| `triggers`            | `on` event, `only`, `keys` (for `key`), `conditions`, `do` actions                         |
-| `pages`               | `{ match, config }`: other settings for some pages (path pattern, partial JSON)            |
-| `levels`              | label, view, goal (`score`, `kills`, `survive`, `boss`)                                    |
-| `visits`              | a vehicle that drives in by itself                                                         |
-| `keys`, `hint`        | keyboard bindings, hint timeout, `hint.pauseWhileOpen` (the game waits while it is open)   |
-| `audio`, `progress`   | synth sounds by id, event → sound, high score storage                                      |
-| `texts`               | UI texts (empty: the default of `locale`)                                                  |
+| Key                   | What it holds                                                                                    |
+| --------------------- | ------------------------------------------------------------------------------------------------ |
+| `view`                | `mode` (`topdown` / `side`), gravity, jump speed, platform selector                              |
+| `game`                | played entity, lives, page wrap, overrun speed, points per broken element                        |
+| `stats`               | stat ids (`hp`, `attack`, `defense`, `dex`, `speed`, `luck` …) with label, min, max              |
+| `entities`            | figure, monsters, vehicles: `kind`, stats, `behavior`, `moves`, `reward`, `boss`, sprite         |
+|                       | bosses also `phases`: `below` (% health), `label`, `stats`, `do` actions                         |
+|                       | vehicles also `drive` (handling), `ram` (damage to monsters), `absorbs` (takes the hits)         |
+| `moves`               | attacks: keys, power, reach, cooldown, push, `breaks`, where usable                              |
+| `items`, `itemSpawns` | pickups and when they appear; `do` is a list of actions                                          |
+| `throwables`          | bombs, rocks, mines, balls (`catch`): keys, speed, fuse, radius, power, ammo, where usable       |
+| `hideouts`            | tall grass, bushes, a pond, rocks where monsters (`hideIn`) hide until you walk through          |
+| `upgrades`            | shop entries: cost, levels, stats added, optional actions                                        |
+| `spawns`              | which monster, how often (`every`), how many (`count`), `max`, level range, scaling              |
+| `waves`               | timed scripts: level range, `after`, `steps` (`at`, `every`, `repeat`, `do` actions)             |
+| `triggers`            | `on` event, `only`, `keys` (for `key`), `conditions`, `do` actions                               |
+| `pages`               | `{ match, config }`: other settings for some pages (path pattern, partial JSON)                  |
+| `levels`              | label, view, goal (`score`, `kills`, `survive`, `boss`)                                          |
+| `visits`              | a vehicle that drives in by itself                                                               |
+| `keys`, `hint`        | keyboard bindings (`keys.hint`: show/hide the instructions), hint timeout, `hint.pauseWhileOpen` |
+| `audio`, `progress`   | synth sounds by id, event → sound, high score storage                                            |
+| `texts`               | UI texts (empty: the default of `locale`)                                                        |
 
 ## Sprite sheets and animations
 
@@ -50,6 +50,14 @@ Items use `idle`. With reduced motion the first frame of each state stays.
 	"entities": { "hero": { "sprite": "hero" } }
 }
 ```
+
+## The instructions panel
+
+It is open at the start and folds away after `hint.hideAfter` seconds. The visitor can hide and show it with its
+button or the key `keys.hint` (default `I`; `hint.pauseWhileOpen` makes the game wait while it is open). Once the
+visitor has shown or hidden it themselves it **stays as they left it**: it no longer folds away by itself and does
+not pop up again. (Next to a vehicle it reminds once, if nobody touched it.) The panel has no exit button: leave the
+game with Esc or the page's own game button.
 
 ## Throwables and vehicles
 

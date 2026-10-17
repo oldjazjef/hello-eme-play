@@ -455,7 +455,7 @@ export class GameUi {
 		}
 		const hide = iconButton('panelClose', t.hideHint, () => a.hideHint(true));
 		hide.setAttribute('aria-expanded', 'true');
-		hint.append(element('div', 'play-row', hide, iconButton('close', t.exit, a.exit)));
+		hint.append(element('div', 'play-row', hide));
 		return hint;
 	}
 

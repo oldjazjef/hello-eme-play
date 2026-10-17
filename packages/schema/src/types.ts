@@ -500,6 +500,8 @@ export interface PlayConfig {
 		honk: string[];
 		use: string[];
 		shop: string[];
+		/** Shows or hides the instructions. */
+		hint: string[];
 		/** Sends out the next team member (and calls the one out back). */
 		party: string[];
 	};
