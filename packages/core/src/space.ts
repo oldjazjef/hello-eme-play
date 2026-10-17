@@ -12,7 +12,8 @@ export function radiusOf(size: number): number {
 }
 
 export function sizeOf(world: World, body: Body): number {
-	return world.config.entities[body.def]?.size ?? 50;
+	const definition = world.config.entities[body.def];
+	return (definition?.size ?? 50) + (definition ? definition.evolve.size * body.level : 0);
 }
 
 export interface StaticHostOptions {

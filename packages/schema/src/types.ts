@@ -128,6 +128,35 @@ export interface EntityDefinition {
 	absorbs: boolean;
 	/** Monsters: what it throws or drops at the figure, from how far, and how often. */
 	throws: MonsterThrow[];
+	/** Monsters: has offspring now and then. */
+	breed: BreedDefinition;
+	/** Monsters: grows stronger over time or by hitting, and may turn into something else. */
+	evolve: EvolveDefinition;
+}
+
+export interface BreedDefinition {
+	/** Seconds between litters (max 0: never). */
+	every: Range;
+	/** Young per litter. */
+	count: Range;
+	/** No litter while this many of the young's kind are alive. */
+	max: number;
+	/** Key into `entities`; empty: its own kind. */
+	into: string;
+}
+
+export interface EvolveDefinition {
+	/** Seconds until the next level (0: not by time). */
+	every: number;
+	/** Hits on the figure until the next level (0: not by hitting). */
+	hits: number;
+	maxLevel: number;
+	/** Added to its stats for each level (`hp` heals by the same amount). */
+	stats: Record<string, number>;
+	/** Added to its size for each level, px. */
+	size: number;
+	/** Key into `entities`: what it becomes at its top level (empty: stays). */
+	into: string;
 }
 
 export interface MonsterThrow {

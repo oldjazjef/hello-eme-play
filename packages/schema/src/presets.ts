@@ -289,6 +289,36 @@ export const PRESETS: Record<string, Preset> = {
 			itemSpawns: [{ item: 'bombs', every: { min: 15, max: 30 }, max: 2 }]
 		}
 	},
+	swarm: {
+		label: t('Wuchernde Monster', 'Breeding monsters'),
+		description: t(
+			'Blobs vermehren sich, wachsen mit der Zeit und werden zu Brutes. Wer zu lange wartet, wird überrannt.',
+			'Blobs breed, grow over time and turn into brutes. Wait too long and you are overrun.'
+		),
+		config: {
+			entities: {
+				hero: { ...CLASSIC.hero, stats: { ...CLASSIC.hero.stats, attack: 2 } },
+				blob: {
+					...CLASSIC.blob,
+					reward: { points: 100 },
+					breed: { every: { min: 12, max: 20 }, count: { min: 1, max: 2 }, max: 12 },
+					evolve: { every: 25, maxLevel: 3, stats: { hp: 1, attack: 2 }, size: 6, into: 'brute' }
+				},
+				brute: {
+					kind: 'monster',
+					label: 'Brute',
+					look: 'enemy',
+					size: 80,
+					stats: { hp: 10, attack: 20, defense: 2, speed: 55 },
+					moves: ['bite'],
+					reward: { points: 400 },
+					evolve: { hits: 3, maxLevel: 3, stats: { attack: 5, speed: 10 }, size: 8 }
+				},
+				car: CLASSIC.car
+			},
+			spawns: [{ entity: 'blob', every: { min: 20, max: 30 }, count: { min: 1, max: 1 }, max: 4 }]
+		}
+	},
 	platformer: {
 		label: t('Sidescroller', 'Side-scroller'),
 		description: t(

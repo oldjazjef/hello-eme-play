@@ -3,6 +3,7 @@ import { tickBody } from './bodies.js';
 import { monsterAttack, targetOf } from './combat.js';
 import { advance, fall, radiusOf, sizeOf, spotInView } from './space.js';
 import { statOf } from './stats.js';
+import { tickLife } from './life.js';
 import { monsterThrow } from './throwables.js';
 import { autopilot, driveOf } from './vehicle.js';
 import type { Body, World } from './types.js';
@@ -29,6 +30,7 @@ export function think(world: World, dt: number): void {
 			world.bodies.splice(world.bodies.indexOf(body), 1);
 			continue;
 		}
+		tickLife(world, body, dt);
 		moveMonster(world, body, target, dt);
 		attack(world, body, target);
 		if (world.phase === 'playing') monsterThrow(world, body, target);

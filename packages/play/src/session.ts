@@ -8,6 +8,7 @@ import {
 	createWorld,
 	isSkidding,
 	rearWheels,
+	sizeOf,
 	victimOf,
 	type Body,
 	type Host,
@@ -618,8 +619,10 @@ export class Session {
 			(a, b) => Number(b.kind === 'vehicle') - Number(a.kind === 'vehicle')
 		);
 		for (const body of bodies) {
-			const definition = config.entities[body.def];
-			if (!definition) continue;
+			const base = config.entities[body.def];
+			if (!base) continue;
+			// Evolved monsters are bigger than their definition says.
+			const definition = body.level > 0 ? { ...base, size: sizeOf(world, body) } : base;
 			drawBody(ctx, body, definition, scene);
 			if (body.kind === 'monster')
 				drawHealth(ctx, body, body.stats.hp ?? body.hp, scene, definition.size);

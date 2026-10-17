@@ -104,6 +104,34 @@ it needs no ammo, and `where`, `ammo` and `keys` don't apply. The first throw co
 }
 ```
 
+**Monsters that breed and evolve** (the [swarm preset](../packages/schema/src/presets.ts)):
+
+- `breed`: `every` (seconds between litters, `max: 0` never), `count` (young per litter), `max` (no litter while
+  this many of the young's kind are alive, so the page isn't overrun) and `into` (what the young are; empty:
+  the same kind). The young appear next to the parent. Never more than 250 bodies exist at once.
+- `evolve`: a new level every `every` seconds alive and/or after `hits` hits on the figure, up to `maxLevel`.
+  Each level adds `stats` (`hp` heals by the same amount) and `size` px. At the top level it can turn into
+  another entity (`into`, at full health, starting again at level 0).
+
+```json
+{
+	"entities": {
+		"blob": {
+			"breed": { "every": { "min": 12, "max": 20 }, "max": 12 },
+			"evolve": {
+				"every": 25,
+				"maxLevel": 3,
+				"stats": { "hp": 1, "attack": 2 },
+				"size": 6,
+				"into": "brute"
+			}
+		}
+	}
+}
+```
+
+The world sends `breed` and `evolve` events (e.g. `audio.events`).
+
 **Vehicles** are entities of `kind: "vehicle"`; any number of kinds can exist side by side, spawned by a `spawns`
 rule, a `spawn` action or `visits`. What makes them different:
 

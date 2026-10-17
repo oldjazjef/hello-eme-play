@@ -1,4 +1,5 @@
 /** Moves, damage, defeat, rewards. */
+import { noteHit } from './life.js';
 import { stateOf } from './state.js';
 import { cooldownOf, distance, distanceToSegment, hitOf, statOf } from './stats.js';
 import { radiusOf, sizeOf } from './space.js';
@@ -96,7 +97,10 @@ export function monsterAttack(world: World, monster: Body, moveId: string): bool
 	monster.pose = { pose: move.pose, left: move.seconds };
 	const victim = victimOf(world);
 	const hit = hitOf(world, monster, move.power, victim);
-	if (!hit.evaded) world.damage(victim, hit.amount, monster);
+	if (!hit.evaded) {
+		world.damage(victim, hit.amount, monster);
+		noteHit(world, monster);
+	}
 	return true;
 }
 

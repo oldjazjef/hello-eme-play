@@ -449,6 +449,81 @@ const ENTITY = object(t('Figur, Monster oder Fahrzeug', 'Figure, monster or vehi
 			cooldown: num(t('Pause (Sekunden)', 'Cooldown (seconds)'), 4, 0.2, 600)
 		})
 	},
+	breed: object(
+		t('Vermehrt sich (Monster)', 'Breeds (monsters)'),
+		{
+			every: range(
+				t('Abstand zwischen Würfen (Sekunden, 0 = nie)', 'Between litters (seconds, 0 = never)'),
+				0,
+				0,
+				{ min: 0, max: 3600 }
+			),
+			count: range(
+				t('Junge pro Wurf', 'Young per litter'),
+				1,
+				1,
+				{ min: 1, max: 20 },
+				{ int: true }
+			),
+			max: int(
+				t('Kein Wurf ab so vielen gleichzeitig', 'No litter once this many exist'),
+				10,
+				1,
+				200
+			),
+			into: ref(
+				t('Junge sind (leer: gleiche Art)', 'Young are (empty: same kind)'),
+				'entities',
+				true
+			)
+		},
+		t(
+			'Das Monster bekommt von selbst Junge in seiner Nähe. Ohne Grenze würde die Seite überrannt: „Kein Wurf ab …“ zählt alle der Art der Jungen.',
+			'The monster has young next to it by itself. “No litter once …” counts all of the young’s kind, so the page is not overrun.'
+		)
+	),
+	evolve: object(
+		t('Entwickelt sich (Monster)', 'Evolves (monsters)'),
+		{
+			every: num(
+				t('Neues Level alle (Sekunden, 0 = nie)', 'New level every (seconds, 0 = never)'),
+				0,
+				0,
+				3600
+			),
+			hits: int(
+				t(
+					'Neues Level nach Treffern auf die Figur (0 = nie)',
+					'New level after hits on the figure (0 = never)'
+				),
+				0,
+				0,
+				1000
+			),
+			maxLevel: int(t('Höchstes Level', 'Top level'), 3, 1, 50),
+			stats: {
+				type: 'record',
+				label: t('Werte pro Level', 'Stats per level'),
+				idLabel: t('Wert', 'Stat'),
+				of: num(t('Menge', 'Amount'), 0, -100_000, 100_000),
+				default: {},
+				maxItems: 30
+			},
+			size: num(t('Grösser pro Level (px)', 'Bigger per level (px)'), 0, 0, 200),
+			into: ref(
+				t(
+					'Wird auf dem höchsten Level zu (leer: bleibt)',
+					'Becomes at the top level (empty: stays)'
+				),
+				'entities',
+				true
+			)
+		},
+		t(
+			'Das Monster wird mit der Zeit oder durch Treffer stärker, grösser und kann sich am Ende in eine andere Art verwandeln.',
+			'The monster grows stronger and bigger over time or by hitting, and can turn into another kind at the end.'
+		)
+	),
 	drive: DRIVE,
 	ram: RAM,
 	absorbs: bool(

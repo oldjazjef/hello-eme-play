@@ -79,6 +79,11 @@ export interface Body {
 	wander: { angle: number; left: number };
 	/** Vehicles driving by themselves (arriving, leaving). */
 	pilot: { targets: { x: number; y: number }[]; pause: number; leaving: boolean } | undefined;
+	/** Monsters: level (evolving), seconds and hits towards the next, seconds until the next litter (-1: not set). */
+	level: number;
+	levelTime: number;
+	hits: number;
+	breedIn: number;
 	/** Monsters: seconds until the next throw. */
 	throwCooldown: number;
 	/** Seconds until the same vehicle can hurt this body again. */
@@ -172,6 +177,10 @@ export interface WorldEvents extends Record<string, unknown> {
 	throw: { id: string; projectile: Projectile };
 	/** A throwable (or a wrecked vehicle: `throwable` is empty) went off at (x, y). */
 	explode: { throwable: string; x: number; y: number; radius: number };
+	/** A monster got a level (`into` empty) or turned into another kind (`level` 0). */
+	evolve: { body: Body; level: number; into: string };
+	/** A monster had young. */
+	breed: { parent: Body; child: Body };
 	/** A vehicle took too much damage and is gone. */
 	wreck: { vehicle: Body };
 	land: { x: number; y: number };
