@@ -4,6 +4,7 @@
  */
 import type { Action, Condition, EventName } from '@hello-eme/play-schema';
 import { hostile } from './bodies.js';
+import { checkpoint, scare } from './arcade.js';
 import { addPoints, heal } from './combat.js';
 import { stateOf } from './state.js';
 import { placeHazard } from './throwables.js';
@@ -49,6 +50,17 @@ export const ACTION_RUNNERS: ActionRunners = {
 	callTeam: (world) => world.cycleParty(),
 	hazard: (world, action) => placeHazard(world, action.throwable, action.where, action.count),
 	healParty: (world, action) => world.healParty(action.amount),
+	grow: (world, action) => {
+		stateOf(world).tail.length += action.amount;
+	},
+	toStart: (world) => world.toStart(),
+	checkpoint: (world) => checkpoint(world),
+	launch: (world, action) => {
+		if (world.view !== 'side') return;
+		world.player.fall = -action.speed;
+		world.player.grounded = false;
+	},
+	scare: (world, action) => scare(world, action.seconds),
 	nextLevel: (world) => world.nextLevel(),
 	message: (world, action) => action.text && world.events.emit('message', { text: action.text }),
 	sound: (world, action) => action.sound && world.events.emit('sound', { id: action.sound }),
@@ -105,7 +117,7 @@ export function holds(world: World, condition: Condition): boolean {
 }
 
 /** The thing an event is about (a monster, an item, an upgrade), for the trigger's `only`. */
-function subject(name: EventName, data: unknown): string | undefined {
+function subject(name: EventName, data: unknown): string[] {
 	const read = (key: string): string | undefined => {
 		const value = (data as Record<string, unknown> | undefined)?.[key];
 		return typeof value === 'string' ? value : undefined;
@@ -114,17 +126,22 @@ function subject(name: EventName, data: unknown): string | undefined {
 	const item = (data as { item?: { def: string } } | undefined)?.item;
 	const parent = (data as { parent?: Body } | undefined)?.parent;
 	const vehicle = (data as { vehicle?: Body } | undefined)?.vehicle;
+	const one = (value: string | undefined): string[] => (value === undefined ? [] : [value]);
 	if (name === 'kill' || name === 'catch' || name === 'escape' || name === 'encounter')
-		return body?.def;
-	if (name === 'evolve' || name === 'faint') return body?.def;
-	if (name === 'pickup' || name === 'touch') return item?.def;
-	if (name === 'throw') return read('id');
-	if (name === 'explode') return read('throwable');
-	if (name === 'breed') return parent?.def;
-	if (name === 'wreck') return vehicle?.def;
-	if (name === 'summon') return body?.def;
-	if (name === 'upgrade') return read('id');
-	return undefined;
+		return one(body?.def);
+	if (name === 'evolve' || name === 'faint') return one(body?.def);
+	if (name === 'pickup' || name === 'touch') return one(item?.def);
+	if (name === 'throw') return one(read('id'));
+	if (name === 'explode') return one(read('throwable'));
+	if (name === 'breed') return one(parent?.def);
+	if (name === 'wreck') return one(vehicle?.def);
+	if (name === 'summon') return one(body?.def);
+	if (name === 'upgrade') return one(read('id'));
+	// A lost ball: by the edge it left through, or by what it was.
+	if (name === 'lost') return [...one(read('edge')), ...one(body?.def)];
+	if (name === 'split') return one(parent?.def);
+	if (name === 'stomp' || name === 'attack') return one(body?.def);
+	return [];
 }
 
 /** Hooks the configured triggers up to the world's events. */
@@ -140,7 +157,7 @@ export function installTriggers(world: World): void {
 				// `key` triggers pick by their keys; `only` doesn't apply to them.
 				if (name === 'key') {
 					if (!trigger.keys.includes((data as { code: string }).code)) return;
-				} else if (trigger.only !== '' && trigger.only !== subject(name, data)) return;
+				} else if (trigger.only !== '' && !subject(name, data).includes(trigger.only)) return;
 				if (!trigger.conditions.every((condition) => holds(world, condition))) return;
 				state.fired.add(index);
 				runActions(world, trigger.do);

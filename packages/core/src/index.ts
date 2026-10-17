@@ -8,10 +8,13 @@ export {
 	createStaticHost,
 	EDGE,
 	HARD_EDGE,
+	itemBox,
 	radiusOf,
 	sizeOf,
 	type StaticHostOptions
 } from './space.js';
+export { isShielded } from './armor.js';
+export { barBox } from './bounce.js';
 export { statOf } from './stats.js';
 export { ACTION_RUNNERS } from './triggers.js';
 export { upgradePrice } from './progress.js';

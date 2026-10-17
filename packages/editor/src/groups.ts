@@ -10,7 +10,18 @@ export type GroupId = keyof Pick<
 const GROUPS: readonly { id: GroupId; keys: readonly string[] }[] = [
 	{
 		id: 'groupGame',
-		keys: ['version', 'enabled', 'locale', 'view', 'game', 'visits', 'levels', 'progress']
+		keys: [
+			'version',
+			'enabled',
+			'locale',
+			'view',
+			'game',
+			'visits',
+			'levels',
+			'maps',
+			'waves',
+			'progress'
+		]
 	},
 	{ id: 'groupCharacters', keys: ['entities', 'stats', 'sprites', 'moves', 'spawns', 'hideouts'] },
 	{ id: 'groupItems', keys: ['items', 'throwables', 'upgrades', 'itemSpawns'] },

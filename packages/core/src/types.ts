@@ -102,6 +102,17 @@ export interface Body {
 	parked: boolean;
 	/** Boss phases already started. */
 	phase: number;
+	/** Where it started (it comes back there). */
+	home: { x: number; y: number };
+	/** Grid movement: the way it goes and the cell centre it is heading for (undefined: not moving). */
+	grid:
+		{ dx: number; dy: number; tx: number; ty: number; wantX: number; wantY: number } | undefined;
+	/** Side view: jumps left in the air. */
+	airLeft: number;
+	/** Bosses: the next time (s) each attack is due, the one being shown, a charge under way. */
+	attackDue: number[];
+	windup: { index: number; left: number; total: number } | undefined;
+	dash: { x: number; y: number; left: number } | undefined;
 }
 
 /** A caught monster the figure carries. */
@@ -161,6 +172,8 @@ export interface Pickup {
 	age: number;
 	/** Objects: seconds until touching it runs its effect again. */
 	cooldown: number;
+	/** Hits left before a bouncing ball breaks it (0: unbreakable). */
+	hp: number;
 }
 
 /** What the visitor does, set by the runtime (keyboard, touch, a bot in simulations). */
@@ -179,7 +192,7 @@ export interface Controls {
 
 export type Phase = 'lobby' | 'playing' | 'over' | 'won';
 
-export type DefeatSource = 'move' | 'overrun' | 'trigger' | 'blast';
+export type DefeatSource = 'move' | 'overrun' | 'trigger' | 'blast' | 'stomp';
 
 export interface WorldEvents extends Record<string, unknown> {
 	start: { phase: Phase };
@@ -237,6 +250,16 @@ export interface WorldEvents extends Record<string, unknown> {
 	wave: { index: number; label: string; step: number };
 	/** A boss phase started (`index` into the entity's `phases`). */
 	phase: { body: Body; index: number; label: string };
+	/** A bouncing ball went through a pit (`edge`: left, right, top or bottom). */
+	lost: { body: Body; edge: 'left' | 'right' | 'top' | 'bottom' };
+	/** A monster broke into smaller ones. */
+	split: { parent: Body; children: Body[] };
+	/** The monsters are scared for `seconds`. */
+	scare: { seconds: number };
+	/** The figure landed on a monster. */
+	stomp: { body: Body };
+	/** A boss uses an attack pattern (`index` into its `attacks`). */
+	attack: { body: Body; index: number; kind: string };
 }
 
 export interface Stats {
@@ -284,13 +307,17 @@ export interface World {
 	readonly hideouts: readonly Hideout[];
 	readonly upgrades: Record<string, number>;
 	readonly stats: Stats;
+	/** The tail of the grid figure (oldest first), for drawing. */
+	readonly tail: { x: number; y: number }[];
+	/** The monsters are scared now (and can be eaten). */
+	scared: boolean;
 
 	/** Advances the game by `dt` seconds. */
 	step(dt: number): void;
 	/** A new body of an entity definition; undefined for unknown ones. */
 	spawn(def: string, x: number, y: number): Body | undefined;
 	/** Monsters (or any entity) at the edge of the visible window / near the figure. */
-	spawnAt(def: string, count: number, where: 'edge' | 'near'): Body[];
+	spawnAt(def: string, count: number, where: 'edge' | 'near' | 'figure'): Body[];
 	dropItem(def: string, x?: number, y?: number): Pickup | undefined;
 	/** Starts a round: from the lobby (the figure steps out of the visiting car) or directly. */
 	begin(): void;
@@ -311,6 +338,8 @@ export interface World {
 	ammoOf(id: string): number;
 	/** Adds (or takes) ammo, within 0 and the throwable's maximum. */
 	giveAmmo(id: string, amount: number): void;
+	/** Sends the figure back to its starting place (and shortens its tail to the start). */
+	toStart(): void;
 	/** Sends out the next healthy team member (calling the one out back); after the last, none is out. */
 	cycleParty(): void;
 	/** Adds a monster of this kind to the team. Returns it (undefined: unknown kind or team full). */

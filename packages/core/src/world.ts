@@ -1,6 +1,8 @@
 import type { ViewMode } from '@hello-eme/play-schema';
 import { resolveConfig, type PlayConfig } from '@hello-eme/play-schema';
 import { parkingSpot, think } from './ai.js';
+import { tickArcade, tickStomp, toStart } from './arcade.js';
+import { headingOf } from './bounce.js';
 import { createBody, tickBody } from './bodies.js';
 import { addPoints, damage as applyDamage, overrun, targetOf, useMove } from './combat.js';
 import { createEventBus } from './events.js';
@@ -13,6 +15,7 @@ import { createRandom } from './random.js';
 import { setState, stateOf, type State } from './state.js';
 import {
 	advance,
+	arenaOf,
 	createStaticHost,
 	edgePoint,
 	floorY,
@@ -82,12 +85,18 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 		intervalDue: [],
 		fired: new Set(),
 		kills: {},
-		level: { time: 0, earned: 0, kills: 0, boss: false },
+		level: { time: 0, earned: 0, kills: 0, boss: false, required: false },
 		carDue: undefined,
 		depth: 0,
 		vehicleBonus: {},
 		rideSince: undefined,
-		ridden: 0
+		ridden: 0,
+		start: { x: 0, y: 0 },
+		arena: undefined,
+		grid: undefined,
+		tail: { length: 0, points: [] },
+		scaredUntil: 0,
+		respawns: []
 	};
 
 	const heroDefinition = config.entities[config.game.player];
@@ -128,6 +137,8 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 		hideouts,
 		upgrades: {},
 		stats: emptyStats(),
+		tail: [],
+		scared: false,
 
 		step(dt) {
 			const seconds = Math.min(Math.max(dt, 0), MAX_STEP);
@@ -146,8 +157,10 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 			} else {
 				walk(world, player, seconds);
 			}
+			tickStomp(world);
 			for (const id of controls.held) useMove(world, id);
 			tickObjects(world, seconds);
+			tickArcade(world);
 			think(world, seconds);
 			updatePickups(world, seconds);
 			updateProjectiles(world, seconds);
@@ -179,6 +192,14 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 					body.pilot = { targets: [parkingSpot(world)], pause: 0, leaving: false };
 				} else body.parked = true;
 			}
+			if (definition.behavior === 'drift' || definition.behavior === 'bounce') {
+				body.angle = headingOf(world, definition.heading);
+			} else if (definition.behavior === 'patrol') {
+				body.angle = headingOf(world, definition.heading);
+				if (side) body.angle = Math.cos(body.angle) >= 0 ? 0 : Math.PI;
+			} else if (definition.behavior === 'paddle') {
+				body.angle = definition.heading >= 0 ? (definition.heading * Math.PI) / 180 : Math.PI;
+			}
 			world.bodies.push(body);
 			events.emit('spawn', { body });
 			return body;
@@ -188,17 +209,34 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 			const target = targetOf(world);
 			return Array.from({ length: count }, () => {
 				let spot = edgePoint(world);
+				const arena = arenaOf(world);
+				const clamp = (point: { x: number; y: number }) => ({
+					x: Math.min(Math.max(point.x, arena.left + HARD_EDGE), arena.right - HARD_EDGE),
+					y: Math.min(Math.max(point.y, arena.top + HARD_EDGE), arena.bottom - HARD_EDGE)
+				});
 				if (where === 'near') {
 					const angle = random() * Math.PI * 2;
 					const away = 140 + random() * 140;
-					spot = { x: target.x + Math.cos(angle) * away, y: target.y + Math.sin(angle) * away };
-					const pg = host.page();
-					spot.x = Math.min(Math.max(spot.x, HARD_EDGE), pg.width - HARD_EDGE);
-					spot.y = Math.min(Math.max(spot.y, HARD_EDGE), pg.height - HARD_EDGE);
+					spot = clamp({
+						x: target.x + Math.cos(angle) * away,
+						y: target.y + Math.sin(angle) * away
+					});
+				} else if (where === 'figure') {
+					spot = clamp({
+						x: target.x + Math.cos(target.angle) * 56,
+						y: target.y + Math.sin(target.angle) * 56
+					});
 				}
 				const hideIn = config.entities[def]?.hideIn;
 				const hiding = hideIn ? hidingSpot(world, hideIn) : undefined;
-				if (!hiding) return world.spawn(def, spot.x, spot.y);
+				if (!hiding) {
+					const body = world.spawn(def, spot.x, spot.y);
+					const behavior = config.entities[def]?.behavior;
+					if (body && where === 'figure' && (behavior === 'bounce' || behavior === 'drift')) {
+						body.angle = target.angle + (random() - 0.5) * 0.5;
+					}
+					return body;
+				}
 				const hidden = world.spawn(def, hiding.x, hiding.y);
 				if (hidden) {
 					hidden.hidden = true;
@@ -266,6 +304,8 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 			}
 			events.emit('viewChange', { mode });
 		},
+
+		toStart: () => toStart(world),
 
 		nextLevel() {
 			world.level += 1;
@@ -381,6 +421,9 @@ function isResolved(json: unknown): json is PlayConfig {
 /** The first moments of a round: level 1, the vehicle that will drive in, the `start` event. */
 function startRound(world: World): void {
 	const state = stateOf(world);
+	// The window as it is now is the arena (and the grid laid over it).
+	state.arena = undefined;
+	state.grid = undefined;
 	const visits = world.config.visits;
 	state.carDue =
 		visits.enabled && visits.whilePlaying && !world.riding
@@ -410,7 +453,7 @@ function handleActions(world: World): void {
 	if (pressed.has('party')) world.cycleParty();
 	if (pressed.has('jump')) {
 		if (world.riding) honk(world);
-		else if (startJump(world, world.player)) world.stats.jumps += 1;
+		else if (startJump(world, world.player, true)) world.stats.jumps += 1;
 	}
 	if (pressed.has('honk') && world.riding) honk(world);
 	pressed.clear();

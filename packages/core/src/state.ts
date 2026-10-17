@@ -20,7 +20,7 @@ export interface State {
 	/** Beaten monsters by entity id. */
 	kills: Record<string, number>;
 	/** Counters since the current level began. */
-	level: { time: number; earned: number; kills: number; boss: boolean };
+	level: { time: number; earned: number; kills: number; boss: boolean; required: boolean };
 	/** Time (s) the vehicle drives in; undefined: not planned (or came already). */
 	carDue: number | undefined;
 	/** Trigger actions running inside each other (recursion guard). */
@@ -30,6 +30,19 @@ export interface State {
 	/** When the figure got into the vehicle (s), for the driving time. */
 	rideSince: number | undefined;
 	ridden: number;
+	/** The figure's starting place (a map, a checkpoint). */
+	start: { x: number; y: number };
+	/** The window the game happens in when the arena is `screen` (undefined: not fixed yet). */
+	arena: { left: number; top: number; right: number; bottom: number } | undefined;
+	/** The grid of `grid` control and of the current map; undefined until needed. */
+	grid:
+		{ cell: number; x0: number; y0: number; cols: number; rows: number; map: boolean } | undefined;
+	/** Segments of the figure's tail: how long it should be and where the head was. */
+	tail: { length: number; points: { x: number; y: number }[] };
+	/** The time (s) the monsters stop being scared. */
+	scaredUntil: number;
+	/** Monsters that come back: what, where, when (s). */
+	respawns: { def: string; x: number; y: number; at: number }[];
 }
 
 const states = new WeakMap<World, State>();

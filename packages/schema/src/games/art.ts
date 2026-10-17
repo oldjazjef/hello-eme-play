@@ -5,10 +5,10 @@
  */
 import type { Facing } from '../types.js';
 
-const INK = '#1e1b4b';
+export const INK = '#1e1b4b';
 
 const uri = (svg: string): string => `data:image/svg+xml,${encodeURIComponent(svg)}`;
-const wrap = (body: string, width = 64, height = 64): string =>
+export const wrap = (body: string, width = 64, height = 64): string =>
 	uri(
 		`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" stroke-linejoin="round" stroke-linecap="round">${body}</svg>`
 	);

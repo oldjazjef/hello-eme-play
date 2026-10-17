@@ -56,7 +56,13 @@ export function createBody(
 		throwCooldown: 2,
 		runOver: 0,
 		parked: false,
-		phase: 0
+		phase: 0,
+		home: { x, y },
+		grid: undefined,
+		airLeft: 0,
+		attackDue: [],
+		windup: undefined,
+		dash: undefined
 	};
 }
 

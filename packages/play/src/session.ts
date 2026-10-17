@@ -25,10 +25,15 @@ import {
 	BLAST_MS,
 	drawBlast,
 	drawBody,
+	drawFlame,
 	drawHealth,
 	drawHideout,
 	drawPickup,
 	drawProjectile,
+	drawScared,
+	drawShield,
+	drawTail,
+	drawWindup,
 	drawShards,
 	drawTeamRing,
 	drawSkidMarks,
@@ -103,6 +108,7 @@ export class Session {
 	#phase: Phase = 'visit';
 	#hintHidden = false;
 	/** Whether the visitor has shown or hidden the instructions themselves (then they stay as left). */
+	#scrollWas: string | undefined;
 	#hintUser = false;
 	/** The hint about getting into a vehicle was shown once already. */
 	#nearHinted = false;
@@ -188,7 +194,21 @@ export class Session {
 		return this.#world;
 	}
 
+	/** An arena that is the window keeps the page still while the game runs. */
+	#lockScroll(lock: boolean): void {
+		const wanted = lock && this.#hooks.config.game.arena === 'screen';
+		const page = document.documentElement;
+		if (wanted && this.#scrollWas === undefined) {
+			this.#scrollWas = page.style.overflow;
+			page.style.overflow = 'hidden';
+		} else if (!wanted && this.#scrollWas !== undefined) {
+			page.style.overflow = this.#scrollWas;
+			this.#scrollWas = undefined;
+		}
+	}
+
 	destroy(): void {
+		this.#lockScroll(false);
 		cancelAnimationFrame(this.#request);
 		removeEventListener('keydown', this.#input.keydown);
 		removeEventListener('keyup', this.#input.keyup);
@@ -396,6 +416,7 @@ export class Session {
 		let world = this.#world;
 		const playing = hooks.state === 'playing';
 
+		this.#lockScroll(playing && world.phase === 'playing');
 		if (playing && world.phase === 'lobby') {
 			world.begin();
 			this.#startRound();
@@ -668,9 +689,14 @@ export class Session {
 				own ? this.#pictures[own] : undefined
 			);
 		});
-		for (const pickup of world.pickups) {
-			const definition = config.items[pickup.def];
-			if (definition) drawPickup(ctx, pickup, definition, scene);
+		// Platforms and walls lie underneath what stands on them.
+		for (const flat of [true, false]) {
+			for (const pickup of world.pickups) {
+				const definition = config.items[pickup.def];
+				if (definition && (definition.platform || definition.solid) === flat) {
+					drawPickup(ctx, pickup, definition, scene);
+				}
+			}
 		}
 		for (const projectile of world.projectiles) {
 			const definition = config.throwables[projectile.def];
@@ -686,12 +712,21 @@ export class Session {
 			// Evolved monsters are bigger than their definition says.
 			const definition = body.level > 0 ? { ...base, size: sizeOf(world, body) } : base;
 			if (body.ally) drawTeamRing(ctx, body, definition.size, scene);
+			if (world.scared && body.kind === 'monster' && !body.ally) {
+				drawScared(ctx, body, definition.size, scene);
+			}
 			drawBody(ctx, body, definition, scene);
+			drawShield(ctx, world, body, definition.size, scene);
+			drawWindup(ctx, body, definition.size, scene);
 			if (body.kind === 'monster')
 				drawHealth(ctx, body, body.stats.hp ?? body.hp, scene, definition.size);
 		}
 		const hero = config.entities[config.game.player];
+		if (world.tail.length > 0 && hero) drawTail(ctx, world.tail, hero.size, scene);
 		if (hero && world.phase !== 'lobby' && !world.riding) {
+			if (config.game.control === 'ship' && world.view === 'topdown' && world.player.moving) {
+				drawFlame(ctx, world.player, hero.size, scene);
+			}
 			drawBody(ctx, world.player, hero, scene);
 		}
 		for (const blast of this.#blasts) drawBlast(ctx, blast, scene, now);

@@ -309,6 +309,99 @@ rule, a `spawn` action or `visits`. What makes them different:
 
 A fast, light bike and a slow, tough truck: [arsenal preset](../packages/schema/src/presets.ts).
 
+## Arcade games: ships, grids, paddles, platforms, bosses
+
+Eight more presets, `retro-*`, rebuild arcade classics from the same pieces. Each is a game of its own kind:
+
+| Preset            | Kind                                                                                                      |
+| ----------------- | --------------------------------------------------------------------------------------------------------- |
+| `retro-asteroids` | space shooter: a spaceship with inertia, rocks that split into smaller ones, saucers, nova bombs          |
+| `retro-frogger`   | hop cell by cell across lanes of traffic, every hit sends you back to the start; fetch all the flags      |
+| `retro-snake`     | the snake moves by itself, apples grow the tail, walls and the tail hurt; walls from round 2              |
+| `retro-munch`     | Pac-Man: a maze from a map, pellets, power pills that scare the ghosts, ghosts that come back, a tunnel   |
+| `retro-bricks`    | Breakout: a paddle, a ball that bounces, bricks with hits, steel blocks, the ball speeds up               |
+| `retro-ping`      | Pong: a paddle at the left, a computer paddle at the right, a ball that is lost on either side            |
+| `retro-jumper`    | platformer: jump in the air once more, platforms, springs, lava, checkpoints, stomping on walkers, a flag |
+| `retro-titan`     | boss fights: warning rings, phases, fans of shots, charges, bomb rain, drones, a shield and a weak spot   |
+
+**How the figure is steered** (`game.control`; from above, the side view always walks and jumps):
+
+- `walk` (default) as before.
+- `ship`: left and right turn, up pushes, down brakes; it keeps drifting (`game.ship`: `thrust`, `turn`,
+  `maxSpeed`, `drag`). Shots go out where the nose points: a throwable with `speed`, `fuse: 0`, `look: "bullet"`
+  and `auto: true` (holding the key keeps firing) is a laser. A shot is spent at the edge of the arena.
+- `grid`: cell by cell (`game.grid`: `cell` size, `auto` keeps moving by itself, `crash` makes a wall or the tail
+  hurt, `tail` grows a tail). Solid items block cells; with `game.wrap` the grid edges lead round to the other
+  side (a tunnel). The action `grow` makes the tail longer.
+- `slide`: a paddle along one edge of the window (`game.slideAxis`: `x` at the bottom, `y` at the left). Give the
+  entity `shape: "bar"`: a ball bounces off it, and where it hits decides the angle.
+
+**The arena** (`game.arena`): `page` is the whole page as before; `screen` is the window as it is when the round
+begins, and the page stays put while you play (bounces, wrap, edges and spawns all use it).
+
+**Respawning** (`game.respawn`): `stay` as before; `death`: after losing a life the figure starts again at its
+starting place; `hit`: every hit costs a life and sends it back. The starting place is the map's start, or the
+place of the action `checkpoint`; `toStart` sends the figure there at any time.
+
+**Maps**: a level drawn as text. `maps.<id>` has `rows` (every character is a cell), `cell` (size; it shrinks to
+fit the window), `align` (`center` or `bottom` for the side view) and a `legend` that says what a character puts
+down: an `item`, an `entity` (with an `angle` in degrees, `-1` = its own), or `start` for the figure. A level
+takes a map with `levels[].map`; the level before is cleaned away. The goal `clear` is reached when every item
+with `required: true` is gone (pellets, bricks, flags).
+
+**Behaviors** (`entities[].behavior`, besides chase, wander, flee, stand):
+
+- `drift`: flies straight in its `heading` (degrees, `-1` any) and comes back in on the other side. Asteroids,
+  traffic. `split` breaks a beaten one into `count` smaller ones (`into`), `faster` percent quicker.
+- `bounce`: a ball. It bounces off the edges of the arena, solid items and paddles. Items with `hp` lose a hit
+  per bounce and break at 0 (their `do` runs, the event is `pickup`); `game.pit` says which edge loses a ball
+  (the `lost` event, `only` can be `left`, `right`, `top`, `bottom`). The action `spawn` with `where: "figure"`
+  puts a new one in front of the figure, flying where it faces.
+- `paddle`: a bar (`shape: "bar"`) that follows the nearest ball along its edge (`heading` is where it looks).
+- `patrol`: walks to and fro, turns at the window's edge, at walls and (side view) at the end of a platform.
+- `ghost`: on a grid, takes at every corner the way that brings it closest to its aim (each ghost has its own
+  character: chase, cut off, only when close). `respawn` brings a beaten one back at its start after that many
+  seconds. The action `scare` makes the monsters flee and lets the figure eat them for a while.
+
+**Platformers**: `view.airJumps` (jumps in the air), `game.stomp` (landing on a monster hurts it for that many
+times the attack and bounces the figure up; event `stomp`), items with `platform` (stand on top, jump through from
+below; they float), `float` (coins), `box` and `aspect` (a rectangular hit area; `size` is the longer side), the
+action `launch` (a spring) and `checkpoint`.
+
+**Boss fights**: an entity's `attacks` list. Each has a `kind` (`fan`: shots over `spread` degrees, 360 = a ring;
+`charge`; `rain`: throwables near the figure; `summon`; `teleport`), `every` (pause), `windup` (seconds the boss
+shows a red ring before it happens, so it can be dodged), `fromPhase` / `toPhase` (the patterns of a phase) and
+`range`. `weakSpot` (`side`, `multiplier`, `other`) makes it take more damage from one side, `shieldedBy`
+makes it immune while one of that kind lives. The event `attack` fires when a pattern happens.
+
+```json
+{
+	"entities": {
+		"colossus": {
+			"kind": "monster",
+			"boss": true,
+			"shieldedBy": "drone",
+			"weakSpot": { "side": "back", "multiplier": 2.5, "other": 0.5 },
+			"attacks": [
+				{
+					"kind": "fan",
+					"every": 3,
+					"windup": 0.8,
+					"throwable": "orb",
+					"count": 10,
+					"spread": 360
+				},
+				{ "kind": "summon", "every": 11, "entity": "drone", "count": 2, "fromPhase": 1 }
+			],
+			"phases": [{ "below": 50, "label": "Enraged!", "stats": { "speed": 30 } }]
+		}
+	}
+}
+```
+
+New events: `lost`, `split`, `stomp`, `attack`. New actions: `grow`, `toStart`, `checkpoint`, `launch`, `scare`;
+`spawn` also takes `where: "figure"`.
+
 ## Cookbook
 
 Stronger monsters each level:

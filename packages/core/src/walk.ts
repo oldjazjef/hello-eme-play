@@ -1,5 +1,15 @@
 /** The figure on foot: walking over the page (top-down) or running and jumping (side view). */
-import { advance, fall, follow } from './space.js';
+import { walkGrid } from './grid.js';
+import {
+	advance,
+	arenaOf,
+	fall,
+	follow,
+	HARD_EDGE,
+	itemPlatforms,
+	SLIDE_INSET,
+	viewRect
+} from './space.js';
 import { statOf } from './stats.js';
 import type { Body, World } from './types.js';
 
@@ -22,10 +32,16 @@ export function walkFrame(body: Pick<Body, 'moving' | 'distance'>): 0 | 1 {
 	return Math.floor(body.distance / STRIDE) % 2 === 0 ? 0 : 1;
 }
 
-/** Starts a jump (top-down: a hop that clicks on landing; side view: leaves the ground). */
-export function startJump(world: World, body: Body): boolean {
+/**
+ * Starts a jump (top-down: a hop that clicks on landing; side view: leaves the ground, or, with
+ * `air`, jumps again in the air as often as `view.airJumps` allows).
+ */
+export function startJump(world: World, body: Body, air = false): boolean {
 	if (world.view === 'side') {
-		if (!body.grounded) return false;
+		if (!body.grounded) {
+			if (!air || body.airLeft <= 0) return false;
+			body.airLeft -= 1;
+		}
 		body.fall = -world.config.view.jumpSpeed;
 		body.grounded = false;
 		return true;
@@ -40,6 +56,14 @@ export function walk(world: World, body: Body, dt: number): void {
 	const { axis } = world.controls;
 	const speed = statOf(world, body, 'speed');
 	if (world.view === 'side') return walkSide(world, body, dt, speed);
+	const control = world.config.game.control;
+	if (control === 'ship') return flyShip(world, body, dt);
+	if (control === 'grid') {
+		walkGrid(world, body, dt);
+		follow(world, body.x, body.y);
+		return;
+	}
+	if (control === 'slide') return slide(world, body, dt, speed);
 
 	const length = Math.hypot(axis.x, axis.y);
 	const moving = length > 0;
@@ -75,14 +99,74 @@ function walkSide(world: World, body: Body, dt: number, speed: number): void {
 		}
 	}
 	fall(world, body, dt);
+	if (body.grounded) body.airLeft = world.config.view.airJumps;
+	follow(world, body.x, body.y);
+}
+
+/** A spaceship: left and right turn it, up pushes it forward, and it keeps drifting. */
+function flyShip(world: World, body: Body, dt: number): void {
+	const { axis } = world.controls;
+	const ship = world.config.game.ship;
+	body.angle += axis.x * ship.turn * dt;
+	let vx = body.vx;
+	let vy = body.vy;
+	const thrusting = axis.y < 0;
+	if (thrusting) {
+		vx += Math.cos(body.angle) * ship.thrust * dt;
+		vy += Math.sin(body.angle) * ship.thrust * dt;
+	}
+	// Down brakes hard; with no pedal it slows down gently.
+	const slow = Math.exp(-(axis.y > 0 ? 3 : ship.drag) * dt);
+	vx *= slow;
+	vy *= slow;
+	const total = Math.hypot(vx, vy);
+	if (total > ship.maxSpeed) {
+		vx = (vx / total) * ship.maxSpeed;
+		vy = (vy / total) * ship.maxSpeed;
+	}
+	const x = body.x;
+	const y = body.y;
+	advance(world, body, vx * dt, vy * dt, world.config.game.wrap);
+	// Against an edge it stops pushing into it.
+	const wrapped = world.config.game.wrap;
+	if (!wrapped && Math.abs(body.x - (x + vx * dt)) > 0.01) vx = 0;
+	if (!wrapped && Math.abs(body.y - (y + vy * dt)) > 0.01) vy = 0;
+	body.vx = vx;
+	body.vy = vy;
+	body.moving = thrusting;
+	body.distance += Math.hypot(vx, vy) * dt;
+	follow(world, body.x, body.y);
+}
+
+/** A paddle: slides along one edge of the window, facing the field. */
+function slide(world: World, body: Body, dt: number, speed: number): void {
+	const { axis } = world.controls;
+	const arena = world.config.game.arena === 'screen' ? arenaOf(world) : viewRect(world);
+	const inset = SLIDE_INSET;
+	if (world.config.game.slideAxis === 'x') {
+		body.angle = -Math.PI / 2;
+		body.y = arena.bottom - inset;
+		body.x = Math.min(
+			arena.right - HARD_EDGE,
+			Math.max(arena.left + HARD_EDGE, body.x + axis.x * speed * dt)
+		);
+		body.moving = axis.x !== 0;
+	} else {
+		body.angle = 0;
+		body.x = arena.left + inset;
+		body.y = Math.min(
+			arena.bottom - HARD_EDGE,
+			Math.max(arena.top + HARD_EDGE, body.y + axis.y * speed * dt)
+		);
+		body.moving = axis.y !== 0;
+	}
+	body.distance += speed * dt * (body.moving ? 1 : 0);
 	follow(world, body.x, body.y);
 }
 
 function isOnPlatform(world: World, body: Body): boolean {
-	return world.host
-		.platforms()
-		.some(
-			(platform) =>
-				body.x >= platform.x1 && body.x <= platform.x2 && Math.abs(platform.y - body.y) < 2
-		);
+	return [...world.host.platforms(), ...itemPlatforms(world)].some(
+		(platform) =>
+			body.x >= platform.x1 && body.x <= platform.x2 && Math.abs(platform.y - body.y) < 2
+	);
 }

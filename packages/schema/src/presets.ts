@@ -4,7 +4,7 @@
  */
 import { t, type Text } from './dsl.js';
 import { CLASSIC } from './schema.js';
-import { GAMES } from './games/index.js';
+import { GAMES, RETRO } from './games/index.js';
 
 export interface Preset {
 	label: Text;
@@ -396,5 +396,6 @@ export const PRESETS: Record<string, Preset> = {
 		}
 	},
 
-	...GAMES
+	...GAMES,
+	...RETRO
 };

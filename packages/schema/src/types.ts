@@ -15,11 +15,34 @@ export type ViewMode = (typeof VIEW_MODES)[number];
 export const ENTITY_KINDS = ['figure', 'monster', 'vehicle'] as const;
 export type EntityKind = (typeof ENTITY_KINDS)[number];
 
-export const BEHAVIORS = ['chase', 'wander', 'flee', 'stand', 'arrive'] as const;
+export const BEHAVIORS = [
+	'chase',
+	'wander',
+	'flee',
+	'stand',
+	'arrive',
+	'drift',
+	'bounce',
+	'patrol',
+	'ghost',
+	'paddle'
+] as const;
 export type Behavior = (typeof BEHAVIORS)[number];
 
 export const LOOKS = ['figure', 'enemy', 'car'] as const;
 export type Look = (typeof LOOKS)[number];
+
+export const CONTROLS = ['walk', 'ship', 'grid', 'slide'] as const;
+export type Control = (typeof CONTROLS)[number];
+
+export const PITS = ['none', 'bottom', 'top', 'left', 'right', 'leftright', 'topbottom'] as const;
+export type Pit = (typeof PITS)[number];
+
+export const ATTACK_KINDS = ['fan', 'charge', 'rain', 'summon', 'teleport'] as const;
+export type AttackKind = (typeof ATTACK_KINDS)[number];
+
+export const WEAK_SIDES = ['any', 'front', 'back', 'flank'] as const;
+export type WeakSide = (typeof WEAK_SIDES)[number];
 
 export const ITEM_LOOKS = [
 	'heart',
@@ -29,11 +52,13 @@ export const ITEM_LOOKS = [
 	'wall',
 	'spikes',
 	'bush',
-	'puddle'
+	'puddle',
+	'brick',
+	'pellet'
 ] as const;
 export type ItemLook = (typeof ITEM_LOOKS)[number];
 
-export const THROWABLE_LOOKS = ['bomb', 'rock', 'mine', 'ball'] as const;
+export const THROWABLE_LOOKS = ['bomb', 'rock', 'mine', 'ball', 'bullet'] as const;
 export type ThrowableLook = (typeof THROWABLE_LOOKS)[number];
 
 export const HIDEOUT_LOOKS = ['grass', 'bush', 'water', 'rocks'] as const;
@@ -69,11 +94,15 @@ export const EVENT_NAMES = [
 	'breed',
 	'wreck',
 	'summon',
-	'touch'
+	'touch',
+	'lost',
+	'split',
+	'stomp',
+	'attack'
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
-export const GOALS = ['none', 'score', 'kills', 'survive', 'boss'] as const;
+export const GOALS = ['none', 'score', 'kills', 'survive', 'boss', 'clear'] as const;
 export type GoalType = (typeof GOALS)[number];
 
 export interface StatDefinition {
@@ -161,6 +190,59 @@ export interface EntityDefinition {
 	breed: BreedDefinition;
 	/** Monsters: grows stronger over time or by hitting, and may turn into something else. */
 	evolve: EvolveDefinition;
+	/** `drift` and `bounce`: the direction it starts in, degrees (0 = right, 90 = down; -1: any). */
+	heading: number;
+	/** Round, or a thin bar (a paddle) as long as `size` across the way it slides. */
+	shape: 'round' | 'bar';
+	/** Monsters: breaks into smaller ones when beaten. */
+	split: SplitDefinition;
+	/** Monsters: comes back at its start place this many seconds after being beaten (0: never). */
+	respawn: number;
+	/** Bosses: takes more (or less) damage depending on where the attacker stands. */
+	weakSpot: WeakSpotDefinition;
+	/** Bosses: cannot be hurt while one of this kind is alive (empty: none). */
+	shieldedBy: string;
+	/** Bosses: the attacks it cycles through, each with its own pause, from and to a phase. */
+	attacks: BossAttack[];
+}
+
+export interface SplitDefinition {
+	/** Key into `entities`; empty: it just goes. */
+	into: string;
+	count: Range;
+	/** Faster than the parent by this many percent. */
+	faster: number;
+}
+
+export interface WeakSpotDefinition {
+	/** Where the attacker has to stand, seen from the boss' facing. */
+	side: WeakSide;
+	/** Damage factor from that side, and from everywhere else. */
+	multiplier: number;
+	other: number;
+}
+
+export interface BossAttack {
+	kind: AttackKind;
+	/** Seconds between two uses. */
+	every: number;
+	/** Seconds the boss shows what is coming (and can be dodged) before it happens. */
+	windup: number;
+	/** Used from this phase on (0: from the start) up to `toPhase` (0: to the end). */
+	fromPhase: number;
+	toPhase: number;
+	/** `fan`, `rain`: key into `throwables`. `summon`: key into `entities`. */
+	throwable: string;
+	entity: string;
+	/** Shots, falling objects or summoned monsters. */
+	count: number;
+	/** `fan`: angle covered, degrees (360: all around). */
+	spread: number;
+	/** Only while the figure is closer than this (0: from anywhere), px. */
+	range: number;
+	/** `charge`: speed in percent of its own, and how long it lasts (seconds). */
+	boost: number;
+	seconds: number;
 }
 
 export interface BreedDefinition {
@@ -271,6 +353,17 @@ export interface ItemDefinition {
 	damage: number;
 	/** Who it hurts (or heals): the figure and its team, the monsters, or everyone. */
 	damageWho: 'figure' | 'monsters' | 'all';
+	/** A rectangular hit area (`aspect` = width ÷ height) instead of a round one. */
+	box: boolean;
+	aspect: number;
+	/** Side view: can be stood on from above (and stays where it is instead of falling). */
+	platform: boolean;
+	/** Side view: stays in the air where it is, instead of falling to the ground. */
+	float: boolean;
+	/** Hits a bouncing ball takes before it breaks and runs `do` (0: unbreakable). */
+	hp: number;
+	/** The `clear` goal waits until every such item is gone. */
+	required: boolean;
 	do: Action[];
 }
 
@@ -311,6 +404,8 @@ export interface ThrowableDefinition {
 	maxAmmo: number;
 	/** Never runs out. */
 	unlimited: boolean;
+	/** Holding the key keeps using it (as often as the cooldown allows). */
+	auto: boolean;
 	/** Keys into `audio.sounds`. */
 	sound: string;
 	explodeSound: string;
@@ -346,7 +441,7 @@ export interface UpgradeDefinition {
 }
 
 export type Action =
-	| { do: 'spawn'; entity: string; count: number; where: 'edge' | 'near' }
+	| { do: 'spawn'; entity: string; count: number; where: 'edge' | 'near' | 'figure' }
 	| { do: 'setView'; mode: ViewMode }
 	| { do: 'points'; amount: number }
 	| { do: 'heal'; amount: number }
@@ -363,6 +458,11 @@ export type Action =
 	| { do: 'healParty'; amount: number }
 	| { do: 'callTeam' }
 	| { do: 'hazard'; throwable: string; where: 'figure' | 'near' | 'edge'; count: number }
+	| { do: 'grow'; amount: number }
+	| { do: 'toStart' }
+	| { do: 'checkpoint' }
+	| { do: 'launch'; speed: number }
+	| { do: 'scare'; seconds: number }
 	| { do: 'nextLevel' }
 	| { do: 'message'; text: string }
 	| { do: 'sound'; sound: string }
@@ -425,8 +525,34 @@ export interface Goal {
 	amount: number;
 }
 
+/** A character of a map and what it puts on the page. */
+export interface MapSymbol {
+	/** Key into `items` (empty: none). */
+	item: string;
+	/** Key into `entities` (empty: none). */
+	entity: string;
+	/** Degrees an entity starts in (0 = right, 90 = down; -1: its own `heading`). */
+	angle: number;
+	/** Where the figure starts. */
+	start: boolean;
+}
+
+/** A level drawn as text: every character of a row is one cell, placed in the middle of the window. */
+export interface MapDefinition {
+	label: string;
+	rows: string[];
+	/** Size of a cell, px (also the grid of `grid` control). It shrinks when the map does not fit the window. */
+	cell: number;
+	/** Where it stands in the window: in the middle, or on the ground (side view). */
+	align: 'center' | 'bottom';
+	/** Character → what is there. Characters not listed (and spaces) stay empty. */
+	legend: Record<string, MapSymbol>;
+}
+
 export interface LevelDefinition {
 	label: string;
+	/** Key into `maps`: put on the page when the level starts (empty: none). */
+	map: string;
 	/** Switches the view when the level starts (empty: keeps it). */
 	view: '' | ViewMode;
 	goal: Goal;
@@ -453,6 +579,8 @@ export interface PlayConfig {
 		jumpSpeed: number;
 		/** Side view: page elements to stand on. */
 		platforms: { selector: string; minWidth: number };
+		/** Side view: how often the figure can jump again in the air. */
+		airJumps: number;
 	};
 	game: {
 		/** The entity the visitor plays. */
@@ -466,6 +594,22 @@ export interface PlayConfig {
 		breakPoints: number;
 		/** How many caught monsters the figure can carry. */
 		partySize: number;
+		/** How the figure is steered. */
+		control: Control;
+		/** `slide`: which way the figure slides along its edge of the window. */
+		slideAxis: 'x' | 'y';
+		/** Where things happen: the whole page, or the window as it is at the start (the page stays put). */
+		arena: 'page' | 'screen';
+		/** A bouncing ball that leaves the window on this side is lost (the `lost` event). */
+		pit: Pit;
+		/** `death`: after losing a life the figure starts again at its starting place; `hit`: every hit costs a life. */
+		respawn: 'stay' | 'death' | 'hit';
+		/** Side view: landing on a monster hurts it for this many times the attack (0: off). */
+		stomp: number;
+		/** `ship`: how it flies. */
+		ship: { thrust: number; turn: number; maxSpeed: number; drag: number };
+		/** `grid`: moves cell by cell. */
+		grid: { cell: number; auto: boolean; crash: boolean; tail: boolean };
 	};
 	stats: Record<string, StatDefinition>;
 	sprites: Record<string, SpriteDefinition>;
@@ -487,6 +631,7 @@ export interface PlayConfig {
 		whilePlaying: boolean;
 		playDelay: Range;
 	};
+	maps: Record<string, MapDefinition>;
 	waves: Wave[];
 	triggers: Trigger[];
 	levels: LevelDefinition[];
