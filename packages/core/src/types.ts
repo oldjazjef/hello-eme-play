@@ -79,6 +79,8 @@ export interface Body {
 	wander: { angle: number; left: number };
 	/** Vehicles driving by themselves (arriving, leaving). */
 	pilot: { targets: { x: number; y: number }[]; pause: number; leaving: boolean } | undefined;
+	/** Monsters: seconds until the next throw. */
+	throwCooldown: number;
 	/** Seconds until the same vehicle can hurt this body again. */
 	runOver: number;
 	/** Parked and waiting (vehicles). */
@@ -104,6 +106,10 @@ export interface Projectile {
 	/** Seconds until it goes off (Infinity: no fuse, it goes off on contact). */
 	fuse: number;
 	age: number;
+	/** Who threw it: the figure (hurts monsters) or a monster (hurts the figure). */
+	owner: 'figure' | 'monster';
+	/** The thrower's attack when it was thrown. */
+	attack: number;
 }
 
 export interface Pickup {

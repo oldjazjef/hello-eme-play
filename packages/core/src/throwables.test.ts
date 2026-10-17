@@ -205,3 +205,63 @@ describe('throwables', () => {
 		expect(world.controls.throws.size).toBe(0);
 	});
 });
+
+describe('monsters that throw', () => {
+	const thrower = {
+		kind: 'monster',
+		stats: { hp: 5, attack: 3, speed: 70 },
+		behavior: 'stand',
+		moves: [],
+		throws: [{ throwable: 'bomb', range: 500, cooldown: 2 }]
+	};
+	const bombs = { bomb: { ...bomb, speed: 500, fuse: 0.5, radius: 90, power: 10 } };
+	const make = () =>
+		quiet({
+			entities: {
+				hero: { kind: 'figure', stats: { hp: 100, attack: 1, speed: 220 } },
+				thrower,
+				blob: standing.blob
+			},
+			throwables: bombs
+		});
+
+	it('throws at the figure when it is in range, then waits for the cooldown', () => {
+		const world = make();
+		world.spawn('thrower', world.player.x + 300, world.player.y);
+		const thrown = vi.fn();
+		world.events.on('throw', thrown);
+		run(world, 2.2);
+		expect(thrown).toHaveBeenCalledOnce();
+		run(world, 1);
+		expect(thrown).toHaveBeenCalledOnce();
+		run(world, 1.5);
+		expect(thrown.mock.calls.length).toBeGreaterThan(1);
+	});
+
+	it('does not throw from beyond its range', () => {
+		const world = make();
+		world.spawn('thrower', world.player.x + 600, world.player.y);
+		run(world, 3);
+		expect(world.projectiles).toHaveLength(0);
+	});
+
+	it("the blast hurts the figure and spares other monsters, with the thrower's attack", () => {
+		const world = make();
+		world.spawn('thrower', world.player.x + 150, world.player.y);
+		const other = world.spawn('blob', world.player.x + 20, world.player.y);
+		run(world, 3);
+		expect(world.player.hp).toBeLessThan(100);
+		expect(other?.hp).toBe(4);
+	});
+
+	it("is not counted as the figure's own throws", () => {
+		const world = make();
+		world.spawn('thrower', world.player.x + 150, world.player.y);
+		const thrown = vi.fn();
+		world.events.on('throw', thrown);
+		run(world, 2.5);
+		expect(thrown).toHaveBeenCalled();
+		expect(world.stats.thrown).toBe(0);
+		expect(world.ammoOf('bomb')).toBe(3);
+	});
+});

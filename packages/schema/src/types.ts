@@ -126,6 +126,17 @@ export interface EntityDefinition {
 	drive: DriveDefinition;
 	ram: RamDefinition;
 	absorbs: boolean;
+	/** Monsters: what it throws or drops at the figure, from how far, and how often. */
+	throws: MonsterThrow[];
+}
+
+export interface MonsterThrow {
+	/** Key into `throwables`. */
+	throwable: string;
+	/** Throws when the figure is closer than this (px). */
+	range: number;
+	/** Seconds until it throws again. */
+	cooldown: number;
 }
 
 export interface BossPhase {

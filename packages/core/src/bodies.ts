@@ -43,6 +43,7 @@ export function createBody(
 		drift: 0,
 		wander: { angle: 0, left: 0 },
 		pilot: undefined,
+		throwCooldown: 2,
 		runOver: 0,
 		parked: false,
 		phase: 0
@@ -55,6 +56,7 @@ export function tickBody(body: Body, dt: number): void {
 	body.hurt = Math.max(0, body.hurt - dt);
 	body.invulnerable = Math.max(0, body.invulnerable - dt);
 	body.runOver = Math.max(0, body.runOver - dt);
+	body.throwCooldown = Math.max(0, body.throwCooldown - dt);
 	if (body.pose) {
 		body.pose.left -= dt;
 		if (body.pose.left <= 0) body.pose = undefined;

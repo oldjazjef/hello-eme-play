@@ -4,7 +4,7 @@ import { direction, targetOf, victimOf } from './combat.js';
 import { advance, fall, radiusOf, sizeOf } from './space.js';
 import { stateOf } from './state.js';
 import { cooldownOf, distance, reduced, statOf } from './stats.js';
-import type { Projectile, World } from './types.js';
+import type { Body, Projectile, World } from './types.js';
 
 /** From above a thrown object slows down by this factor per second: it flies about speed ÷ DRAG px. */
 const DRAG = 3;
@@ -76,7 +76,9 @@ export function throwItem(world: World, id: string): boolean {
 		grounded: false,
 		drop: 0,
 		fuse: definition.fuse > 0 ? definition.fuse : Infinity,
-		age: 0
+		age: 0,
+		owner: 'figure',
+		attack: statOf(world, world.player, 'attack')
 	};
 	world.projectiles.push(projectile);
 	world.stats.thrown += 1;
@@ -138,6 +140,11 @@ function triggered(
 ): boolean {
 	if (p.age < ARMING) return false;
 	if (definition.speed > 0 && rested) return true;
+	if (p.owner === 'monster') {
+		return (
+			distance(targetOf(world), p) <= radiusOf(sizeOf(world, targetOf(world))) + definition.size / 2
+		);
+	}
 	return world.bodies.some(
 		(body) =>
 			body.kind === 'monster' &&
@@ -153,8 +160,7 @@ function remove(world: World, projectile: Projectile): void {
 /** The blast: monsters in range are hurt and pushed away, page elements break, the figure may be hurt. */
 function explode(world: World, p: Projectile, definition: ThrowableDefinition): void {
 	remove(world, p);
-	const thrower = world.player;
-	const base = statOf(world, thrower, 'attack') * definition.power;
+	const base = p.attack * definition.power;
 	world.events.emit('explode', {
 		throwable: p.def,
 		x: p.x,
@@ -162,7 +168,7 @@ function explode(world: World, p: Projectile, definition: ThrowableDefinition): 
 		radius: Math.max(definition.radius, definition.size)
 	});
 	if (definition.explodeSound) world.events.emit('sound', { id: definition.explodeSound });
-	for (const monster of [...world.bodies]) {
+	for (const monster of p.owner === 'figure' ? [...world.bodies] : []) {
 		if (monster.kind !== 'monster') continue;
 		const near = distance(monster, p);
 		const reach =
@@ -172,9 +178,9 @@ function explode(world: World, p: Projectile, definition: ThrowableDefinition): 
 		monster.vx = Math.cos(away) * definition.push;
 		monster.vy = world.view === 'side' ? 0 : Math.sin(away) * definition.push;
 		if (world.view === 'side' && definition.push > 0) monster.fall = -definition.push * 0.5;
-		world.damage(monster, reduced(base, statOf(world, monster, 'defense')), thrower, 'blast');
+		world.damage(monster, reduced(base, statOf(world, monster, 'defense')), world.player, 'blast');
 	}
-	if (definition.hurtsFigure) {
+	if (definition.hurtsFigure || p.owner === 'monster') {
 		const victim = victimOf(world);
 		const target = targetOf(world);
 		const reach = definition.radius + radiusOf(sizeOf(world, target));
@@ -211,4 +217,44 @@ function strikePage(world: World, p: Projectile, definition: ThrowableDefinition
 			breaks: true
 		});
 	}
+}
+
+/** A monster throws (or drops) the first of its throwables the figure is close enough for. */
+export function monsterThrow(world: World, monster: Body, target: Body): void {
+	const entity = world.config.entities[monster.def];
+	if (!entity || monster.throwCooldown > 0 || world.projectiles.length >= MAX_PROJECTILES) return;
+	const side = world.view === 'side';
+	const toX = target.x - monster.x;
+	const toY = side ? 0 : target.y - monster.y;
+	const away = Math.hypot(toX, toY);
+	const choice = entity.throws.find(
+		(entry) => world.config.throwables[entry.throwable] && away <= entry.range
+	);
+	const definition = choice && world.config.throwables[choice.throwable];
+	if (!choice || !definition) return;
+	monster.throwCooldown = choice.cooldown;
+	const facing = away > 0 ? { x: toX / away, y: toY / away } : { x: 1, y: 0 };
+	// Thrown to land on the figure when the throwable can fly that far.
+	const speed = definition.speed > 0 ? Math.min(definition.speed, Math.max(80, away * DRAG)) : 0;
+	const reach = sizeOf(world, monster);
+	const projectile: Projectile = {
+		id: stateOf(world).nextId++,
+		def: choice.throwable,
+		x: monster.x + (speed > 0 ? facing.x * reach * 0.4 : 0),
+		y: side
+			? monster.y - (speed > 0 ? reach * 0.5 : 0)
+			: monster.y + (speed > 0 ? facing.y * reach * 0.4 : 0),
+		vx: facing.x * speed,
+		vy: side ? 0 : facing.y * speed,
+		fall: side && speed > 0 ? -speed * ARC : 0,
+		grounded: false,
+		drop: 0,
+		fuse: definition.fuse > 0 ? definition.fuse : Infinity,
+		age: 0,
+		owner: 'monster',
+		attack: statOf(world, monster, 'attack')
+	};
+	world.projectiles.push(projectile);
+	world.events.emit('throw', { id: choice.throwable, projectile });
+	if (definition.sound) world.events.emit('sound', { id: definition.sound });
 }

@@ -194,8 +194,8 @@ export const PRESETS: Record<string, Preset> = {
 	arsenal: {
 		label: t('Arsenal und Fahrzeuge', 'Arsenal and vehicles'),
 		description: t(
-			'Bomben (G), Steine (T) und Minen aus dem Auto (M); dazu ein Motorrad und ein Laster, die anders fahren und anders einstecken.',
-			'Bombs (G), rocks (T) and mines from a vehicle (M), plus a bike and a truck that drive and take hits differently.'
+			'Bomben (G), Steine (T) und Minen aus dem Auto (M); dazu ein Motorrad und ein Laster, die anders fahren und anders einstecken, und Bomber-Monster, die zurückwerfen.',
+			'Bombs (G), rocks (T) and mines from a vehicle (M), plus a bike and a truck that drive and take hits differently, and bomber monsters that throw back.'
 		),
 		config: {
 			entities: {
@@ -203,6 +203,17 @@ export const PRESETS: Record<string, Preset> = {
 				blob: {
 					...CLASSIC.blob,
 					reward: { points: 100, drops: [{ item: 'bombs', chance: 20 }] }
+				},
+				bomber: {
+					kind: 'monster',
+					label: 'Bomber',
+					look: 'enemy',
+					size: 56,
+					stats: { hp: 4, attack: 2, speed: 50 },
+					behavior: 'wander',
+					moves: [],
+					reward: { points: 200, drops: [{ item: 'bombs', chance: 50 }] },
+					throws: [{ throwable: 'bomb', range: 420, cooldown: 5 }]
 				},
 				car: CLASSIC.car,
 				bike: {
@@ -271,6 +282,7 @@ export const PRESETS: Record<string, Preset> = {
 			},
 			spawns: [
 				{ entity: 'blob', every: { min: 8, max: 16 }, count: { min: 1, max: 3 }, max: 8 },
+				{ entity: 'bomber', every: { min: 20, max: 35 }, count: { min: 1, max: 1 }, max: 2 },
 				{ entity: 'bike', every: { min: 40, max: 70 }, count: { min: 1, max: 1 }, max: 1 },
 				{ entity: 'truck', every: { min: 60, max: 90 }, count: { min: 1, max: 1 }, max: 1 }
 			],

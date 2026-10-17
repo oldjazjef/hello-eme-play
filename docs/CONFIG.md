@@ -87,6 +87,23 @@ defined in `throwables` and used with its `keys` (touch screens get a button wit
 }
 ```
 
+**Monsters throw too**: list what a monster throws in its entity's `throws` (`throwable`, `range`: throws when the
+figure is closer than that, `cooldown`). It aims at the figure (or its vehicle) and the throwable lands on it when
+it can fly that far. A monster's blast hurts the figure (using the monster's `attack`) and never other monsters;
+it needs no ammo, and `where`, `ammo` and `keys` don't apply. The first throw comes two seconds after it appears.
+
+```json
+{
+	"entities": {
+		"bomber": {
+			"kind": "monster",
+			"behavior": "wander",
+			"throws": [{ "throwable": "bomb", "range": 420, "cooldown": 5 }]
+		}
+	}
+}
+```
+
 **Vehicles** are entities of `kind: "vehicle"`; any number of kinds can exist side by side, spawned by a `spawns`
 rule, a `spawn` action or `visits`. What makes them different:
 

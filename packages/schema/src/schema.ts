@@ -435,6 +435,20 @@ const ENTITY = object(t('Figur, Monster oder Fahrzeug', 'Figure, monster or vehi
 			do: ACTIONS(t('Dann', 'Then'))
 		})
 	},
+	throws: {
+		type: 'list',
+		label: t('Wirft (Monster)', 'Throws (monsters)'),
+		help: t(
+			'Bomben, Steine oder Minen, die das Monster auf die Figur wirft. Sie verletzen die Figur, nie andere Monster, und brauchen keine Munition.',
+			'Bombs, rocks or mines the monster throws at the figure. They hurt the figure, never other monsters, and need no ammo.'
+		),
+		maxItems: 5,
+		of: object(t('Wurf', 'Throw'), {
+			throwable: ref(t('Wurfobjekt', 'Throwable'), 'throwables'),
+			range: num(t('Wirft ab Abstand (px)', 'Throws within (px)'), 350, 20, 3000),
+			cooldown: num(t('Pause (Sekunden)', 'Cooldown (seconds)'), 4, 0.2, 600)
+		})
+	},
 	drive: DRIVE,
 	ram: RAM,
 	absorbs: bool(
