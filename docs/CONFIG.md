@@ -24,7 +24,7 @@ the Payload form or the JSON Schema list every field with bounds.
 | `pages`               | `{ match, config }`: other settings for some pages (path pattern, partial JSON)            |
 | `levels`              | label, view, goal (`score`, `kills`, `survive`, `boss`)                                    |
 | `visits`              | a vehicle that drives in by itself                                                         |
-| `keys`, `hint`        | keyboard bindings, hint timeout                                                            |
+| `keys`, `hint`        | keyboard bindings, hint timeout, `hint.pauseWhileOpen` (the game waits while it is open)   |
 | `audio`, `progress`   | synth sounds by id, event → sound, high score storage                                      |
 | `texts`               | UI texts (empty: the default of `locale`)                                                  |
 

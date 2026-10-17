@@ -403,7 +403,10 @@ export class Session {
 			world.dismissVisit();
 		}
 
-		const paused = this.#shopOpen;
+		// Optionally the game waits while the instructions are open (never in the lobby or after the end).
+		const readingHint =
+			hooks.config.hint.pauseWhileOpen && playing && world.phase === 'playing' && !this.#hintHidden;
+		const paused = this.#shopOpen || readingHint;
 		if (!paused) {
 			this.#input.apply(world.controls, world.riding !== undefined);
 			world.step(dt);
@@ -469,7 +472,8 @@ export class Session {
 		if (phase !== this.#phase) {
 			this.#hintSince = now;
 			// Next to the vehicle the hint matters again: how to get in.
-			if (phase === 'near') this.#hintHidden = false;
+			// (Not when the game pauses for the hint: it would stop the game at every vehicle.)
+			if (phase === 'near' && !this.#hooks.config.hint.pauseWhileOpen) this.#hintHidden = false;
 		}
 		const hideAfter = this.#hooks.config.hint.hideAfter;
 		if (

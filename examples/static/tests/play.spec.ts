@@ -164,3 +164,25 @@ test('throws a bomb with G: it uses up ammo and goes off after its fuse', async 
 	await expect.poll(() => canvas(page, 'projectiles'), { timeout: 5000 }).toBe('0');
 	expect(errors).toEqual([]);
 });
+
+test('can pause while the instructions are open, and runs once they are folded away', async ({
+	page
+}) => {
+	await page.goto(page_url);
+	await page.evaluate(() => {
+		window.Play?.configure({ hint: { hideAfter: 0, pauseWhileOpen: true } });
+	});
+	await page.locator('[data-play-toggle]').click();
+	await expect.poll(() => canvas(page, 'state')).toBe('playing');
+	const time = () => page.evaluate(() => window.Play?.world?.time ?? -1);
+	await page.waitForTimeout(500);
+	const before = await time();
+	await page.waitForTimeout(700);
+	expect(await time()).toBe(before);
+	await page
+		.getByRole('button', { name: /Hinweis ausblenden|Hide hint/i })
+		.first()
+		.click();
+	await page.waitForTimeout(700);
+	expect(await time()).toBeGreaterThan(before + 0.3);
+});

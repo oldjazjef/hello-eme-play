@@ -1179,6 +1179,19 @@ const FIELDS: Record<string, Node> = {
 			4,
 			0,
 			3600
+		),
+		pauseWhileOpen: bool(
+			t(
+				'Spiel pausiert, solange die Anleitung ausgeklappt ist',
+				'Pause the game while the instructions are open'
+			),
+			false,
+			{
+				help: t(
+					'Die Anleitung steht beim Start offen: das Spiel beginnt, wenn sie eingeklappt wird (von Hand oder nach „Klappt ein nach“; 0 = bis du sie schliesst).',
+					'The instructions are open at the start: the game begins when they fold away (by hand or after “Folds away after”; 0 = until you close them).'
+				)
+			}
 		)
 	}),
 	audio: object(t('Ton', 'Audio'), {

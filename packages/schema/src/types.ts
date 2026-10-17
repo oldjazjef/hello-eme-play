@@ -503,7 +503,7 @@ export interface PlayConfig {
 		/** Sends out the next team member (and calls the one out back). */
 		party: string[];
 	};
-	hint: { hideAfter: number };
+	hint: { hideAfter: number; pauseWhileOpen: boolean };
 	audio: {
 		enabled: boolean;
 		volume: number;
