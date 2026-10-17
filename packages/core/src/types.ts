@@ -87,6 +87,8 @@ export interface Body {
 	hideout: number;
 	/** Monsters beaten, towards the next level. */
 	kills: number;
+	/** Standing in an item that hides (a bush): not seen, and not seeing. */
+	covered: boolean;
 	/** Monsters: level (evolving), seconds and hits towards the next, seconds until the next litter (-1: not set). */
 	level: number;
 	levelTime: number;

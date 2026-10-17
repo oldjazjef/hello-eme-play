@@ -88,6 +88,45 @@ defined in `throwables` and used with its `keys` (touch screens get a button wit
 }
 ```
 
+## Objects: items with properties
+
+An item with `"pickup": "none"` can't be picked up: it stays on the page as an **object**, and its properties act on
+whatever touches it (the figure, its vehicle, monsters, the team):
+
+- `solid`: blocks the way. Figures, monsters and vehicles walk up to it and no further (wall, tree, crate,
+  barricade). In the side view only the sides block.
+- `hides`: whatever stands in it is covered: monsters inside are invisible, the figure inside is drawn faint, and
+  monsters farther than 90 px no longer see it, so chasers wander instead (bush, tent, curtain).
+- `damage` and `damageWho`: health lost per second by touching it (`figure` = the figure or its vehicle and its team,
+  `monsters`, or `all`). A negative number heals (a spring), a positive one hurts (spikes, lava, barbed wire). A
+  vehicle that `absorbs` takes it instead of the figure.
+- `look`: `wall`, `spikes`, `bush` and `puddle` are built-in pictures for objects; `sprite` is better.
+- `itemSpawns[].initial`: that many lie spread over the whole page from the start of the level (never on the figure).
+
+```json
+{
+	"items": {
+		"tree": { "pickup": "none", "lifetime": 0, "look": "bush", "size": 70, "solid": true },
+		"thorns": {
+			"pickup": "none",
+			"lifetime": 0,
+			"look": "spikes",
+			"size": 50,
+			"damage": 6,
+			"damageWho": "all"
+		},
+		"spring": { "pickup": "none", "lifetime": 0, "look": "puddle", "size": 74, "damage": -12 }
+	},
+	"itemSpawns": [
+		{ "item": "tree", "initial": 14 },
+		{ "item": "thorns", "initial": 5 },
+		{ "item": "spring", "initial": 2 }
+	]
+}
+```
+
+All ten example games lay objects out this way.
+
 ## Catching monsters, a team, hideouts (Ememons)
 
 You can play a Pokémon-style game with this:

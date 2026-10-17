@@ -61,7 +61,16 @@ export function ItemLookPreview(props: { look: ItemLook }) {
 				strokeLinejoin="round"
 				style={{
 					stroke: SPRITE_COLORS.outline,
-					fill: props.look === 'heart' ? SPRITE_COLORS.itemAlt : SPRITE_COLORS.item
+					fill:
+						props.look === 'heart' || props.look === 'spikes'
+							? SPRITE_COLORS.itemAlt
+							: props.look === 'wall'
+								? SPRITE_COLORS.rock
+								: props.look === 'bush'
+									? SPRITE_COLORS.grass
+									: props.look === 'puddle'
+										? SPRITE_COLORS.water
+										: SPRITE_COLORS.item
 				}}
 			/>
 		</svg>

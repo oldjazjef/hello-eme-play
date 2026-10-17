@@ -109,6 +109,11 @@ function factsOf(
 	} else if (path === 'items') {
 		const pickup = optionLabel(node.of, 'pickup', data.pickup ?? 'touch', ctx);
 		if (pickup) facts.push(pickup);
+		if (resolved.solid === true) facts.push('▣');
+		if (resolved.hides === true) facts.push('◌');
+		if (typeof resolved.damage === 'number' && resolved.damage !== 0) {
+			facts.push(`${resolved.damage > 0 ? '−' : '+'}${Math.abs(resolved.damage)}/s`);
+		}
 		const look = ITEM_LOOKS.find((candidate) => candidate === resolved.look);
 		if (look) builtIn = { kind: 'item', look };
 	} else if (path === 'throwables') {

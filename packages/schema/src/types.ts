@@ -21,7 +21,16 @@ export type Behavior = (typeof BEHAVIORS)[number];
 export const LOOKS = ['figure', 'enemy', 'car'] as const;
 export type Look = (typeof LOOKS)[number];
 
-export const ITEM_LOOKS = ['heart', 'star', 'gem', 'bolt'] as const;
+export const ITEM_LOOKS = [
+	'heart',
+	'star',
+	'gem',
+	'bolt',
+	'wall',
+	'spikes',
+	'bush',
+	'puddle'
+] as const;
 export type ItemLook = (typeof ITEM_LOOKS)[number];
 
 export const THROWABLE_LOOKS = ['bomb', 'rock', 'mine', 'ball'] as const;
@@ -229,6 +238,8 @@ export interface SpawnRule {
 
 export interface ItemSpawnRule {
 	item: string;
+	/** How many are placed over the page when the round starts. */
+	initial: number;
 	every: Range;
 	max: number;
 	fromLevel: number;
@@ -240,10 +251,18 @@ export interface ItemDefinition {
 	sprite: string;
 	look: ItemLook;
 	size: number;
-	/** `touch`: picked up by walking onto it. `use`: the use key picks it up. */
-	pickup: 'touch' | 'use';
+	/** `touch`: picked up by walking onto it. `use`: the use key picks it up. `none`: an object that stays. */
+	pickup: 'touch' | 'use' | 'none';
 	/** Seconds until it vanishes (0: stays). */
 	lifetime: number;
+	/** Blocks the way: figures, monsters and vehicles can't walk through it. */
+	solid: boolean;
+	/** Whatever stands in it is hidden: invisible monsters, a figure monsters can't see. */
+	hides: boolean;
+	/** Health lost per second by whoever touches it (negative: gained). */
+	damage: number;
+	/** Who it hurts (or heals): the figure and its team, the monsters, or everyone. */
+	damageWho: 'figure' | 'monsters' | 'all';
 	do: Action[];
 }
 

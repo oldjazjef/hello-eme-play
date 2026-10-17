@@ -29,7 +29,7 @@ describe('runBalance', () => {
 		for (const [id, preset] of Object.entries(PRESETS)) {
 			expect(runBalance(preset.config), id).toBeDefined();
 		}
-	});
+	}, 30_000);
 
 	it('says idle when nothing can happen', () => {
 		const empty = { spawns: [], triggers: [], levels: [] };

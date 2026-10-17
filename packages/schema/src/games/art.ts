@@ -241,12 +241,24 @@ export type IconKind =
 	| 'gem'
 	| 'rock'
 	| 'fireball'
-	| 'apple';
+	| 'apple'
+	| 'tree'
+	| 'wall'
+	| 'spikes'
+	| 'spring'
+	| 'hedge'
+	| 'barricade';
 
 /** A small picture of a thing (an item, a throwable). */
 export function icon(kind: IconKind, color: string, accent = '#ffffff'): string {
 	const stroke = `stroke="${INK}" stroke-width="3"`;
 	const shapes: Record<IconKind, string> = {
+		tree: `<rect x="27" y="38" width="10" height="22" rx="2" fill="#92400e" ${stroke}/><circle cx="32" cy="26" r="20" fill="${color}" ${stroke}/><circle cx="24" cy="20" r="6" fill="${accent}" opacity=".35"/><circle cx="40" cy="30" r="5" fill="${accent}" opacity=".25"/>`,
+		wall: `<rect x="4" y="10" width="56" height="44" rx="3" fill="${color}" ${stroke}/><path d="M4 24 L60 24 M4 38 L60 38 M20 10 L20 24 M44 10 L44 24 M32 24 L32 38 M14 38 L14 54 M48 38 L48 54" stroke="${accent}" stroke-width="2.5" fill="none" opacity=".8"/>`,
+		spikes: `<path d="M4 56 L4 54 L12 12 L20 54 L22 54 L30 8 L38 54 L40 54 L48 12 L56 54 L60 56 Z" fill="${color}" ${stroke}/><path d="M12 12 L10 40 M30 8 L28 38 M48 12 L46 40" stroke="${accent}" stroke-width="2.5" fill="none" opacity=".7"/>`,
+		spring: `<circle cx="32" cy="32" r="26" fill="${color}" ${stroke}/><circle cx="32" cy="32" r="17" fill="none" stroke="${accent}" stroke-width="3" opacity=".75"/><path d="M32 20 L32 44 M20 32 L44 32" stroke="${accent}" stroke-width="5"/>`,
+		hedge: `<circle cx="18" cy="36" r="16" fill="${color}" ${stroke}/><circle cx="46" cy="36" r="16" fill="${color}" ${stroke}/><circle cx="32" cy="24" r="18" fill="${color}" ${stroke}/><circle cx="26" cy="20" r="3" fill="${accent}" opacity=".7"/><circle cx="40" cy="30" r="3" fill="${accent}" opacity=".7"/><circle cx="20" cy="40" r="3" fill="${accent}" opacity=".7"/>`,
+		barricade: `<rect x="4" y="22" width="56" height="10" rx="3" fill="${color}" ${stroke}/><rect x="4" y="40" width="56" height="10" rx="3" fill="${color}" ${stroke}/><path d="M10 14 L10 58 M54 14 L54 58" stroke="${INK}" stroke-width="5"/><path d="M14 22 L22 32 M30 22 L38 32 M46 22 L54 32" stroke="${accent}" stroke-width="3"/>`,
 		potion: `<path d="M26 8 L38 8 L38 22 L50 48 C52 54 48 58 42 58 L22 58 C16 58 12 54 14 48 L26 22 Z" fill="${color}" ${stroke}/><rect x="24" y="4" width="16" height="8" rx="2" fill="#92400e" ${stroke}/><path d="M20 44 L44 44" stroke="${accent}" stroke-width="3" opacity=".7"/>`,
 		flask: `<path d="M24 6 L40 6 L40 24 L54 52 C56 58 52 60 46 60 L18 60 C12 60 8 58 10 52 L24 24 Z" fill="${color}" fill-opacity=".85" ${stroke}/><path d="M20 6 L44 6" stroke="${INK}" stroke-width="4"/>`,
 		coin: `<circle cx="32" cy="32" r="24" fill="${color}" ${stroke}/><circle cx="32" cy="32" r="16" fill="none" stroke="${accent}" stroke-width="3" opacity=".8"/><path d="M32 22 L32 42 M27 27 Q32 21 37 27 Q27 34 37 39 Q32 44 27 38" fill="none" stroke="${accent}" stroke-width="3"/>`,

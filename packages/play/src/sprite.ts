@@ -242,8 +242,30 @@ export const ITEM_LOOK_PATHS: Record<ItemLook, string> = {
 			return `${i === 0 ? 'M' : 'L'}${(Math.cos(angle) * radius).toFixed(1)} ${(Math.sin(angle) * radius).toFixed(1)}`;
 		}).join(' ') + ' Z',
 	gem: 'M0 -50 L40 -10 L0 50 L-40 -10 Z',
-	bolt: 'M10 -50 L-30 5 L-2.5 5 L-10 50 L30 -10 L2.5 -10 Z'
+	bolt: 'M10 -50 L-30 5 L-2.5 5 L-10 50 L30 -10 L2.5 -10 Z',
+	wall: 'M-46 -38 L46 -38 L46 38 L-46 38 Z',
+	spikes: 'M-48 40 L-36 -30 L-24 40 L-12 -40 L0 40 L12 -40 L24 40 L36 -30 L48 40 Z',
+	bush: 'M-44 26 C-60 4 -40 -22 -18 -16 C-14 -42 18 -42 22 -16 C46 -22 60 6 44 26 Z',
+	puddle: 'M-50 0 C-50 -26 -10 -34 20 -28 C50 -22 52 10 30 24 C0 38 -50 28 -50 0 Z'
 };
+
+/** What an item's built-in look is filled with. */
+function itemFill(look: ItemLook, colors: SpriteColors): string {
+	switch (look) {
+		case 'heart':
+			return colors.itemAlt;
+		case 'wall':
+			return colors.rock;
+		case 'spikes':
+			return colors.itemAlt;
+		case 'bush':
+			return colors.grass;
+		case 'puddle':
+			return colors.water;
+		default:
+			return colors.item;
+	}
+}
 
 /** The outline of each built-in throwable look around (0, 0), like `ITEM_LOOK_PATHS`, for previews. */
 export const THROWABLE_LOOK_PATHS: Record<ThrowableLook, string> = {
@@ -475,7 +497,7 @@ export function drawBody(
 	const picture = definition.sprite ? scene.pictures[definition.sprite] : undefined;
 	const height = scene.reducedMotion ? 0 : jumpHeight(body);
 	const blink = body.invulnerable > 0 && Math.floor(body.invulnerable * 10) % 2 === 0;
-	ctx.globalAlpha = body.hurt > 0 || blink ? 0.45 : 1;
+	ctx.globalAlpha = body.hurt > 0 || blink || body.covered ? 0.45 : 1;
 
 	if (scene.side) {
 		drawSide(ctx, body, definition, scene, x, y, scale, picture);
@@ -888,7 +910,9 @@ export function drawPickup(
 	scene: Scene
 ): void {
 	if (pickup.ttl < 3 && Math.floor(pickup.ttl * 6) % 2 === 0) return;
-	const bob = scene.reducedMotion ? 0 : Math.sin(pickup.age * 4) * 3;
+	// Objects that stay (trees, walls, spikes) don't bob.
+	const bob =
+		scene.reducedMotion || definition.pickup === 'none' ? 0 : Math.sin(pickup.age * 4) * 3;
 	const x = pickup.x - scene.scroll.x;
 	const y = pickup.y - scene.scroll.y - (scene.side ? definition.size / 2 : 0) + bob;
 	const picture = definition.sprite ? scene.pictures[definition.sprite] : undefined;
@@ -912,7 +936,7 @@ export function drawPickup(
 	ctx.translate(x, y);
 	ctx.lineWidth = 3;
 	ctx.strokeStyle = colors.outline;
-	ctx.fillStyle = definition.look === 'heart' ? colors.itemAlt : colors.item;
+	ctx.fillStyle = itemFill(definition.look, colors);
 	ctx.beginPath();
 	switch (definition.look) {
 		case 'heart':
@@ -940,6 +964,27 @@ export function drawPickup(
 			ctx.lineTo(-r * 0.2, r);
 			ctx.lineTo(r * 0.6, -r * 0.2);
 			ctx.lineTo(r * 0.05, -r * 0.2);
+			break;
+		case 'wall':
+			ctx.roundRect(-r, -r * 0.8, r * 2, r * 1.6, r * 0.15);
+			break;
+		case 'spikes':
+			for (let i = 0; i < 5; i++) {
+				const left = -r + (i * 2 * r) / 5;
+				ctx.moveTo(left, r * 0.8);
+				ctx.lineTo(left + r / 5, -r * 0.8);
+				ctx.lineTo(left + (2 * r) / 5, r * 0.8);
+			}
+			break;
+		case 'bush':
+			ctx.arc(-r * 0.45, r * 0.1, r * 0.5, 0, Math.PI * 2);
+			ctx.moveTo(r * 0.95, r * 0.1);
+			ctx.arc(r * 0.45, r * 0.1, r * 0.5, 0, Math.PI * 2);
+			ctx.moveTo(r * 0.5, -r * 0.25);
+			ctx.arc(0, -r * 0.25, r * 0.5, 0, Math.PI * 2);
+			break;
+		case 'puddle':
+			ctx.ellipse(0, 0, r, r * 0.65, 0, 0, Math.PI * 2);
 			break;
 	}
 	ctx.closePath();

@@ -43,6 +43,7 @@ export function createBody(
 		drift: 0,
 		wander: { angle: 0, left: 0 },
 		pilot: undefined,
+		covered: false,
 		ally: false,
 		member: 0,
 		hidden: false,

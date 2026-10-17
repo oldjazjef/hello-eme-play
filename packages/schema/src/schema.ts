@@ -610,10 +610,11 @@ const ITEM = object(t('Gegenstand', 'Item'), {
 	sprite: ref(t('Bild', 'Picture'), 'sprites', true),
 	look: select(t('Eingebautes Aussehen', 'Built-in look'), ITEM_LOOKS, 'star'),
 	size: num(t('Grösse (px)', 'Size (px)'), 30, 8, 200),
-	pickup: select(t('Einsammeln', 'Pick up'), ['touch', 'use'], 'touch', {
+	pickup: select(t('Einsammeln', 'Pick up'), ['touch', 'use', 'none'], 'touch', {
 		optionLabels: {
 			touch: t('Drüberlaufen', 'Walk over it'),
-			use: t('Mit Aktionstaste', 'With the use key')
+			use: t('Mit Aktionstaste', 'With the use key'),
+			none: t('Gar nicht (bleibt als Objekt liegen)', 'Not at all (stays as an object)')
 		}
 	}),
 	lifetime: num(
@@ -622,6 +623,40 @@ const ITEM = object(t('Gegenstand', 'Item'), {
 		0,
 		3600
 	),
+	solid: bool(t('Versperrt den Weg', 'Blocks the way'), false, {
+		help: t(
+			'Figur, Monster und Fahrzeuge kommen nicht hindurch (Mauer, Baum, Kiste).',
+			'Figures, monsters and vehicles cannot get through (a wall, a tree, a crate).'
+		)
+	}),
+	hides: bool(t('Versteckt, was darin steht', 'Hides what stands in it'), false, {
+		help: t(
+			'Monster darin sind unsichtbar, die Figur darin sehen Monster nicht mehr (Busch, Zelt).',
+			'Monsters inside are invisible, and monsters can no longer see a figure inside (a bush, a tent).'
+		)
+	}),
+	damage: num(
+		t(
+			'Schaden pro Sekunde beim Berühren (minus = heilt)',
+			'Damage per second on touch (negative = heals)'
+		),
+		0,
+		-1000,
+		1000,
+		{
+			help: t(
+				'Stacheln, Lava, eine Heilquelle: wer das Objekt berührt, verliert (oder gewinnt) Leben.',
+				'Spikes, lava, a healing spring: whoever touches the object loses (or gains) health.'
+			)
+		}
+	),
+	damageWho: select(t('Wirkt auf', 'Affects'), ['figure', 'monsters', 'all'], 'figure', {
+		optionLabels: {
+			figure: t('Figur und Team', 'The figure and its team'),
+			monsters: t('Monster', 'Monsters'),
+			all: t('Alle', 'Everyone')
+		}
+	}),
 	do: ACTIONS(t('Wirkung', 'Effect'))
 });
 
@@ -769,6 +804,12 @@ const SPAWN = object(t('Monster-Regel', 'Monster rule'), {
 
 const ITEM_SPAWN = object(t('Gegenstand-Regel', 'Item rule'), {
 	item: ref(t('Gegenstand', 'Item'), 'items'),
+	initial: int(t('Am Rundenstart verteilt (Anzahl)', 'Scattered at the start (count)'), 0, 0, 200, {
+		help: t(
+			'So viele liegen von Anfang an über die ganze Seite verteilt (für Bäume, Mauern, Stacheln).',
+			'This many lie spread over the whole page from the start (for trees, walls, spikes).'
+		)
+	}),
 	every: range(t('Abstand (Sekunden)', 'Interval (seconds)'), 20, 40, { min: 0.5, max: 3600 }),
 	max: int(t('Höchstens gleichzeitig', 'At most at once'), 2, 1, 100),
 	...level(1)

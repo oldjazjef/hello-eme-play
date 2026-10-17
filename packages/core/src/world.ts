@@ -4,7 +4,7 @@ import { parkingSpot, think } from './ai.js';
 import { createBody, tickBody } from './bodies.js';
 import { addPoints, damage as applyDamage, overrun, targetOf, useMove } from './combat.js';
 import { createEventBus } from './events.js';
-import { createPickup, spawnItems, updatePickups, usePickup } from './items.js';
+import { createPickup, spawnItems, tickObjects, updatePickups, usePickup } from './items.js';
 import { cycleParty, healParty, hidingSpot, placeHideouts, recruit, tickHideouts } from './team.js';
 import { ammoOf, giveAmmo, throwItem, updateProjectiles } from './throwables.js';
 import { buy, canBuy, checkGoal, spawnMonsters, startLevel, vehicleVisit } from './progress.js';
@@ -147,6 +147,7 @@ export function createWorld(json: PlayConfig | unknown, options: WorldOptions = 
 				walk(world, player, seconds);
 			}
 			for (const id of controls.held) useMove(world, id);
+			tickObjects(world, seconds);
 			think(world, seconds);
 			updatePickups(world, seconds);
 			updateProjectiles(world, seconds);

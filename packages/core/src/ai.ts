@@ -2,7 +2,7 @@
 import { tickBody } from './bodies.js';
 import { monsterAttack, targetOf } from './combat.js';
 import { advance, fall, radiusOf, sizeOf, spotInView } from './space.js';
-import { statOf } from './stats.js';
+import { distance, statOf } from './stats.js';
 import { tickLife } from './life.js';
 import { foeOf, thinkAlly } from './team.js';
 import { monsterThrow } from './throwables.js';
@@ -11,6 +11,8 @@ import type { Body, World } from './types.js';
 
 /** Monsters farther from the figure than this (px) give up; only happens across a page wrap. */
 const GIVE_UP = 5000;
+/** A monster sees a hidden figure only this close (px). */
+const BLIND_RANGE = 90;
 /** How fast knockback fades (1/s). */
 const FRICTION = 5;
 
@@ -39,7 +41,13 @@ export function think(world: World, dt: number): void {
 		tickLife(world, body, dt);
 		// A team member close by draws the monster's attention.
 		const foe = foeOf(world, body);
-		moveMonster(world, body, foe ?? target, dt);
+		moveMonster(
+			world,
+			body,
+			foe ?? target,
+			dt,
+			!foe && target.covered && distance(body, target) > BLIND_RANGE
+		);
 		attack(world, body, foe ?? target, foe);
 		if (world.phase === 'playing' && !foe) monsterThrow(world, body, target);
 	}
@@ -69,7 +77,7 @@ function driveAlone(world: World, vehicle: Body, dt: number): void {
 	if (world.view === 'side') fall(world, vehicle, dt);
 }
 
-function moveMonster(world: World, monster: Body, target: Body, dt: number): void {
+function moveMonster(world: World, monster: Body, target: Body, dt: number, blind = false): void {
 	const definition = world.config.entities[monster.def];
 	const side = world.view === 'side';
 	const speed = statOf(world, monster, 'speed');
@@ -80,7 +88,9 @@ function moveMonster(world: World, monster: Body, target: Body, dt: number): voi
 	const toX = target.x - monster.x;
 	const toY = side ? 0 : target.y - monster.y;
 	const to = Math.hypot(toX, toY);
-	switch (definition?.behavior ?? 'chase') {
+	// A figure hidden in a bush is not seen from afar: the monster wanders instead.
+	const behavior = definition?.behavior ?? 'chase';
+	switch (blind && behavior === 'chase' ? 'wander' : behavior) {
 		case 'chase':
 			// Close enough to hit: stop there instead of pushing into the target.
 			if (to > reach * 0.8 && to > 0) {

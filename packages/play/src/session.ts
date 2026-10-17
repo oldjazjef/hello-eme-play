@@ -647,7 +647,7 @@ export class Session {
 		);
 		for (const body of bodies) {
 			const base = config.entities[body.def];
-			if (!base || body.hidden) continue;
+			if (!base || body.hidden || (body.covered && body.kind === 'monster' && !body.ally)) continue;
 			// Evolved monsters are bigger than their definition says.
 			const definition = body.level > 0 ? { ...base, size: sizeOf(world, body) } : base;
 			if (body.ally) drawTeamRing(ctx, body, definition.size, scene);
