@@ -191,6 +191,92 @@ export const PRESETS: Record<string, Preset> = {
 			]
 		}
 	},
+	arsenal: {
+		label: t('Arsenal und Fahrzeuge', 'Arsenal and vehicles'),
+		description: t(
+			'Bomben (G), Steine (T) und Minen aus dem Auto (M); dazu ein Motorrad und ein Laster, die anders fahren und anders einstecken.',
+			'Bombs (G), rocks (T) and mines from a vehicle (M), plus a bike and a truck that drive and take hits differently.'
+		),
+		config: {
+			entities: {
+				hero: CLASSIC.hero,
+				blob: {
+					...CLASSIC.blob,
+					reward: { points: 100, drops: [{ item: 'bombs', chance: 20 }] }
+				},
+				car: CLASSIC.car,
+				bike: {
+					kind: 'vehicle',
+					label: 'Bike',
+					look: 'car',
+					size: 60,
+					stats: { hp: 40, attack: 2, speed: 560, accel: 900, handling: 5 },
+					behavior: 'arrive',
+					drive: { reverse: 80, brake: 1400, grip: 50 },
+					ram: { power: 0.5 }
+				},
+				truck: {
+					kind: 'vehicle',
+					label: 'Truck',
+					look: 'car',
+					size: 130,
+					stats: { hp: 300, attack: 6, defense: 20, speed: 300, accel: 260, handling: 1.6 },
+					behavior: 'arrive',
+					drive: { brake: 500, roll: 150, slideGrip: 3 },
+					ram: { power: 3, minSpeed: 90 },
+					absorbs: true
+				}
+			},
+			throwables: {
+				bomb: { label: 'Bomb', keys: ['KeyG'], ammo: 5 },
+				rock: {
+					label: 'Rock',
+					look: 'rock',
+					keys: ['KeyT'],
+					where: 'foot',
+					size: 16,
+					speed: 520,
+					fuse: 0,
+					radius: 0,
+					power: 2,
+					push: 300,
+					breaks: false,
+					cooldown: 0.5,
+					unlimited: true
+				},
+				mine: {
+					label: 'Mine',
+					look: 'mine',
+					keys: ['KeyM'],
+					where: 'vehicle',
+					direction: 'back',
+					size: 26,
+					speed: 0,
+					fuse: 0,
+					radius: 90,
+					power: 6,
+					ammo: 3
+				}
+			},
+			items: {
+				bombs: {
+					label: 'Bombs',
+					look: 'bolt',
+					lifetime: 25,
+					do: [
+						{ do: 'ammo', throwable: 'bomb', amount: 3 },
+						{ do: 'ammo', throwable: 'mine', amount: 1 }
+					]
+				}
+			},
+			spawns: [
+				{ entity: 'blob', every: { min: 8, max: 16 }, count: { min: 1, max: 3 }, max: 8 },
+				{ entity: 'bike', every: { min: 40, max: 70 }, count: { min: 1, max: 1 }, max: 1 },
+				{ entity: 'truck', every: { min: 60, max: 90 }, count: { min: 1, max: 1 }, max: 1 }
+			],
+			itemSpawns: [{ item: 'bombs', every: { min: 15, max: 30 }, max: 2 }]
+		}
+	},
 	platformer: {
 		label: t('Sidescroller', 'Side-scroller'),
 		description: t(

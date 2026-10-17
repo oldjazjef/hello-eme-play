@@ -39,7 +39,7 @@
 		<!-- Build first: npm run build. The configuration is one JSON (here inline). -->
 		<script
 			src="../../packages/play/dist/play.iife.js"
-			data-config='{"levels":[{"label":"Warm-up","goal":{"type":"kills","amount":3}},{"label":"Heat","view":"side","goal":{"type":"survive","amount":30}}],"upgrades":{"muscles":{"label":"Muscles","help":"+1 attack","cost":100,"max":3,"stats":{"attack":1}}},"items":{"heart":{"look":"heart","do":[{"do":"heal","amount":30}]}},"entities":{"hero":{"kind":"figure","stats":{"hp":100,"attack":1,"speed":220},"moves":["punch","kick"]},"blob":{"kind":"monster","stats":{"hp":2,"attack":5,"speed":70},"moves":["bite"],"reward":{"points":100,"drops":[{"item":"heart","chance":30}]}},"car":{"kind":"vehicle","look":"car","size":90,"behavior":"arrive","stats":{"hp":100,"attack":3,"speed":420,"accel":520,"handling":3}}}}'
+			data-config='{"throwables":{"bomb":{"label":"Bomb","keys":["KeyG"],"ammo":5}},"levels":[{"label":"Warm-up","goal":{"type":"kills","amount":3}},{"label":"Heat","view":"side","goal":{"type":"survive","amount":30}}],"upgrades":{"muscles":{"label":"Muscles","help":"+1 attack","cost":100,"max":3,"stats":{"attack":1}}},"items":{"heart":{"look":"heart","do":[{"do":"heal","amount":30}]}},"entities":{"hero":{"kind":"figure","stats":{"hp":100,"attack":1,"speed":220},"moves":["punch","kick"]},"blob":{"kind":"monster","stats":{"hp":2,"attack":5,"speed":70},"moves":["bite"],"reward":{"points":100,"drops":[{"item":"heart","chance":30}]}},"car":{"kind":"vehicle","look":"car","size":90,"behavior":"arrive","stats":{"hp":100,"attack":3,"speed":420,"accel":520,"handling":3}}}}'
 			defer
 		></script>
 	</head>
@@ -49,7 +49,8 @@
 			<h1>A page that is also a game</h1>
 			<p>
 				Press the game button (bottom right). Walk with the arrow keys, punch with space, kick with
-				Q, jump with E, get into the car with F. Everything is configured by one JSON.
+				Q, jump with E, get into the car with F, throw a bomb with G. Everything is configured by
+				one JSON.
 			</p>
 			<section>
 				<h2>Things to break</h2>

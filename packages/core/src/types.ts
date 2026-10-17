@@ -87,6 +87,25 @@ export interface Body {
 	phase: number;
 }
 
+/** A bomb, rock or mine in flight, on the ground or about to go off. */
+export interface Projectile {
+	id: number;
+	/** Key into `config.throwables`. */
+	def: string;
+	x: number;
+	y: number;
+	/** Horizontal (and, from above, vertical) speed, px/s. */
+	vx: number;
+	vy: number;
+	/** Side view: vertical speed (down is positive) and whether it rests; `drop` is unused. */
+	fall: number;
+	grounded: boolean;
+	drop: number;
+	/** Seconds until it goes off (Infinity: no fuse, it goes off on contact). */
+	fuse: number;
+	age: number;
+}
+
 export interface Pickup {
 	id: number;
 	def: string;
@@ -111,11 +130,13 @@ export interface Controls {
 	held: Set<string>;
 	/** One-shot actions since the last step. */
 	pressed: Set<'jump' | 'honk' | 'use'>;
+	/** Throwables (ids of `config.throwables`) asked for since the last step. */
+	throws: Set<string>;
 }
 
 export type Phase = 'lobby' | 'playing' | 'over' | 'won';
 
-export type DefeatSource = 'move' | 'overrun' | 'trigger';
+export type DefeatSource = 'move' | 'overrun' | 'trigger' | 'blast';
 
 export interface WorldEvents extends Record<string, unknown> {
 	start: { phase: Phase };
@@ -141,6 +162,12 @@ export interface WorldEvents extends Record<string, unknown> {
 		breaks: boolean;
 	};
 	move: { move: string; pose: Pose };
+	/** The figure threw or dropped a throwable (`id` into `config.throwables`). */
+	throw: { id: string; projectile: Projectile };
+	/** A throwable (or a wrecked vehicle: `throwable` is empty) went off at (x, y). */
+	explode: { throwable: string; x: number; y: number; radius: number };
+	/** A vehicle took too much damage and is gone. */
+	wreck: { vehicle: Body };
 	land: { x: number; y: number };
 	honk: { x: number; y: number };
 	points: { amount: number; total: number };
@@ -163,6 +190,7 @@ export interface Stats {
 	broken: number;
 	jumps: number;
 	honks: number;
+	thrown: number;
 	pickups: number;
 	upgrades: number;
 	/** Points earned (spending on upgrades doesn't lower it). */
@@ -189,6 +217,7 @@ export interface World {
 	riding: Body | undefined;
 	readonly bodies: Body[];
 	readonly pickups: Pickup[];
+	readonly projectiles: Projectile[];
 	readonly upgrades: Record<string, number>;
 	readonly stats: Stats;
 
@@ -212,6 +241,14 @@ export interface World {
 	/** Effective value of a stat (base + temporary changes, within the stat's bounds). */
 	stat(body: Body, id: string): number;
 	maxHp(body: Body): number;
+	/** Throws or drops a throwable. Returns whether it happened (ammo, cooldown, where). */
+	throwItem(id: string): boolean;
+	/** How many of a throwable the figure has (Infinity when unlimited). */
+	ammoOf(id: string): number;
+	/** Adds (or takes) ammo, within 0 and the throwable's maximum. */
+	giveAmmo(id: string, amount: number): void;
+	/** A vehicle is destroyed; the figure sitting in it gets out. */
+	wreck(vehicle: Body): void;
 	/** Gets in or out of the vehicle nearby. */
 	use(): void;
 	/** A key was pressed (its `KeyboardEvent.code`): sets off the triggers bound to it. */

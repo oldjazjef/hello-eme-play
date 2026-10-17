@@ -21,8 +21,17 @@ export function targetOf(world: World): Body {
 	return world.riding ?? world.player;
 }
 
+/**
+ * Who takes the hits: the vehicle the figure sits in when it is built to (`absorbs`), else the
+ * figure itself.
+ */
+export function victimOf(world: World): Body {
+	const vehicle = world.riding;
+	return vehicle && world.config.entities[vehicle.def]?.absorbs ? vehicle : world.player;
+}
+
 /** Facing as a unit vector (side view: only left or right). */
-function direction(world: World, body: Body): { x: number; y: number } {
+export function direction(world: World, body: Body): { x: number; y: number } {
 	if (world.view === 'side') return { x: Math.cos(body.angle) >= 0 ? 1 : -1, y: 0 };
 	return { x: Math.cos(body.angle), y: Math.sin(body.angle) };
 }
@@ -85,8 +94,9 @@ export function monsterAttack(world: World, monster: Body, moveId: string): bool
 	if (!move || monster.cooldown > 0) return false;
 	monster.cooldown = cooldownOf(world, monster, move.cooldown);
 	monster.pose = { pose: move.pose, left: move.seconds };
-	const hit = hitOf(world, monster, move.power, world.player);
-	if (!hit.evaded) world.damage(world.player, hit.amount, monster);
+	const victim = victimOf(world);
+	const hit = hitOf(world, monster, move.power, victim);
+	if (!hit.evaded) world.damage(victim, hit.amount, monster);
 	return true;
 }
 
@@ -100,9 +110,20 @@ export function damage(
 ): void {
 	if (world.phase !== 'playing' || amount <= 0) return;
 	if (target === world.player) return hurtPlayer(world, amount, from);
+	if (target.kind === 'vehicle') return hurtVehicle(world, target, amount, from);
 	target.hp -= amount;
 	target.hurt = 0.25;
 	if (target.hp <= 0) defeat(world, target, source);
+}
+
+/** A vehicle that takes hits for its driver blinks, and is wrecked when its health is gone. */
+function hurtVehicle(world: World, vehicle: Body, amount: number, from: Body | undefined): void {
+	if (vehicle.invulnerable > 0) return;
+	vehicle.hp -= amount;
+	vehicle.invulnerable = HURT_SECONDS;
+	vehicle.hurt = HURT_SECONDS;
+	world.events.emit('hurt', { amount, from });
+	if (vehicle.hp <= 0) world.wreck(vehicle);
 }
 
 function hurtPlayer(world: World, amount: number, from: Body | undefined): void {
@@ -161,13 +182,15 @@ export function overrun(world: World, vehicle: Body): void {
 	const speed = Math.abs(vehicle.speed);
 	if (speed < 1) return;
 	const reach = sizeOf(world, vehicle) * 0.38;
-	const fast = speed >= world.config.game.overrunSpeed;
+	const ram = world.config.entities[vehicle.def]?.ram;
+	const fast = speed >= (ram?.minSpeed || world.config.game.overrunSpeed);
 	for (const monster of [...world.bodies]) {
 		if (!isMonster(monster) || monster.runOver > 0) continue;
 		if (distance(monster, vehicle) > reach) continue;
 		if (fast) {
 			monster.runOver = 0.5;
-			const power = 1 + (speed / Math.max(1, statOf(world, vehicle, 'speed'))) * 2;
+			const power =
+				(1 + (speed / Math.max(1, statOf(world, vehicle, 'speed'))) * 2) * (ram?.power ?? 1);
 			const hit = hitOf(world, vehicle, power, monster);
 			if (!hit.evaded) world.damage(monster, hit.amount, vehicle, 'overrun');
 		} else {

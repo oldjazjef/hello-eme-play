@@ -3,7 +3,7 @@ import { tickBody } from './bodies.js';
 import { monsterAttack, targetOf } from './combat.js';
 import { advance, fall, radiusOf, sizeOf, spotInView } from './space.js';
 import { statOf } from './stats.js';
-import { autopilot } from './vehicle.js';
+import { autopilot, driveOf } from './vehicle.js';
 import type { Body, World } from './types.js';
 
 /** Monsters farther from the figure than this (px) give up; only happens across a page wrap. */
@@ -41,7 +41,9 @@ function driveAlone(world: World, vehicle: Body, dt: number): void {
 		if (world.view === 'side') fall(world, vehicle, dt);
 		return;
 	}
-	vehicle.speed = Math.sign(vehicle.speed) * Math.max(0, Math.abs(vehicle.speed) - 320 * dt);
+	vehicle.speed =
+		Math.sign(vehicle.speed) *
+		Math.max(0, Math.abs(vehicle.speed) - driveOf(world, vehicle).roll * dt);
 	if (vehicle.speed !== 0) {
 		advance(
 			world,

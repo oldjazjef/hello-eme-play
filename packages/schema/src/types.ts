@@ -24,6 +24,9 @@ export type Look = (typeof LOOKS)[number];
 export const ITEM_LOOKS = ['heart', 'star', 'gem', 'bolt'] as const;
 export type ItemLook = (typeof ITEM_LOOKS)[number];
 
+export const THROWABLE_LOOKS = ['bomb', 'rock', 'mine'] as const;
+export type ThrowableLook = (typeof THROWABLE_LOOKS)[number];
+
 export const FACINGS = ['right', 'down', 'left', 'up'] as const;
 export type Facing = (typeof FACINGS)[number];
 
@@ -72,6 +75,35 @@ export interface SpriteDefinition {
 	facing: Facing;
 }
 
+/**
+ * How a vehicle handles (seen from above). The vehicle's stats `speed`, `accel` and `handling` say
+ * how fast and how nimble it is; these say how it feels: grip, braking, sliding.
+ */
+export interface DriveDefinition {
+	/** Top speed in reverse, px/s. */
+	reverse: number;
+	/** Braking while going the other way, px/s². */
+	brake: number;
+	/** Rolling out with no pedal pressed, px/s². */
+	roll: number;
+	/** How fast the drift angle fades (1/s) with the tires gripping and with the handbrake. */
+	grip: number;
+	slideGrip: number;
+	/** Largest drift angle, rad. */
+	maxDrift: number;
+	/** Handbrake: how much tighter it turns, and how much speed it takes away (px/s²). */
+	handbrakeTurn: number;
+	handbrakeDrag: number;
+}
+
+/** What a vehicle does to monsters it runs into. */
+export interface RamDefinition {
+	/** Multiplies the vehicle's `attack` (which also grows with its speed). */
+	power: number;
+	/** Hurts from this speed on (px/s); 0: `game.overrunSpeed`. */
+	minSpeed: number;
+}
+
 export interface EntityDefinition {
 	kind: EntityKind;
 	label: string;
@@ -90,6 +122,10 @@ export interface EntityDefinition {
 	boss: boolean;
 	/** Bosses: run once each when health drops below `below` percent (any order of listing). */
 	phases: BossPhase[];
+	/** Vehicles: how it handles, what it does to monsters, whether it takes the hits for the driver. */
+	drive: DriveDefinition;
+	ram: RamDefinition;
+	absorbs: boolean;
 }
 
 export interface BossPhase {
@@ -155,6 +191,46 @@ export interface ItemDefinition {
 	do: Action[];
 }
 
+/** Something the figure throws or drops (a bomb, a rock, a mine) and that goes off. */
+export interface ThrowableDefinition {
+	label: string;
+	sprite: string;
+	look: ThrowableLook;
+	size: number;
+	/** Keyboard keys (the touch screen gets a button anyway). */
+	keys: string[];
+	/** Where it can be used. */
+	where: 'foot' | 'vehicle' | 'both';
+	/** From a vehicle: out of the front or the back. */
+	direction: 'front' | 'back';
+	/** Launch speed, px/s (0: dropped on the spot). A vehicle's own speed is added. */
+	speed: number;
+	/** Seconds until it goes off (0: when it touches a monster, or lands, or comes to rest). */
+	fuse: number;
+	/** Side view, with a fuse: how much of its speed it keeps bouncing off the ground (0..1). */
+	bounce: number;
+	/** Multiplies the thrower's `attack`. */
+	power: number;
+	/** Blast radius, px (0: only the monster it touches). */
+	radius: number;
+	/** Knockback in px/s. */
+	push: number;
+	/** The blast breaks page elements. */
+	breaks: boolean;
+	/** The blast also hurts the figure (and its vehicle) when close. */
+	hurtsFigure: boolean;
+	/** Seconds until the next one. */
+	cooldown: number;
+	/** How many the figure starts with, and the most it can carry. */
+	ammo: number;
+	maxAmmo: number;
+	/** Never runs out. */
+	unlimited: boolean;
+	/** Keys into `audio.sounds`. */
+	sound: string;
+	explodeSound: string;
+}
+
 export interface UpgradeDefinition {
 	label: string;
 	help: string;
@@ -183,6 +259,7 @@ export type Action =
 			seconds: number;
 	  }
 	| { do: 'dropItem'; item: string }
+	| { do: 'ammo'; throwable: string; amount: number }
 	| { do: 'nextLevel' }
 	| { do: 'message'; text: string }
 	| { do: 'sound'; sound: string }
@@ -287,6 +364,7 @@ export interface PlayConfig {
 	entities: Record<string, EntityDefinition>;
 	moves: Record<string, MoveDefinition>;
 	items: Record<string, ItemDefinition>;
+	throwables: Record<string, ThrowableDefinition>;
 	upgrades: Record<string, UpgradeDefinition>;
 	spawns: SpawnRule[];
 	itemSpawns: ItemSpawnRule[];

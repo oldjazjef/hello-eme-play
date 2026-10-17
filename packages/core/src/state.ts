@@ -7,6 +7,9 @@ export interface State {
 	/** Per spawn rule / item rule / interval trigger: the time (s) it fires next. */
 	spawnDue: number[];
 	itemDue: number[];
+	/** Throwables the figure carries, and the time (s) each can be used again. */
+	ammo: Record<string, number>;
+	throwDue: Record<string, number>;
 	intervalDue: number[];
 	/** Triggers that already ran (`once`). */
 	fired: Set<number>;

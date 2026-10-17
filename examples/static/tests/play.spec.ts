@@ -146,3 +146,21 @@ test('shows game over with a restart button when the figure dies', async ({ page
 	await expect.poll(() => canvas(page, 'health')).toBe('100');
 	await expect(page.locator('.play-over')).toHaveCount(0);
 });
+
+test('throws a bomb with G: it uses up ammo and goes off after its fuse', async ({ page }) => {
+	const errors: string[] = [];
+	page.on('pageerror', (error) => errors.push(String(error)));
+	await start(page);
+	await page.evaluate(() => {
+		const world = window.Play?.world;
+		if (!world) return;
+		world.player.angle = 0;
+		const blob = world.spawn('blob', world.player.x + 100, world.player.y);
+		if (blob) blob.speed = 0;
+	});
+	await page.keyboard.press('KeyG');
+	await expect.poll(() => canvas(page, 'projectiles')).toBe('1');
+	expect(await page.evaluate(() => window.Play?.world?.ammoOf('bomb'))).toBe(4);
+	await expect.poll(() => canvas(page, 'projectiles'), { timeout: 5000 }).toBe('0');
+	expect(errors).toEqual([]);
+});

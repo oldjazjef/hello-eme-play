@@ -8,6 +8,7 @@ import {
 	createWorld,
 	isSkidding,
 	rearWheels,
+	victimOf,
 	type Body,
 	type Host,
 	type World
@@ -19,15 +20,19 @@ import { createPageHost, reducedMotion } from './page.js';
 import { loadBest, saveBest } from './progress.js';
 import { addMarks, fresh, type SkidMark } from './skid.js';
 import {
+	BLAST_MS,
+	drawBlast,
 	drawBody,
 	drawHealth,
 	drawPickup,
+	drawProjectile,
 	drawShards,
 	drawSkidMarks,
 	loadPictures,
 	monsterShardColors,
 	resolveColors,
 	shardColors,
+	type Blast,
 	type Pictures,
 	type Scene,
 	type SpriteColors
@@ -99,6 +104,7 @@ export class Session {
 	#shards: Shard[] = [];
 	#monsterShards: Shard[] = [];
 	#marks: SkidMark[] = [];
+	#blasts: Blast[] = [];
 	/** Rear wheels in the last frame (page coordinates), where new tire marks start. */
 	#wheelsBefore: { x: number; y: number }[] = [];
 	#pictures: Pictures = {};
@@ -133,6 +139,7 @@ export class Session {
 			use: () => this.#input.request('use'),
 			jump: () => this.#input.request(this.#world.riding ? 'honk' : 'jump'),
 			move: (id, held) => this.#input.holdMove('pad', id, held),
+			throwItem: (id) => this.#input.throwItem(id),
 			handbrake: (held) => (this.#input.handbrake.pad = held),
 			steer: (value) => (this.#input.wheel = value),
 			pedal: (value) => (this.#input.pedal = value),
@@ -217,6 +224,9 @@ export class Session {
 			on('kill', ({ body }) => {
 				this.#burst({ x: body.x - 20, y: body.y - 20, width: 40, height: 40 }, 'monster');
 			}),
+			on('explode', ({ x, y, radius }) =>
+				this.#blasts.push({ x, y, radius, at: performance.now() })
+			),
 			on('enterVehicle', () => this.#hooks.emit('car-enter')),
 			on('levelUp', ({ level }) => level > 1 && this.#hooks.emit('level', { level })),
 			on('viewChange', ({ mode }) => this.#hooks.emit('view', { mode })),
@@ -286,6 +296,7 @@ export class Session {
 		this.#wrecker.repair();
 		this.#shards = [];
 		this.#marks = [];
+		this.#blasts = [];
 		this.#render();
 	}
 
@@ -407,6 +418,7 @@ export class Session {
 		if (++this.#frames % 30 === 0) {
 			this.#colors = resolveColors(this.#ui.probe);
 			this.#marks = fresh(this.#marks, now);
+			this.#blasts = this.#blasts.filter((blast) => now - blast.at < BLAST_MS);
 		}
 		this.#draw(ctx, now);
 		this.#request = requestAnimationFrame(this.#frame);
@@ -423,7 +435,7 @@ export class Session {
 			return;
 		}
 		// Tire marks while it slides; none across a jump to the other end of the page.
-		const wheels = rearWheels(car);
+		const wheels = rearWheels(car, world.config.entities[car.def]?.size);
 		const jumped = this.#wheelsBefore.some((before, index) => {
 			const wheel = wheels[index];
 			return wheel ? Math.hypot(wheel.x - before.x, wheel.y - before.y) > 200 : false;
@@ -501,8 +513,8 @@ export class Session {
 			hintHidden: this.#hintHidden,
 			hud: config.spawns.length > 0 || config.levels.length > 0 || upgrades.length > 0,
 			score: world.score,
-			health: world.player.hp,
-			maxHealth: world.maxHp(world.player),
+			health: victimOf(world).hp,
+			maxHealth: world.maxHp(victimOf(world)),
 			over: world.phase === 'over' ? 'over' : world.phase === 'won' ? 'won' : 'none',
 			level: world.level,
 			levels: config.levels.length,
@@ -515,6 +527,17 @@ export class Session {
 					}
 				: undefined,
 			moves,
+			throwables: Object.entries(config.throwables).flatMap(([id, item]) =>
+				item.where === 'both' || (item.where === 'vehicle') === (world.riding !== undefined)
+					? [
+							{
+								id,
+								label: item.label || id,
+								ammo: item.unlimited ? '∞' : String(world.ammoOf(id))
+							}
+						]
+					: []
+			),
 			upgrades,
 			shopOpen: this.#shopOpen,
 			stats: Object.entries(config.stats).flatMap(([id, stat]) =>
@@ -559,6 +582,7 @@ export class Session {
 		data.view = world.view;
 		data.level = String(world.level);
 		data.items = String(world.pickups.length);
+		data.projectiles = String(world.projectiles.length);
 		data.state = world.phase;
 	}
 
@@ -585,6 +609,10 @@ export class Session {
 			const definition = config.items[pickup.def];
 			if (definition) drawPickup(ctx, pickup, definition, scene);
 		}
+		for (const projectile of world.projectiles) {
+			const definition = config.throwables[projectile.def];
+			if (definition) drawProjectile(ctx, projectile, definition, scene);
+		}
 		// Vehicles first, then monsters, then the figure on top.
 		const bodies = [...world.bodies].sort(
 			(a, b) => Number(b.kind === 'vehicle') - Number(a.kind === 'vehicle')
@@ -600,6 +628,7 @@ export class Session {
 		if (hero && world.phase !== 'lobby' && !world.riding) {
 			drawBody(ctx, world.player, hero, scene);
 		}
+		for (const blast of this.#blasts) drawBlast(ctx, blast, scene, now);
 		drawShards(ctx, this.#shards, scene, shardColors(this.#colors));
 		drawShards(ctx, this.#monsterShards, scene, monsterShardColors(this.#colors));
 	}

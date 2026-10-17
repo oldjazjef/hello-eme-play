@@ -3,7 +3,13 @@
  * tire marks. Everything is drawn on one canvas that covers the window; world positions are page
  * coordinates, so the scroll position is subtracted.
  */
-import { jumpHeight, walkFrame, type Body, type Pickup } from '@hello-eme/play-core';
+import {
+	jumpHeight,
+	walkFrame,
+	type Body,
+	type Pickup,
+	type Projectile
+} from '@hello-eme/play-core';
 import type {
 	Animation,
 	EntityDefinition,
@@ -11,7 +17,8 @@ import type {
 	ItemDefinition,
 	ItemLook,
 	Look,
-	PlayConfig
+	PlayConfig,
+	ThrowableDefinition
 } from '@hello-eme/play-schema';
 import { opacity as skidOpacity, SKID, type SkidMark } from './skid.js';
 import type { Shard } from './wreck.js';
@@ -570,6 +577,116 @@ export function drawHealth(
 }
 
 /** Draws an item: its picture, or a small shape for its look; it bobs and blinks before it vanishes. */
+/** A going-off throwable: an expanding flash, seconds since the blast. */
+export interface Blast {
+	x: number;
+	y: number;
+	radius: number;
+	/** `performance.now()` when it went off. */
+	at: number;
+}
+
+/** How long a blast flash lasts, ms. */
+export const BLAST_MS = 380;
+
+/** A bomb, rock or mine in flight or lying around: the picture, or the built-in look. */
+export function drawProjectile(
+	ctx: CanvasRenderingContext2D,
+	projectile: Projectile,
+	definition: ThrowableDefinition,
+	scene: Scene
+): void {
+	const x = projectile.x - scene.scroll.x;
+	const y = projectile.y - scene.scroll.y - (scene.side ? definition.size / 2 : 0);
+	const picture = definition.sprite ? scene.pictures[definition.sprite] : undefined;
+	if (
+		picture &&
+		drawPicture(
+			ctx,
+			picture,
+			x,
+			y,
+			0,
+			1,
+			false,
+			frameAt(picture.sheet, 'idle', scene.time + projectile.age, scene.reducedMotion)
+		)
+	)
+		return;
+	const r = definition.size / 2;
+	const { colors } = scene;
+	// A lit fuse blinks faster as the bomb is about to go off.
+	const left = Number.isFinite(projectile.fuse) ? projectile.fuse : Infinity;
+	const blink = scene.reducedMotion
+		? left < 1
+		: Math.floor(projectile.age * (left < 1 ? 14 : 5)) % 2 === 0;
+	ctx.save();
+	ctx.translate(x, y);
+	ctx.lineWidth = 3;
+	ctx.strokeStyle = colors.outline;
+	ctx.fillStyle =
+		definition.look === 'rock' ? colors.b : definition.look === 'mine' ? colors.e : colors.shadow;
+	ctx.beginPath();
+	if (definition.look === 'rock') {
+		for (let i = 0; i < 7; i++) {
+			const angle = (Math.PI * 2 * i) / 7;
+			const radius = r * (i % 2 === 0 ? 1 : 0.78);
+			const px = Math.cos(angle) * radius;
+			const py = Math.sin(angle) * radius;
+			if (i === 0) ctx.moveTo(px, py);
+			else ctx.lineTo(px, py);
+		}
+		ctx.closePath();
+	} else ctx.arc(0, 0, r * (definition.look === 'mine' ? 1 : 0.85), 0, Math.PI * 2);
+	ctx.stroke();
+	ctx.fill();
+	if (definition.look === 'bomb') {
+		// The fuse on top and its spark.
+		ctx.strokeStyle = colors.outline;
+		ctx.beginPath();
+		ctx.moveTo(0, -r * 0.8);
+		ctx.lineTo(r * 0.35, -r * 1.25);
+		ctx.stroke();
+		if (blink) {
+			ctx.fillStyle = colors.itemAlt;
+			ctx.beginPath();
+			ctx.arc(r * 0.35, -r * 1.25, r * 0.25, 0, Math.PI * 2);
+			ctx.fill();
+		}
+	} else if (definition.look === 'mine' && blink) {
+		ctx.fillStyle = colors.l;
+		ctx.beginPath();
+		ctx.arc(0, 0, r * 0.3, 0, Math.PI * 2);
+		ctx.fill();
+	}
+	ctx.restore();
+}
+
+/** The flash of a blast: a disc that grows to the blast radius and fades. */
+export function drawBlast(
+	ctx: CanvasRenderingContext2D,
+	blast: Blast,
+	scene: Scene,
+	now: number
+): void {
+	const progress = Math.min(1, (now - blast.at) / BLAST_MS);
+	const radius = blast.radius * (scene.reducedMotion ? 1 : 0.35 + 0.65 * progress);
+	ctx.save();
+	ctx.globalAlpha = (1 - progress) * 0.85;
+	ctx.translate(
+		blast.x - scene.scroll.x,
+		blast.y - scene.scroll.y - (scene.side ? radius * 0.3 : 0)
+	);
+	ctx.fillStyle = scene.colors.item;
+	ctx.strokeStyle = scene.colors.itemAlt;
+	ctx.lineWidth = 4;
+	ctx.beginPath();
+	ctx.arc(0, 0, radius, 0, Math.PI * 2);
+	ctx.fill();
+	ctx.stroke();
+	ctx.restore();
+}
+
 export function drawPickup(
 	ctx: CanvasRenderingContext2D,
 	pickup: Pickup,

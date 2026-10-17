@@ -7,8 +7,8 @@ import { isObject, problems, resolve, toJsonSchema } from './dsl.js';
 import { migrate } from './migrate.js';
 import { cleanPages, mergeConfig, pageConfigFor, withoutPages } from './pages.js';
 import { SCHEMA_VERSION } from './version.js';
-import { PAGE_CONFIG, PLAY_SCHEMA } from './schema.js';
-import type { PlayConfig } from './types.js';
+import { DRIVE, PAGE_CONFIG, PLAY_SCHEMA } from './schema.js';
+import type { DriveDefinition, PlayConfig } from './types.js';
 
 const DEFAULT_ENTITIES = (resolve(PLAY_SCHEMA, {}) as PlayConfig).entities;
 
@@ -39,6 +39,9 @@ function build(json: unknown): PlayConfig {
 	}
 	return config;
 }
+
+/** How a vehicle handles when its definition doesn't say (the car's). */
+export const DEFAULT_DRIVE = resolve(DRIVE, {}) as DriveDefinition;
 
 /** The complete default (classic) configuration. */
 export const DEFAULT_CONFIG: PlayConfig = build({});

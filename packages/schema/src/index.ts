@@ -6,6 +6,7 @@ export * from './dsl.js';
 export {
 	configProblems,
 	DEFAULT_CONFIG,
+	DEFAULT_DRIVE,
 	playJsonSchema,
 	resolveConfig,
 	resolveConfigFor

@@ -42,6 +42,7 @@ export const ACTION_RUNNERS: ActionRunners = {
 			world.player.x + (world.random() - 0.5) * 120,
 			world.player.y - 20
 		),
+	ammo: (world, action) => world.giveAmmo(action.throwable, action.amount),
 	nextLevel: (world) => world.nextLevel(),
 	message: (world, action) => action.text && world.events.emit('message', { text: action.text }),
 	sound: (world, action) => action.sound && world.events.emit('sound', { id: action.sound }),

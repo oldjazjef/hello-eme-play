@@ -44,6 +44,8 @@ export interface View {
 	boss: { name: string; hp: number; max: number } | undefined;
 	/** Touch buttons for the figure's moves. */
 	moves: { id: string; label: string }[];
+	/** Touch buttons for what can be thrown right now, with the ammo left (`∞` when unlimited). */
+	throwables: { id: string; label: string; ammo: string }[];
 	upgrades: UpgradeRow[];
 	shopOpen: boolean;
 	stats: { label: string; value: string }[];
@@ -58,6 +60,8 @@ export interface UiActions {
 	use(): void;
 	jump(): void;
 	move(id: string, held: boolean): void;
+	/** Throw or drop one. */
+	throwItem(id: string): void;
 	handbrake(held: boolean): void;
 	/** The steering wheel, -1 (full left) to 1 (full right); 0 when let go. */
 	steer(value: number): void;
@@ -227,6 +231,7 @@ export class GameUi {
 			view.hud,
 			view.levels > 0,
 			view.moves.map((move) => move.id).join('+'),
+			view.throwables.map((item) => `${item.id}:${item.ammo}`).join('+'),
 			view.upgrades.length > 0,
 			view.shopOpen,
 			view.shopOpen ? view.upgrades.map((row) => `${row.level}${row.canBuy}`).join('') : ''
@@ -304,8 +309,12 @@ export class GameUi {
 			getOut.addEventListener('click', a.use);
 			const honk = round('honk', t.honk);
 			honk.addEventListener('click', a.jump);
+			const throwables = view.throwables.map(({ id, label, ammo }) =>
+				button('play-pill', `${label} ${ammo}`, () => a.throwItem(id))
+			);
 			actions.append(
 				element('div', 'play-cluster', getOut, honk, drift),
+				...(throwables.length > 0 ? [element('div', 'play-cluster', ...throwables)] : []),
 				element('div', 'play-cluster', brake, gas)
 			);
 		} else {
@@ -322,6 +331,9 @@ export class GameUi {
 				const pill = button('play-pill play-hold', move.label);
 				holdable(pill, (held) => a.move(move.id, held));
 				actions.append(pill);
+			}
+			for (const { id, label, ammo } of view.throwables) {
+				actions.append(button('play-pill', `${label} ${ammo}`, () => a.throwItem(id)));
 			}
 			if (!view.side) actions.append(button('play-button play-large play-hold', t.jump, a.jump));
 		}

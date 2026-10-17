@@ -12,8 +12,10 @@ the Payload form or the JSON Schema list every field with bounds.
 | `stats`               | stat ids (`hp`, `attack`, `defense`, `dex`, `speed`, `luck` …) with label, min, max      |
 | `entities`            | figure, monsters, vehicles: `kind`, stats, `behavior`, `moves`, `reward`, `boss`, sprite |
 |                       | bosses also `phases`: `below` (% health), `label`, `stats`, `do` actions                 |
+|                       | vehicles also `drive` (handling), `ram` (damage to monsters), `absorbs` (takes the hits) |
 | `moves`               | attacks: keys, power, reach, cooldown, push, `breaks`, where usable                      |
 | `items`, `itemSpawns` | pickups and when they appear; `do` is a list of actions                                  |
+| `throwables`          | bombs, rocks, mines: keys, speed, fuse, radius, power, ammo, where usable                |
 | `upgrades`            | shop entries: cost, levels, stats added, optional actions                                |
 | `spawns`              | which monster, how often (`every`), how many (`count`), `max`, level range, scaling      |
 | `waves`               | timed scripts: level range, `after`, `steps` (`at`, `every`, `repeat`, `do` actions)     |
@@ -47,6 +49,57 @@ Items use `idle`. With reduced motion the first frame of each state stays.
 	"entities": { "hero": { "sprite": "hero" } }
 }
 ```
+
+## Throwables and vehicles
+
+A **throwable** is something the figure throws or drops that then goes off: a bomb, a rock, a mine. It is
+defined in `throwables` and used with its `keys` (touch screens get a button with the ammo left).
+
+- `speed` is the launch speed in px/s; `0` drops it on the spot. From above it slows down and flies about
+  `speed ÷ 3` px, in the side view it flies in an arc and falls. A vehicle's own speed comes on top, and
+  `direction: "back"` drops it out of the rear (mines from a car).
+- `fuse` is the time until it goes off. `0` means no fuse: it goes off when it touches a monster, lands or
+  comes to rest. A dropped mine (`speed: 0`, `fuse: 0`) only goes off for a monster. With a fuse and in the side
+  view it bounces (`bounce`).
+- `power` multiplies the figure's `attack` (defense softens it), `radius` is the blast, `push` the knockback,
+  `breaks` lets the blast crack page elements, `hurtsFigure` makes it dangerous for the thrower too.
+- `ammo` is the starting supply, `maxAmmo` the most the figure carries, `unlimited` never runs out. Items,
+  triggers and upgrades refill it with the action `{ "do": "ammo", "throwable": "bomb", "amount": 3 }`.
+- `where` says whether it works on foot, in a vehicle or both.
+
+```json
+{
+	"throwables": {
+		"bomb": { "label": "Bomb", "keys": ["KeyG"], "ammo": 5, "fuse": 2, "radius": 110, "power": 5 },
+		"mine": {
+			"keys": ["KeyM"],
+			"look": "mine",
+			"where": "vehicle",
+			"direction": "back",
+			"speed": 0,
+			"fuse": 0
+		}
+	},
+	"items": {
+		"bombs": { "look": "bolt", "do": [{ "do": "ammo", "throwable": "bomb", "amount": 3 }] }
+	},
+	"itemSpawns": [{ "item": "bombs", "max": 2 }]
+}
+```
+
+**Vehicles** are entities of `kind: "vehicle"`; any number of kinds can exist side by side, spawned by a `spawns`
+rule, a `spawn` action or `visits`. What makes them different:
+
+- `stats`: `speed`, `accel`, `handling` (steering), `hp`, `attack`, `defense`.
+- `drive`: how it feels, seen from above: `reverse` top speed, `brake`, `roll` (rolling out), `grip` and
+  `slideGrip` (a low grip slides), `maxDrift`, `handbrakeTurn`, `handbrakeDrag`. The defaults are the car's.
+- `ram`: `power` multiplies the damage to monsters it runs into (which also grows with its speed), `minSpeed`
+  is the speed it starts to hurt from (`0`: `game.overrunSpeed`).
+- `absorbs`: while the figure sits inside, monsters hurt the vehicle instead (its `hp`, `defense`, `dex`). At 0
+  health it is wrecked, goes off like a bomb (a flash) and the figure gets out.
+- `size` and `sprite` change how it looks; the built-in picture is the car.
+
+A fast, light bike and a slow, tough truck: [arsenal preset](../packages/schema/src/presets.ts).
 
 ## Cookbook
 

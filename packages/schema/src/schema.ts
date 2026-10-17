@@ -27,6 +27,7 @@ import {
 	ITEM_LOOKS,
 	LOOKS,
 	POSES,
+	THROWABLE_LOOKS,
 	VIEW_MODES
 } from './types.js';
 
@@ -152,6 +153,13 @@ export const ACTION: UnionNode = {
 		dropItem: {
 			label: t('Gegenstand fallen lassen', 'Drop an item'),
 			fields: { item: ref(t('Gegenstand', 'Item'), 'items') }
+		},
+		ammo: {
+			label: t('Wurfobjekte geben', 'Give throwables'),
+			fields: {
+				throwable: ref(t('Wurfobjekt', 'Throwable'), 'throwables'),
+				amount: int(t('Anzahl (minus = abziehen)', 'Amount (negative = take away)'), 3, -999, 999)
+			}
 		},
 		nextLevel: { label: t('Nächstes Level', 'Next level'), fields: {} },
 		message: {
@@ -303,6 +311,50 @@ const SPRITE = object(t('Bild', 'Picture'), {
 	})
 });
 
+/** How a vehicle handles; the defaults are the car's. */
+export const DRIVE = object(
+	t('Fahrverhalten (Fahrzeuge)', 'Handling (vehicles)'),
+	{
+		reverse: num(t('Rückwärts höchstens (px/s)', 'Top speed in reverse (px/s)'), 160, 0, 2000),
+		brake: num(t('Bremsen (px/s²)', 'Braking (px/s²)'), 900, 10, 20_000),
+		roll: num(t('Ausrollen (px/s²)', 'Rolling out (px/s²)'), 320, 0, 20_000),
+		grip: num(t('Haftung (1/s)', 'Grip (1/s)'), 30, 0.1, 100),
+		slideGrip: num(
+			t('Haftung mit Handbremse (1/s)', 'Grip with the handbrake (1/s)'),
+			1.2,
+			0.1,
+			100
+		),
+		maxDrift: num(t('Grösster Driftwinkel (rad)', 'Largest drift angle (rad)'), 1.2, 0, 3),
+		handbrakeTurn: num(
+			t('Handbremse: engere Kurven (mal)', 'Handbrake: tighter turns (×)'),
+			1.8,
+			0.1,
+			10
+		),
+		handbrakeDrag: num(
+			t('Handbremse: bremst (px/s²)', 'Handbrake: slows down (px/s²)'),
+			160,
+			0,
+			20_000
+		)
+	},
+	t(
+		'Wie sich das Fahrzeug anfühlt. Tempo, Beschleunigung und Lenkung stehen bei den Werten.',
+		'How the vehicle feels. Speed, acceleration and steering are set under stats.'
+	)
+);
+
+const RAM = object(t('Rammen (Fahrzeuge)', 'Ramming (vehicles)'), {
+	power: num(t('Stärke (mal Angriff)', 'Power (× attack)'), 1, 0, 100),
+	minSpeed: num(
+		t('Verletzt ab (px/s, 0 = Spielregel)', 'Hurts from (px/s, 0 = game rule)'),
+		0,
+		0,
+		5000
+	)
+});
+
 const ENTITY = object(t('Figur, Monster oder Fahrzeug', 'Figure, monster or vehicle'), {
 	kind: select(t('Art', 'Kind'), ENTITY_KINDS, 'monster', {
 		optionLabels: {
@@ -382,7 +434,19 @@ const ENTITY = object(t('Figur, Monster oder Fahrzeug', 'Figure, monster or vehi
 			},
 			do: ACTIONS(t('Dann', 'Then'))
 		})
-	}
+	},
+	drive: DRIVE,
+	ram: RAM,
+	absorbs: bool(
+		t('Fängt Treffer für die Figur ab (Fahrzeug)', 'Takes the hits for the figure (vehicle)'),
+		false,
+		{
+			help: t(
+				'Sitzt die Figur drin, verliert das Fahrzeug Leben statt der Figur. Bei 0 ist es kaputt und die Figur steigt aus.',
+				'While the figure sits inside, the vehicle loses health instead. At 0 it is wrecked and the figure gets out.'
+			)
+		}
+	)
 });
 
 const MOVE = object(t('Angriff', 'Move'), {
@@ -424,6 +488,69 @@ const ITEM = object(t('Gegenstand', 'Item'), {
 	),
 	do: ACTIONS(t('Wirkung', 'Effect'))
 });
+
+const THROWABLE = object(
+	t('Wurfobjekt', 'Throwable'),
+	{
+		label: str(t('Name', 'Name')),
+		sprite: ref(t('Bild', 'Picture'), 'sprites', true),
+		look: select(t('Eingebautes Aussehen', 'Built-in look'), THROWABLE_LOOKS, 'bomb', {
+			optionLabels: { bomb: t('Bombe', 'Bomb'), rock: t('Stein', 'Rock'), mine: t('Mine', 'Mine') }
+		}),
+		size: num(t('Grösse (px)', 'Size (px)'), 24, 8, 200),
+		keys: keys(t('Tasten', 'Keys'), []),
+		where: select(t('Wo einsetzbar', 'Usable'), ['foot', 'vehicle', 'both'], 'both', {
+			optionLabels: {
+				foot: t('Zu Fuss', 'On foot'),
+				vehicle: t('Im Fahrzeug', 'In a vehicle'),
+				both: t('Beides', 'Both')
+			}
+		}),
+		direction: select(t('Aus dem Fahrzeug', 'From a vehicle'), ['front', 'back'], 'front', {
+			optionLabels: { front: t('Nach vorn', 'To the front'), back: t('Nach hinten', 'To the back') }
+		}),
+		speed: num(
+			t('Wurftempo (px/s, 0 = fallen lassen)', 'Throw speed (px/s, 0 = drop)'),
+			420,
+			0,
+			3000,
+			{
+				help: t(
+					'Aus einem fahrenden Fahrzeug kommt dessen Tempo dazu. Von oben fliegt es etwa Tempo ÷ 3 Pixel weit.',
+					'A moving vehicle adds its own speed. From above it flies about speed ÷ 3 pixels.'
+				)
+			}
+		),
+		fuse: num(
+			t('Zündschnur (Sekunden, 0 = bei Berührung)', 'Fuse (seconds, 0 = on contact)'),
+			2,
+			0,
+			60,
+			{
+				help: t(
+					'0: geht los, wenn es ein Monster berührt, landet oder liegen bleibt (eine fallen gelassene Mine nur bei einem Monster).',
+					'0: goes off when it touches a monster, lands or comes to rest (a dropped mine only for a monster).'
+				)
+			}
+		),
+		bounce: num(t('Abprallen (0–1, Sidescroller)', 'Bounce (0–1, side-scroller)'), 0.4, 0, 1),
+		power: num(t('Stärke (mal Angriff)', 'Power (× attack)'), 5, 0, 1000),
+		radius: num(t('Explosionsradius (px)', 'Blast radius (px)'), 110, 0, 1000),
+		push: num(t('Rückstoss (px/s)', 'Knockback (px/s)'), 480, 0, 5000),
+		breaks: bool(t('Zerschlägt Seitenelemente', 'Breaks page elements'), true),
+		hurtsFigure: bool(t('Verletzt auch die Figur', 'Also hurts the figure'), false),
+		cooldown: num(t('Pause (Sekunden)', 'Cooldown (seconds)'), 0.6, 0, 60),
+		ammo: int(t('Start-Vorrat', 'Starting supply'), 5, 0, 999),
+		maxAmmo: int(t('Höchstens tragbar', 'Most it can carry'), 20, 1, 999),
+		unlimited: bool(t('Unbegrenzt', 'Unlimited'), false),
+		sound: ref(t('Ton beim Werfen', 'Sound when thrown'), 'audio.sounds', true),
+		explodeSound: ref(t('Ton bei der Explosion', 'Sound on the blast'), 'audio.sounds', true)
+	},
+	t(
+		'Bomben, Steine, Minen: die Figur wirft oder legt sie, sie gehen los und verletzen Monster. Munition gibt es als Start-Vorrat und über die Aktion „Wurfobjekte geben“.',
+		'Bombs, rocks, mines: the figure throws or drops them, they go off and hurt monsters. Ammo comes as a starting supply and through the “Give throwables” action.'
+	)
+);
 
 const UPGRADE = object(t('Upgrade', 'Upgrade'), {
 	label: str(t('Name', 'Name')),
@@ -676,6 +803,14 @@ const FIELDS: Record<string, Node> = {
 		of: ITEM,
 		default: {},
 		maxItems: 100
+	},
+	throwables: {
+		type: 'record',
+		label: t('Wurfobjekte', 'Throwables'),
+		idLabel: t('Wurfobjekt', 'Throwable'),
+		of: THROWABLE,
+		default: {},
+		maxItems: 50
 	},
 	upgrades: {
 		type: 'record',
