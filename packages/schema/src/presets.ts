@@ -48,10 +48,10 @@ export const PRESETS: Record<string, Preset> = {
 	classic: {
 		label: t('Klassisch', 'Classic'),
 		description: t(
-			'Wie der bisherige Spielmodus: Monster kommen in Wellen, ein Auto fährt vor.',
-			'Like the original game mode: monsters in waves, a car drives in.'
+			'Der Spielmodus mit Gegnern: Monster kommen in Wellen, ein Auto fährt vor.',
+			'The game mode with enemies: monsters in waves, a car drives in.'
 		),
-		config: {}
+		config: { spawns: [{ entity: 'blob' }] }
 	},
 	arcade: {
 		label: t('Arcade mit Upgrades', 'Arcade with upgrades'),

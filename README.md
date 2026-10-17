@@ -1,9 +1,13 @@
 # hello-eme-play
 
-Turns **any website into a game**, configured by **one JSON**. The page itself is the playing field: the
-visitor walks over it, punches paragraphs until they break, fights monsters, jumps on cards and drives a car.
-It works with plain HTML, any framework and any CMS. An editor (one script, no framework) and a Payload plugin
-change the JSON; try it in the [live demo](https://oldjazjef.github.io/hello-eme-play/): guide, editor and live preview.
+Turns **any website into a game**, configured by **one JSON**. The page itself is the playing field.
+
+**The idea behind it is page navigation**: the default mode has no enemies. The visitor walks or jumps over the
+page, knocks on elements, hops onto links and buttons to click them and takes a car for a ride. Everything else
+(monsters, bombs, catching, arcade games) is switched on by the configuration: a game is a navigation mode with
+rules on top. It works with plain HTML, any framework and any CMS. An editor (one script, no framework) and a
+Payload plugin change the JSON; try it in the [live demo](https://oldjazjef.github.io/hello-eme-play/): guide,
+editor and live preview.
 
 ![Top-down view: the figure fights monsters on a web page](docs/images/topdown.png)
 

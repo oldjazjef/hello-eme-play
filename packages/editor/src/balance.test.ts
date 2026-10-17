@@ -11,11 +11,11 @@ const quick = (id: string) => {
 
 describe('runBalance', () => {
 	it('calls the classic game easy for a brawler bot', () => {
-		expect(runBalance({})?.verdict).toBe('easy');
+		expect(runBalance({ spawns: [{ entity: 'blob' }] })?.verdict).toBe('easy');
 	});
 
 	it('calls a brutal setup hard', () => {
-		let stored: unknown = {};
+		let stored: unknown = { spawns: [{ entity: 'blob' }] };
 		stored = applyQuick(stored, quick('figureHealth'), 10);
 		stored = applyQuick(stored, quick('monsterAttack'), 50);
 		stored = applyQuick(stored, quick('monsterSpeed'), 300);
@@ -44,9 +44,9 @@ describe('runBalance', () => {
 
 describe('verdictOf', () => {
 	it('is balanced when some die and some do not', () => {
-		const report = runBalance({})?.report;
+		const report = runBalance({ spawns: [{ entity: 'blob' }] })?.report;
 		if (!report) throw new Error('no report');
 		const mixed = { ...report, rate: { won: 0.2, died: 0.4, timeout: 0.4 } };
-		expect(verdictOf(mixed, resolveConfig({}))).toBe('balanced');
+		expect(verdictOf(mixed, resolveConfig({ spawns: [{ entity: 'blob' }] }))).toBe('balanced');
 	});
 });

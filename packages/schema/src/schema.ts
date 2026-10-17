@@ -1426,7 +1426,7 @@ const FIELDS: Record<string, Node> = {
 		type: 'list',
 		label: t('Monster erscheinen', 'Monster spawns'),
 		of: SPAWN,
-		default: [{ entity: 'blob' }],
+		default: [],
 		maxItems: 50
 	},
 	itemSpawns: {
