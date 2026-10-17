@@ -1,7 +1,7 @@
 import { PRESETS } from '@hello-eme/play-schema';
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { PlayEditor } from './PlayEditor.js';
+import { httpUrl, PlayEditor } from './PlayEditor.js';
 
 const noop = () => undefined;
 const render = (props: Partial<Parameters<typeof PlayEditor>[0]> = {}) =>
@@ -92,5 +92,26 @@ describe('PlayEditor', () => {
 
 	it('defines its colours itself, so it works outside Payload', () => {
 		expect(render()).toContain('--pe-border');
+	});
+
+	it('shows a coffee link only for a web address, opening in a new tab without a referrer', () => {
+		const html = render({ supportUrl: 'https://buymeacoffee.com/someone' });
+		expect(html).toContain('href="https://buymeacoffee.com/someone"');
+		expect(html).toContain('Buy me a coffee');
+		expect(html).toContain('rel="noopener noreferrer"');
+		expect(render({ lang: 'de', supportUrl: 'https://example.com/x' })).toContain(
+			'Kaffee spendieren'
+		);
+		expect(render()).not.toContain('Buy me a coffee');
+		expect(render({ supportUrl: 'javascript:alert(1)' })).not.toContain('Buy me a coffee');
+		expect(render({ supportUrl: 'not a url' })).not.toContain('Buy me a coffee');
+	});
+
+	it('httpUrl lets only http and https through', () => {
+		expect(httpUrl('https://a.example/b')).toBe('https://a.example/b');
+		expect(httpUrl('http://a.example')).toBe('http://a.example/');
+		expect(httpUrl('data:text/html,hi')).toBeUndefined();
+		expect(httpUrl('')).toBeUndefined();
+		expect(httpUrl(undefined)).toBeUndefined();
 	});
 });

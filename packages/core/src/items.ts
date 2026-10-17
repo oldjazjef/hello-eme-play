@@ -6,6 +6,7 @@ import { distance, between, statOf } from './stats.js';
 import { stateOf } from './state.js';
 import { targetOf, victimOf } from './combat.js';
 import { hurtAlly } from './team.js';
+import type { ItemDefinition } from '@hello-eme/play-schema';
 import type { Body, Pickup, World } from './types.js';
 
 /** How close the figure (or its vehicle) must be to pick something up. */
@@ -31,7 +32,8 @@ export function createPickup(
 		fall: 0,
 		grounded: false,
 		drop: 0,
-		age: 0
+		age: 0,
+		cooldown: 0
 	};
 	world.pickups.push(pickup);
 	return pickup;
@@ -43,6 +45,7 @@ export function updatePickups(world: World, dt: number): void {
 	for (const pickup of [...world.pickups]) {
 		pickup.age += dt;
 		pickup.ttl -= dt;
+		pickup.cooldown = Math.max(0, pickup.cooldown - dt);
 		if (pickup.ttl <= 0) {
 			remove(world, pickup);
 			continue;
@@ -123,9 +126,7 @@ export function tickObjects(world: World, dt: number): void {
 	for (const body of bodies) body.covered = false;
 	const objects = world.pickups.flatMap((pickup) => {
 		const definition = world.config.items[pickup.def];
-		return definition && (definition.solid || definition.hides || definition.damage !== 0)
-			? [{ pickup, definition }]
-			: [];
+		return definition && acts(definition) ? [{ pickup, definition }] : [];
 	});
 	for (const { pickup, definition } of objects) {
 		const radius = definition.size / 2;
@@ -135,6 +136,7 @@ export function tickObjects(world: World, dt: number): void {
 			if (definition.hides && near < radius) body.covered = true;
 			if (definition.solid && near < radius + reach) pushOut(world, body, pickup, radius + reach);
 			if (definition.damage !== 0 && near < radius + reach + 4) touch(world, body, definition, dt);
+			if (body === leader && near < radius + reach + 4) act(world, pickup, definition);
 		}
 	}
 	world.player.covered = leader.covered;
@@ -142,6 +144,24 @@ export function tickObjects(world: World, dt: number): void {
 		world.player.x = world.riding.x;
 		world.player.y = world.riding.y;
 	}
+}
+
+/** Whether an item does anything while lying on the page (an object rather than a thing to pick up). */
+function acts(definition: ItemDefinition): boolean {
+	return (
+		definition.solid ||
+		definition.hides ||
+		definition.damage !== 0 ||
+		(definition.pickup === 'none' && definition.do.length > 0)
+	);
+}
+
+/** The figure touches an object with an effect: its actions run (not more often than `every`). */
+function act(world: World, pickup: Pickup, definition: ItemDefinition): void {
+	if (definition.pickup !== 'none' || definition.do.length === 0 || pickup.cooldown > 0) return;
+	pickup.cooldown = definition.every;
+	world.events.emit('touch', { item: pickup, def: definition });
+	world.run(definition.do);
 }
 
 /** Moves a body out of a solid object so they just touch. */

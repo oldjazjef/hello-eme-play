@@ -15,6 +15,8 @@ export interface PlayPluginOptions {
 	 * then shows it next to the form and plays every change, saved or not.
 	 */
 	previewUrl?: string;
+	/** A "Buy me a coffee" (or support) page; the editor shows a link to it in its toolbar. */
+	supportUrl?: string;
 	/** Turns the plugin off but keeps the global, so the database schema stays the same. */
 	disabled?: boolean;
 }
@@ -57,7 +59,8 @@ export function playGlobal(options: PlayPluginOptions = {}): GlobalConfig {
 							path: '@hello-eme/play-payload/client#PlayConfigField',
 							clientProps: {
 								mediaCollection: options.mediaCollection ?? 'media',
-								...(options.previewUrl ? { previewUrl: options.previewUrl } : {})
+								...(options.previewUrl ? { previewUrl: options.previewUrl } : {}),
+								...(options.supportUrl ? { supportUrl: options.supportUrl } : {})
 							}
 						}
 					}

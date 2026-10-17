@@ -177,6 +177,24 @@ export const ACTION: UnionNode = {
 				)
 			}
 		},
+		callTeam: {
+			label: t('Nächstes Teammitglied rufen', 'Call the next team member'),
+			fields: {}
+		},
+		hazard: {
+			label: t('Wurfobjekt auslösen (Falle)', 'Set off a throwable (trap)'),
+			fields: {
+				throwable: ref(t('Wurfobjekt', 'Throwable'), 'throwables'),
+				where: select(t('Wo', 'Where'), ['figure', 'near', 'edge'], 'near', {
+					optionLabels: {
+						figure: t('Bei der Figur', 'At the figure'),
+						near: t('Nahe der Figur', 'Near the figure'),
+						edge: t('Am Rand', 'At the edge')
+					}
+				}),
+				count: int(t('Anzahl', 'Count'), 1, 1, 20)
+			}
+		},
 		nextLevel: { label: t('Nächstes Level', 'Next level'), fields: {} },
 		message: {
 			label: t('Meldung zeigen', 'Show a message'),
@@ -218,6 +236,23 @@ export const CONDITION: UnionNode = {
 			label: t('Zufall', 'Chance'),
 			fields: { percent: num(t('Chance (%)', 'Chance (%)'), 50, 0, 100) }
 		},
+		ammo: {
+			label: t('Munition', 'Ammo'),
+			fields: {
+				throwable: ref(t('Wurfobjekt', 'Throwable'), 'throwables'),
+				min: int(t('Mindestens', 'At least'), 1, 0, 999)
+			}
+		},
+		team: {
+			label: t('Teamgrösse', 'Team size'),
+			fields: { min: int(t('Mindestens', 'At least'), 1, 0, 100) }
+		},
+		riding: {
+			label: t('Im Fahrzeug', 'In a vehicle'),
+			fields: {
+				entity: ref(t('Welches (leer: irgendeins)', 'Which (empty: any)'), 'entities', true)
+			}
+		},
 		kills: {
 			label: t('Besiegte Monster', 'Monsters beaten'),
 			fields: {
@@ -248,7 +283,13 @@ const TRIGGER = object(t('Auslöser', 'Trigger'), {
 			escape: t('Ein Monster sich befreit', 'A monster breaks free'),
 			encounter: t('Ein Monster aus dem Versteck springt', 'A monster jumps out of hiding'),
 			evolve: t('Ein Monster sich entwickelt', 'A monster evolves'),
-			faint: t('Ein Teammitglied ohnmächtig wird', 'A team member faints')
+			faint: t('Ein Teammitglied ohnmächtig wird', 'A team member faints'),
+			throw: t('Ein Wurfobjekt geworfen wird', 'A throwable is thrown'),
+			explode: t('Ein Wurfobjekt explodiert', 'A throwable goes off'),
+			breed: t('Ein Monster Junge bekommt', 'A monster has young'),
+			wreck: t('Ein Fahrzeug zerstört wird', 'A vehicle is wrecked'),
+			summon: t('Ein Teammitglied gerufen wird', 'A team member is called'),
+			touch: t('Ein Objekt berührt wird', 'An object is touched')
 		}
 	}),
 	only: str(
@@ -635,6 +676,21 @@ const ITEM = object(t('Gegenstand', 'Item'), {
 			'Monsters inside are invisible, and monsters can no longer see a figure inside (a bush, a tent).'
 		)
 	}),
+	every: num(
+		t(
+			'Wirkung alle … Sekunden beim Berühren (Objekte)',
+			'Effect every … seconds on touch (objects)'
+		),
+		1,
+		0.1,
+		3600,
+		{
+			help: t(
+				'Bei Objekten (Einsammeln: gar nicht) läuft die Wirkung, wenn die Figur sie berührt, höchstens so oft.',
+				'For objects (pick up: not at all) the effect runs when the figure touches them, at most this often.'
+			)
+		}
+	),
 	damage: num(
 		t(
 			'Schaden pro Sekunde beim Berühren (minus = heilt)',
@@ -744,6 +800,7 @@ const HIDEOUT = object(
 	t('Versteck', 'Hideout'),
 	{
 		label: str(t('Name', 'Name')),
+		sprite: ref(t('Bild (statt Aussehen)', 'Picture (instead of the look)'), 'sprites', true),
 		look: select(t('Aussehen', 'Look'), HIDEOUT_LOOKS, 'grass', {
 			optionLabels: {
 				grass: t('Hohes Gras', 'Tall grass'),

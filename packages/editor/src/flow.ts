@@ -44,7 +44,9 @@ export interface Flow {
 /** Events an action makes happen right away. */
 const EMITS: Readonly<Record<string, readonly EventName[]>> = {
 	setView: ['viewChange'],
-	nextLevel: ['levelUp']
+	nextLevel: ['levelUp'],
+	hazard: ['throw', 'explode'],
+	callTeam: ['summon']
 };
 
 function nodeAt(root: Node, ...keys: string[]): Node | undefined {
@@ -94,6 +96,21 @@ function possible(config: PlayConfig, actions: readonly { do: string }[]): Set<E
 	if (JSON.stringify([config.triggers, config.items, config.upgrades]).includes('"recruit"')) {
 		events.add('faint');
 	}
+	if (Object.keys(config.throwables).length > 0) {
+		events.add('throw');
+		events.add('explode');
+	}
+	if (entities.some((entity) => entity.breed.every.max > 0)) events.add('breed');
+	if (entities.some((entity) => entity.absorbs)) events.add('wreck');
+	if (Object.values(config.items).some((entry) => entry.pickup === 'none' && entry.do.length > 0)) {
+		events.add('touch');
+	}
+	if (
+		Object.values(config.throwables).some((item) => item.catch > 0) ||
+		JSON.stringify([config.triggers, config.items, config.upgrades]).includes('"recruit"')
+	) {
+		events.add('summon');
+	}
 	if (config.levels.length > 0) events.add('levelUp');
 	if (config.levels.some((level) => level.view !== '')) events.add('viewChange');
 	for (const action of actions) for (const name of EMITS[action.do] ?? []) events.add(name);
@@ -125,11 +142,14 @@ export function analyzeFlow(config: PlayConfig, lang: Lang): Flow {
 
 	const item = entryNode('items');
 	for (const [id, definition] of Object.entries(config.items)) {
+		// An object (it can't be picked up) runs its effect when touched; without one it has no step.
+		const object = definition.pickup === 'none';
+		if (object && definition.do.length === 0) continue;
 		steps.push({
 			kind: 'item',
 			path: `items.${id}`,
-			event: 'pickup',
-			when: eventLabelOf('pickup'),
+			event: object ? 'touch' : 'pickup',
+			when: eventLabelOf(object ? 'touch' : 'pickup'),
 			title: definition.label || id,
 			conditions: [],
 			actions: describeActions(doNode(item), definition.do, config, lang),
@@ -154,7 +174,9 @@ export function analyzeFlow(config: PlayConfig, lang: Lang): Flow {
 	// What each step does, to find what it causes.
 	const doneBy = [
 		...config.triggers.map((entry) => entry.do),
-		...Object.values(config.items).map((entry) => entry.do),
+		...Object.values(config.items)
+			.filter((entry) => !(entry.pickup === 'none' && entry.do.length === 0))
+			.map((entry) => entry.do),
 		...Object.values(config.upgrades)
 			.filter((entry) => entry.do.length > 0)
 			.map((entry) => entry.do)

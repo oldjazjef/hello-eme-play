@@ -771,7 +771,8 @@ export function drawHideout(
 	look: HideoutLook,
 	index: number,
 	rustle: number,
-	scene: Scene
+	scene: Scene,
+	picture?: Picture
 ): void {
 	const x = place.x - scene.scroll.x;
 	const y = place.y - scene.scroll.y;
@@ -779,6 +780,7 @@ export function drawHideout(
 	if (x + r < 0 || y + r < 0 || x - r > 1e5 || y - r > 1e5) return;
 	const { colors } = scene;
 	const moving = scene.reducedMotion ? 0 : rustle;
+	if (picture && drawHideoutPictures(ctx, picture, x, y, r, index, moving, scene)) return;
 	ctx.save();
 	ctx.translate(x, y);
 	if (look === 'water') {
@@ -857,6 +859,43 @@ export function drawHideout(
 		}
 	}
 	ctx.restore();
+}
+
+/**
+ * A hideout made of the picture the configuration names: a few of it spread over the patch, the
+ * lower ones in front. Returns false while the picture is still loading (the built-in look shows).
+ */
+function drawHideoutPictures(
+	ctx: CanvasRenderingContext2D,
+	picture: Picture,
+	x: number,
+	y: number,
+	radius: number,
+	index: number,
+	rustle: number,
+	scene: Scene
+): boolean {
+	if (!picture.image.complete || picture.image.naturalWidth === 0) return false;
+	const count = Math.max(1, Math.round((radius * radius) / (picture.size * picture.size)));
+	const spots = Array.from({ length: count }, (_, i) => {
+		const angle = noise(index * 29 + i) * Math.PI * 2;
+		const away = count === 1 ? 0 : Math.sqrt(noise(index * 41 + i * 3)) * radius * 0.8;
+		return { x: Math.cos(angle) * away, y: Math.sin(angle) * away * 0.7, i };
+	}).sort((a, b) => a.y - b.y);
+	for (const spot of spots) {
+		const shake = rustle * Math.sin(scene.time * 26 + spot.i * 2) * 3;
+		drawPicture(
+			ctx,
+			picture,
+			x + spot.x + shake,
+			y + spot.y,
+			0,
+			1,
+			false,
+			frameAt(picture.sheet, 'idle', scene.time + spot.i, scene.reducedMotion)
+		);
+	}
+	return true;
 }
 
 /** A ring under a team member, so it can be told from the wild ones. */

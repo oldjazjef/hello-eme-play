@@ -631,7 +631,16 @@ export class Session {
 			if (!look) return;
 			const inside = walking && Math.hypot(walker.x - place.x, walker.y - place.y) < place.radius;
 			const hiding = world.bodies.some((body) => body.hidden && body.hideout === index);
-			drawHideout(ctx, place, look, index, inside ? 1 : hiding ? 0.25 : 0, scene);
+			const own = config.hideouts[place.def]?.sprite;
+			drawHideout(
+				ctx,
+				place,
+				look,
+				index,
+				inside ? 1 : hiding ? 0.25 : 0,
+				scene,
+				own ? this.#pictures[own] : undefined
+			);
 		});
 		for (const pickup of world.pickups) {
 			const definition = config.items[pickup.def];

@@ -21,6 +21,7 @@ export const CARD_PATHS: ReadonlySet<string> = new Set([
 	'entities',
 	'items',
 	'throwables',
+	'hideouts',
 	'sprites'
 ]);
 
@@ -116,6 +117,10 @@ function factsOf(
 		}
 		const look = ITEM_LOOKS.find((candidate) => candidate === resolved.look);
 		if (look) builtIn = { kind: 'item', look };
+	} else if (path === 'hideouts') {
+		const look = optionLabel(node.of, 'look', resolved.look ?? 'grass', ctx);
+		if (look) facts.push(look);
+		if (typeof resolved.count === 'number') facts.push(`× ${resolved.count}`);
 	} else if (path === 'throwables') {
 		const where = optionLabel(node.of, 'where', resolved.where ?? 'both', ctx);
 		if (where) facts.push(where);

@@ -10,11 +10,16 @@ change the JSON; try it in the [live demo](https://oldjazjef.github.io/hello-eme
 ## What it can do
 
 - **Two views:** top-down and side-scroller (the figure and monsters are drawn in profile; page elements are platforms), switchable at any time by items, triggers or levels.
-- **Figure, monsters, vehicles:** every one has stats (health, attack, speed, …), moves (punch, kick, bite) and a behavior (chase, wander, flee).
+- **Figure, monsters, vehicles:** every one has stats (health, attack, speed, …), moves (punch, kick, bite) and a behavior (chase, wander, flee). Vehicles come in any number of kinds with their own handling (`drive`), ramming (`ram`) and armor (`absorbs`: they take the hits and can be wrecked).
+- **Throwables:** bombs, rocks, mines and balls the figure throws or drops: fuse, blast radius, knockback, ammo, from a vehicle forward or backward. Monsters throw too.
+- **Monsters that live:** they hide in tall grass, bushes, a pond or rocks until you walk through; they breed, level up and evolve into other monsters.
+- **Catch and team (Pokémon style):** balls catch monsters by their health; the team fights for you, levels up by beating monsters and evolves. Call it with R.
+- **Objects:** items that stay on the page and block the way, hide what stands in them, or hurt and heal by touch; each can have its own picture.
 - **Levels and goals:** score, kills, survive for some time or defeat a boss.
 - **Wave scripts and boss phases:** "at 10 s three blobs, at 25 s a swarm, at 40 s the boss"; a boss enrages or summons help when its health falls below a share.
 - **Per-page settings:** `/blog` can be top-down and `/projects` a side-scroller, with other monsters; the game follows the visitor's navigation.
-- **Items, upgrades and a shop**, **triggers** ("when X happens, if Y holds, do Z"), sounds and a high score.
+- **Items, upgrades and a shop**, **triggers** ("when X happens, if Y holds, do Z" with events for throwing, blasts, catching, evolving, wrecks, touching objects …), sounds and a high score.
+- **Ten complete example games with pictures** (Pokémon-style Ememons, Bomberman, vehicle battles, survival, platformer, RPG …) that load in the editor and play at once.
 - **Own pictures:** pixel art is built in; your own PNG or SVG sprite sheets with animations replace it.
 - **Touch controls:** d-pad, round action buttons, steering wheel and pedals for the car.
 - **Safe by design:** the JSON is always validated; wrong values are corrected, never crash the page.
@@ -80,15 +85,17 @@ node examples/static/serve.mjs      # open the printed URL, press the game butto
 
 ### Controls
 
-| Action               | Keyboard           | Touch                    |
-| -------------------- | ------------------ | ------------------------ |
-| Walk / steer the car | Arrow keys or WASD | d-pad / wheel and pedals |
-| Punch (drift in car) | Space              | "Boxen"                  |
-| Kick                 | Q                  | "Kicken"                 |
-| Jump (honk in car)   | E                  | "Springen"               |
-| Get in / out of car  | F                  | on the car               |
-| Shop                 | U                  | "Upgrades"               |
-| Quit                 | Esc                | close button             |
+| Action               | Keyboard                                          | Touch                    |
+| -------------------- | ------------------------------------------------- | ------------------------ |
+| Walk / steer the car | Arrow keys or WASD                                | d-pad / wheel and pedals |
+| Punch (drift in car) | Space                                             | "Boxen"                  |
+| Kick                 | Q                                                 | "Kicken"                 |
+| Jump (honk in car)   | E                                                 | "Springen"               |
+| Get in / out of car  | F                                                 | on the car               |
+| Shop                 | U                                                 | "Upgrades"               |
+| Throw / drop         | the key of the throwable (`throwables.<id>.keys`) | its button               |
+| Next team member     | R                                                 | "Team"                   |
+| Quit                 | Esc                                               | close button             |
 
 All keys can be changed in the JSON (`keys` for walking, jumping, using and the shop, `moves.<id>.keys` for punch and kick). Texts are German or English (`locale`) and can be overridden (`texts`).
 
@@ -147,6 +154,7 @@ and the same editor runs inside the Payload admin ([`@hello-eme/play-payload`](p
 around it). [Try it in the live demo](https://oldjazjef.github.io/hello-eme-play/): editor with live preview, guide
 and a page that plays what you made.
 
+- **A coffee link:** `supportUrl` shows a "Buy me a coffee" link in the toolbar (http or https only).
 - **Quick settings and a simple mode:** sliders and switches for difficulty, speed and how many monsters; Expert
   mode shows every setting.
 - **Live preview:** the game next to the form, restarting on every change, and full screen at one tap. Built in on a
@@ -240,7 +248,7 @@ npx play-sim preset:arcade --rounds 20 --bot brawler
 Bots play your JSON headless and report win and death rates, scores and hints such as "nobody survives" or "too easy" ([package](packages/sim)).
 
 Presets (`PRESETS` in the schema package; the editor offers them as cards you can try in the preview):
-`classic`, `arcade` (levels, items, upgrades, a boss), `platformer` (side view), `view-switch` (an item changes
+`classic`, `arcade` (levels, items, upgrades, a boss), `arsenal` (bombs, rocks, mines, three kinds of vehicle, a monster that throws), `swarm` (breeding, evolving blobs), `platformer` (side view), `view-switch` (an item changes
 the view) and three calm ones without monsters: `explore` (just walk over the page, nothing breaks), `navigate`
 (side view: jump onto links and buttons to click them) and `tour` (a car waits; drive over the page). A JSON that switches between the
 views on a timer: [docs/examples/view-switch.json](docs/examples/view-switch.json).

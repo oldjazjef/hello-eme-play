@@ -21,6 +21,19 @@ describe('playGlobal', () => {
 	});
 });
 
+describe('supportUrl', () => {
+	it('is handed to the editor field only when set', () => {
+		const props = (url?: string) => {
+			const field = playGlobal(url ? { supportUrl: url } : {}).fields[0];
+			return (
+				field as { admin: { components: { Field: { clientProps: Record<string, unknown> } } } }
+			).admin.components.Field.clientProps;
+		};
+		expect(props('https://buymeacoffee.com/x').supportUrl).toBe('https://buymeacoffee.com/x');
+		expect(props()).not.toHaveProperty('supportUrl');
+	});
+});
+
 describe('previewUrl', () => {
 	it('is handed to the form only when set', () => {
 		const props = (url?: string) => {

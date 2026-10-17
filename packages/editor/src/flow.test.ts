@@ -93,3 +93,52 @@ describe('analyzeFlow', () => {
 		expect(loop).toEqual({ code: 'loop', path: 'triggers.0', paths: ['triggers.0', 'triggers.1'] });
 	});
 });
+
+describe('the flow knows the newer events', () => {
+	it('an object with an effect is a step that waits for a touch; one without is not', () => {
+		const found = flow({
+			items: {
+				door: { pickup: 'none', do: [{ do: 'points', amount: 5 }] },
+				tree: { pickup: 'none', solid: true },
+				coin: { do: [{ do: 'points', amount: 1 }] }
+			}
+		});
+		const steps = found.steps
+			.filter((step) => step.kind === 'item')
+			.map((step) => [step.path, step.event]);
+		expect(steps).toEqual([
+			['items.door', 'touch'],
+			['items.coin', 'pickup']
+		]);
+	});
+
+	it('triggers on the new events only warn when nothing can cause them', () => {
+		const warned = (config: unknown) =>
+			flow(config).warnings.filter((warning) => warning.code === 'noSource').length;
+		const trigger = (on: string) => ({ triggers: [{ on, do: [{ do: 'points', amount: 1 }] }] });
+		expect(warned(trigger('explode'))).toBe(1);
+		expect(warned({ ...trigger('explode'), throwables: { bomb: {} } })).toBe(0);
+		expect(warned(trigger('wreck'))).toBe(1);
+		expect(
+			warned({ ...trigger('wreck'), entities: { truck: { kind: 'vehicle', absorbs: true } } })
+		).toBe(0);
+		expect(warned(trigger('breed'))).toBe(1);
+		expect(
+			warned({ ...trigger('breed'), entities: { blob: { breed: { every: { min: 5, max: 5 } } } } })
+		).toBe(0);
+		expect(warned(trigger('touch'))).toBe(1);
+		expect(warned(trigger('summon'))).toBe(1);
+		expect(warned({ ...trigger('summon'), throwables: { ball: { catch: 50 } } })).toBe(0);
+	});
+
+	it('a trap action leads on to the triggers waiting for its blast', () => {
+		const found = flow({
+			throwables: { trap: {} },
+			triggers: [
+				{ on: 'key', keys: ['KeyT'], do: [{ do: 'hazard', throwable: 'trap' }] },
+				{ on: 'explode', do: [{ do: 'points', amount: 5 }] }
+			]
+		});
+		expect(found.steps[0]?.causes).toContain(1);
+	});
+});

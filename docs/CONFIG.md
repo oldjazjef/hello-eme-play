@@ -125,7 +125,60 @@ whatever touches it (the figure, its vehicle, monsters, the team):
 }
 ```
 
+An object can also **do something when the figure touches it**: its `do` actions run (not more often than `every`
+seconds), the world sends the event `touch`, and triggers can listen (`only` = the item id). A door that switches
+the view, a trap that spawns monsters, a shrine that heals the team.
+
+Objects (and every item) take a `sprite` like anything else: assign a picture from the library, with the frames of
+`idle` playing. Hideouts take a `sprite` as well (several of it are spread over the patch instead of the built-in
+grass, bushes, pond or rocks).
+
 All ten example games lay objects out this way.
+
+## Triggers: events, conditions, actions
+
+Everything above can be hooked into triggers (`on`, `only`, `conditions`, `do`; the editor's Triggers tab and Flow view
+know them all):
+
+| Event              | `only`         | When                                        |
+| ------------------ | -------------- | ------------------------------------------- |
+| `throw`, `explode` | throwable id   | something was thrown or dropped / went off  |
+| `breed`            | parent entity  | a monster had young                         |
+| `wreck`            | vehicle entity | a vehicle was destroyed                     |
+| `catch`, `escape`  | monster entity | a ball caught a monster / it broke free     |
+| `encounter`        | monster entity | a hidden monster jumped out                 |
+| `evolve`           | monster entity | a monster got a level or evolved            |
+| `faint`, `summon`  | monster entity | a team member fainted / was called          |
+| `touch`            | item id        | the figure touched an object with an effect |
+
+| Condition | Holds when                                                       |
+| --------- | ---------------------------------------------------------------- |
+| `ammo`    | the figure has at least `min` of a throwable                     |
+| `team`    | the team has at least `min` members                              |
+| `riding`  | the figure sits in a vehicle (`entity`: in that kind of vehicle) |
+
+| Action      | Does                                                                                                        |
+| ----------- | ----------------------------------------------------------------------------------------------------------- |
+| `ammo`      | gives (or takes) throwables                                                                                 |
+| `recruit`   | adds a monster to the team                                                                                  |
+| `healParty` | heals the team by a percent (100 also revives)                                                              |
+| `callTeam`  | sends out the next team member                                                                              |
+| `hazard`    | sets off a throwable as a trap (at the figure, near it or at the edge); it hurts the figure, never monsters |
+
+```json
+{
+	"triggers": [
+		{ "on": "touch", "only": "shrine", "do": [{ "do": "healParty", "amount": 100 }] },
+		{
+			"on": "key",
+			"keys": ["KeyT"],
+			"conditions": [{ "if": "ammo", "throwable": "bomb", "min": 1 }],
+			"do": [{ "do": "hazard", "throwable": "bomb", "where": "near" }]
+		},
+		{ "on": "wreck", "do": [{ "do": "message", "text": "Schrott!" }] }
+	]
+}
+```
 
 ## Catching monsters, a team, hideouts (Ememons)
 

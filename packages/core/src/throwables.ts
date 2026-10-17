@@ -2,7 +2,7 @@
 import type { ThrowableDefinition } from '@hello-eme/play-schema';
 import { hostile } from './bodies.js';
 import { direction, targetOf, victimOf } from './combat.js';
-import { advance, fall, radiusOf, sizeOf } from './space.js';
+import { advance, edgePoint, fall, floorY, HARD_EDGE, radiusOf, sizeOf } from './space.js';
 import { attemptCatch, hurtAlly } from './team.js';
 import { stateOf } from './state.js';
 import { cooldownOf, distance, reduced, statOf } from './stats.js';
@@ -282,4 +282,46 @@ export function monsterThrow(world: World, monster: Body, target: Body): void {
 	world.projectiles.push(projectile);
 	world.events.emit('throw', { id: choice.throwable, projectile });
 	if (definition.sound) world.events.emit('sound', { id: definition.sound });
+}
+
+/** A throwable goes off like a trap: it is put at a spot and hurts the figure, never the monsters. */
+export function placeHazard(
+	world: World,
+	id: string,
+	where: 'figure' | 'near' | 'edge',
+	count: number
+): void {
+	const definition = world.config.throwables[id];
+	if (!definition) return;
+	const leader = targetOf(world);
+	const state = stateOf(world);
+	for (let i = 0; i < count && world.projectiles.length < MAX_PROJECTILES; i++) {
+		let spot = { x: leader.x, y: leader.y };
+		if (where === 'near') {
+			const angle = world.random() * Math.PI * 2;
+			const away = 120 + world.random() * 140;
+			spot = { x: leader.x + Math.cos(angle) * away, y: leader.y + Math.sin(angle) * away };
+		} else if (where === 'edge') spot = edgePoint(world);
+		const pg = world.host.page();
+		const projectile: Projectile = {
+			id: state.nextId++,
+			def: id,
+			x: Math.min(Math.max(spot.x, HARD_EDGE), pg.width - HARD_EDGE),
+			y:
+				world.view === 'side'
+					? floorY(world)
+					: Math.min(Math.max(spot.y, HARD_EDGE), pg.height - HARD_EDGE),
+			vx: 0,
+			vy: 0,
+			fall: 0,
+			grounded: false,
+			drop: 0,
+			fuse: definition.fuse > 0 ? definition.fuse : Infinity,
+			age: 0,
+			owner: 'monster',
+			attack: 1
+		};
+		world.projectiles.push(projectile);
+		world.events.emit('throw', { id, projectile });
+	}
 }

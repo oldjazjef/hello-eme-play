@@ -14,7 +14,7 @@ const wall = { pickup: 'none', solid: true, size: 60, lifetime: 0, look: 'wall' 
 describe('objects: items that stay and have properties', () => {
 	it('an item that cannot be picked up stays where it is, even when walked over', () => {
 		const world = quiet({
-			items: { rock: { pickup: 'none', lifetime: 0, do: [{ do: 'points', amount: 99 }] } }
+			items: { rock: { pickup: 'none', lifetime: 0 } }
 		});
 		world.dropItem('rock', world.player.x, world.player.y);
 		run(world, 2);

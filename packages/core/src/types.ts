@@ -159,6 +159,8 @@ export interface Pickup {
 	grounded: boolean;
 	drop: number;
 	age: number;
+	/** Objects: seconds until touching it runs its effect again. */
+	cooldown: number;
 }
 
 /** What the visitor does, set by the runtime (keyboard, touch, a bot in simulations). */
@@ -187,6 +189,8 @@ export interface WorldEvents extends Record<string, unknown> {
 	death: { lives: number };
 	levelUp: { level: number };
 	pickup: { item: Pickup; def: ItemDefinition };
+	/** The figure touched an object (an item that can't be picked up) with an effect. */
+	touch: { item: Pickup; def: ItemDefinition };
 	upgrade: { id: string; level: number };
 	break: { points: number };
 	enterVehicle: { vehicle: Body };

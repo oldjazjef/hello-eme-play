@@ -12,5 +12,8 @@ const config = resolveConfig(migrate(json)); // complete and corrected
 const arcade = PRESETS.arcade;
 ```
 
+`PRESETS` also holds ten complete example games (`game-*`) with pictures: SVGs inside the JSON, so they load and play
+with nothing else. Their generator is `src/games/art.ts` (creatures, people, vehicles and icons as `data:` addresses).
+
 `dist/play.schema.json` (export `@hello-eme/play-schema/play.schema.json`) is the JSON Schema for editor
 autocompletion. A JSON without `version`, or from `@hello-eme/page-game`, is migrated by `migrate`.

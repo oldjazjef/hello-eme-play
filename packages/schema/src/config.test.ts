@@ -296,3 +296,49 @@ describe('throwables and vehicles', () => {
 		expect(found.some((message) => message.includes('triggers[0].do[0].throwable'))).toBe(true);
 	});
 });
+
+describe('triggers, objects and hideouts with pictures', () => {
+	it('have defaults for the new conditions, actions and fields', () => {
+		const config = resolveConfig({
+			hideouts: { grass: { sprite: 'bush' } },
+			items: { door: { pickup: 'none' } },
+			triggers: [
+				{
+					on: 'touch',
+					only: 'door',
+					conditions: [{ if: 'ammo', throwable: 'bomb' }, { if: 'team' }, { if: 'riding' }],
+					do: [{ do: 'hazard', throwable: 'bomb' }, { do: 'callTeam' }]
+				}
+			]
+		});
+		expect(config.hideouts.grass?.sprite).toBe('bush');
+		expect(config.items.door).toMatchObject({ every: 1, pickup: 'none', solid: false });
+		expect(config.triggers[0]?.conditions).toEqual([
+			{ if: 'ammo', throwable: 'bomb', min: 1 },
+			{ if: 'team', min: 1 },
+			{ if: 'riding', entity: '' }
+		]);
+		expect(config.triggers[0]?.do[0]).toEqual({
+			do: 'hazard',
+			throwable: 'bomb',
+			where: 'near',
+			count: 1
+		});
+	});
+
+	it('explain a hazard or an ammo condition that points at nothing', () => {
+		const found = configProblems({
+			triggers: [
+				{
+					on: 'explode',
+					conditions: [{ if: 'ammo', throwable: 'ghost' }],
+					do: [{ do: 'hazard', throwable: 'phantom' }]
+				}
+			]
+		});
+		expect(found.some((message) => message.includes('triggers[0].conditions[0].throwable'))).toBe(
+			true
+		);
+		expect(found.some((message) => message.includes('triggers[0].do[0].throwable'))).toBe(true);
+	});
+});

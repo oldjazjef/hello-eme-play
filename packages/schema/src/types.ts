@@ -63,7 +63,13 @@ export const EVENT_NAMES = [
 	'escape',
 	'encounter',
 	'evolve',
-	'faint'
+	'faint',
+	'throw',
+	'explode',
+	'breed',
+	'wreck',
+	'summon',
+	'touch'
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
@@ -259,6 +265,8 @@ export interface ItemDefinition {
 	solid: boolean;
 	/** Whatever stands in it is hidden: invisible monsters, a figure monsters can't see. */
 	hides: boolean;
+	/** Objects (`pickup: none`): seconds between two runs of `do` while the figure touches it. */
+	every: number;
 	/** Health lost per second by whoever touches it (negative: gained). */
 	damage: number;
 	/** Who it hurts (or heals): the figure and its team, the monsters, or everyone. */
@@ -311,6 +319,8 @@ export interface ThrowableDefinition {
 /** Places on the page where monsters can hide: tall grass, bushes, a pond, rocks. */
 export interface HideoutDefinition {
 	label: string;
+	/** Key into `sprites`: drawn instead of the built-in look, several times over the patch. */
+	sprite: string;
 	look: HideoutLook;
 	/** How many patches there are on the page. */
 	count: number;
@@ -351,6 +361,8 @@ export type Action =
 	| { do: 'ammo'; throwable: string; amount: number }
 	| { do: 'recruit'; entity: string }
 	| { do: 'healParty'; amount: number }
+	| { do: 'callTeam' }
+	| { do: 'hazard'; throwable: string; where: 'figure' | 'near' | 'edge'; count: number }
 	| { do: 'nextLevel' }
 	| { do: 'message'; text: string }
 	| { do: 'sound'; sound: string }
@@ -363,7 +375,10 @@ export type Condition =
 	| { if: 'view'; mode: ViewMode }
 	| { if: 'health'; below: number }
 	| { if: 'chance'; percent: number }
-	| { if: 'kills'; entity: string; min: number };
+	| { if: 'kills'; entity: string; min: number }
+	| { if: 'ammo'; throwable: string; min: number }
+	| { if: 'team'; min: number }
+	| { if: 'riding'; entity: string };
 
 export interface Trigger {
 	on: EventName;

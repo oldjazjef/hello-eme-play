@@ -87,6 +87,17 @@ const isTextField = (target: EventTarget): boolean =>
 	target instanceof HTMLElement &&
 	(['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable);
 
+/** The address when it is a web page (http or https), else nothing: a link is never a script. */
+export function httpUrl(value: string | undefined): string | undefined {
+	if (!value) return undefined;
+	try {
+		const url = new URL(value);
+		return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
 /**
  * The whole editor for the game's JSON: quick settings, presets with a live preview, a balance
  * check, the complete form, the flow of triggers, a guide and raw JSON, with undo and redo.
@@ -103,6 +114,7 @@ export function PlayEditor(props: PlayEditorProps): ReactNode {
 	const set = (next: unknown, separate = false) =>
 		history.set(isObject(next) ? next : {}, separate);
 
+	const support = httpUrl(props.supportUrl);
 	const hasPreview = props.previewUrl !== undefined || props.previewHtml !== undefined;
 	const groups = useMemo(() => groupNodes(PLAY_SCHEMA), []);
 	const [tab, setTab] = useState<Tab>('quick');
@@ -283,6 +295,16 @@ export function PlayEditor(props: PlayEditorProps): ReactNode {
 					<button type="button" style={styles.button} onClick={copy}>
 						{labels.copyJson}
 					</button>
+					{support && (
+						<a
+							href={support}
+							target="_blank"
+							rel="noopener noreferrer"
+							style={merge(styles.button, { textDecoration: 'none', display: 'inline-block' })}
+						>
+							☕ {labels.coffee}
+						</a>
+					)}
 					<input
 						ref={fileInput}
 						type="file"
