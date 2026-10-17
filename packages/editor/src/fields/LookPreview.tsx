@@ -1,5 +1,11 @@
-import { ITEM_LOOK_PATHS, LOOK_ROWS, SPRITE_COLORS, type SpritePart } from '@hello-eme/play/looks';
-import type { ItemLook, Look } from '@hello-eme/play-schema';
+import {
+	ITEM_LOOK_PATHS,
+	LOOK_ROWS,
+	SPRITE_COLORS,
+	THROWABLE_LOOK_PATHS,
+	type SpritePart
+} from '@hello-eme/play/looks';
+import type { ItemLook, Look, ThrowableLook } from '@hello-eme/play-schema';
 
 const PIXEL = 10;
 
@@ -56,6 +62,28 @@ export function ItemLookPreview(props: { look: ItemLook }) {
 				style={{
 					stroke: SPRITE_COLORS.outline,
 					fill: props.look === 'heart' ? SPRITE_COLORS.itemAlt : SPRITE_COLORS.item
+				}}
+			/>
+		</svg>
+	);
+}
+
+/** The game's built-in shape of a bomb, rock or mine, as a small SVG. */
+export function ThrowableLookPreview(props: { look: ThrowableLook }) {
+	return (
+		<svg viewBox="-60 -60 120 120" style={{ width: '100%', height: '100%' }} aria-hidden="true">
+			<path
+				d={THROWABLE_LOOK_PATHS[props.look]}
+				strokeWidth={6}
+				strokeLinejoin="round"
+				style={{
+					stroke: SPRITE_COLORS.outline,
+					fill:
+						props.look === 'rock'
+							? SPRITE_COLORS.b
+							: props.look === 'mine'
+								? SPRITE_COLORS.e
+								: SPRITE_COLORS.shadow
 				}}
 			/>
 		</svg>

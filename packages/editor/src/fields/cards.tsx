@@ -2,27 +2,37 @@ import {
 	isObject,
 	ITEM_LOOKS,
 	LOOKS,
+	THROWABLE_LOOKS,
 	type EntityKind,
 	type ItemLook,
-	type Look
+	type Look,
+	type ThrowableLook
 } from '@hello-eme/play-schema';
 import type { CSSProperties } from 'react';
 import { itemTitle, pick } from '../state.js';
 import { Button } from './controls.js';
-import { EntityLookPreview, ItemLookPreview } from './LookPreview.js';
+import { EntityLookPreview, ItemLookPreview, ThrowableLookPreview } from './LookPreview.js';
 import { styles } from './styles.js';
 import type { EditorContext } from './types.js';
 import type { RecordNode } from '@hello-eme/play-schema';
 
 /** The lists that show their entries as cards (a picture and the main facts) instead of rows. */
-export const CARD_PATHS: ReadonlySet<string> = new Set(['entities', 'items', 'sprites']);
+export const CARD_PATHS: ReadonlySet<string> = new Set([
+	'entities',
+	'items',
+	'throwables',
+	'sprites'
+]);
 
 interface CardFacts {
 	title: string;
 	/** The picture: the first frame of the entry's sprite, if it has one. */
 	image?: CSSProperties;
 	/** Otherwise the game's built-in picture of its look. */
-	builtIn?: { kind: 'entity'; look: Look } | { kind: 'item'; look: ItemLook };
+	builtIn?:
+		| { kind: 'entity'; look: Look }
+		| { kind: 'item'; look: ItemLook }
+		| { kind: 'throwable'; look: ThrowableLook };
 	facts: string[];
 }
 
@@ -101,6 +111,16 @@ function factsOf(
 		if (pickup) facts.push(pickup);
 		const look = ITEM_LOOKS.find((candidate) => candidate === resolved.look);
 		if (look) builtIn = { kind: 'item', look };
+	} else if (path === 'throwables') {
+		const where = optionLabel(node.of, 'where', resolved.where ?? 'both', ctx);
+		if (where) facts.push(where);
+		const ammo = resolved.unlimited === true ? '∞' : resolved.ammo;
+		if (typeof ammo === 'number' || ammo === '∞') facts.push(`× ${ammo}`);
+		if (typeof resolved.radius === 'number' && resolved.radius > 0) {
+			facts.push(`⌀ ${resolved.radius * 2} px`);
+		}
+		const look = THROWABLE_LOOKS.find((candidate) => candidate === resolved.look);
+		if (look) builtIn = { kind: 'throwable', look };
 	} else {
 		// A picture of the library: its own first frame.
 		const picture = { ...resolved, ...data };
@@ -141,6 +161,9 @@ export function EntryCards(props: {
 							{!card.builtIn && initials(card.title)}
 							{card.builtIn?.kind === 'entity' && <EntityLookPreview look={card.builtIn.look} />}
 							{card.builtIn?.kind === 'item' && <ItemLookPreview look={card.builtIn.look} />}
+							{card.builtIn?.kind === 'throwable' && (
+								<ThrowableLookPreview look={card.builtIn.look} />
+							)}
 							{card.image && <span style={{ ...styles.thumbImage, ...card.image }} />}
 						</span>
 						<strong>{card.title}</strong>

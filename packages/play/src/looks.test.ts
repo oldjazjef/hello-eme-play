@@ -1,6 +1,6 @@
-import { ITEM_LOOKS, LOOKS } from '@hello-eme/play-schema';
+import { ITEM_LOOKS, LOOKS, THROWABLE_LOOKS } from '@hello-eme/play-schema';
 import { describe, expect, it } from 'vitest';
-import { ITEM_LOOK_PATHS, LOOK_ROWS, SPRITE_COLORS } from './looks.js';
+import { ITEM_LOOK_PATHS, LOOK_ROWS, SPRITE_COLORS, THROWABLE_LOOK_PATHS } from './looks.js';
 
 describe('looks', () => {
 	it('has a rectangular picture for every look, made of known parts', () => {
@@ -17,6 +17,17 @@ describe('looks', () => {
 	it('has an outline for every item look, closed and inside the 100 × 100 box', () => {
 		for (const look of ITEM_LOOKS) {
 			const path = ITEM_LOOK_PATHS[look];
+			expect(path, look).toMatch(/^M.*Z$/);
+			const numbers = [...path.matchAll(/-?\d+(?:\.\d+)?/g)].map((match) =>
+				Math.abs(Number(match[0]))
+			);
+			expect(Math.max(...numbers), look).toBeLessThanOrEqual(70);
+		}
+	});
+
+	it('has an outline for every throwable look, inside the 100 × 100 box', () => {
+		for (const look of THROWABLE_LOOKS) {
+			const path = THROWABLE_LOOK_PATHS[look];
 			expect(path, look).toMatch(/^M.*Z$/);
 			const numbers = [...path.matchAll(/-?\d+(?:\.\d+)?/g)].map((match) =>
 				Math.abs(Number(match[0]))

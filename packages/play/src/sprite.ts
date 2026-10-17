@@ -18,6 +18,7 @@ import type {
 	ItemLook,
 	Look,
 	PlayConfig,
+	ThrowableLook,
 	ThrowableDefinition
 } from '@hello-eme/play-schema';
 import { opacity as skidOpacity, SKID, type SkidMark } from './skid.js';
@@ -235,6 +236,13 @@ export const ITEM_LOOK_PATHS: Record<ItemLook, string> = {
 		}).join(' ') + ' Z',
 	gem: 'M0 -50 L40 -10 L0 50 L-40 -10 Z',
 	bolt: 'M10 -50 L-30 5 L-2.5 5 L-10 50 L30 -10 L2.5 -10 Z'
+};
+
+/** The outline of each built-in throwable look around (0, 0), like `ITEM_LOOK_PATHS`, for previews. */
+export const THROWABLE_LOOK_PATHS: Record<ThrowableLook, string> = {
+	bomb: 'M-38 8 A38 38 0 1 0 38 8 A38 38 0 1 0 -38 8 Z M-4 -24 L14 -44 L22 -36 L6 -20 Z',
+	rock: 'M46.0 0.0 L22.4 28.1 L-10.2 44.8 L-32.4 15.6 L-41.4 -20.0 L-8.0 -35.1 L28.7 -36.0 Z',
+	mine: 'M-46 0 A46 46 0 1 0 46 0 A46 46 0 1 0 -46 0 Z'
 };
 
 const isPart = (char: string): char is SpritePart =>
