@@ -46,6 +46,8 @@
 				// No previewUrl: the editor shows the game on a built-in sample page. With
 				// previewUrl: 'https://my.site/play-preview' it shows a page of your own instead.
 				referenceUrl: 'https://github.com/oldjazjef/hello-eme-play/blob/main/docs/REFERENCE.md',
+				// A support link in the toolbar (http or https); leave it out for none.
+				supportUrl: 'https://buymeacoffee.com/hello.eme',
 				onChange: (json) => {
 					output.textContent = JSON.stringify(json, null, 2);
 				}
