@@ -4,6 +4,7 @@
  */
 import { t, type Text } from './dsl.js';
 import { CLASSIC } from './schema.js';
+import { GAMES } from './games/index.js';
 
 export interface Preset {
 	label: Text;
@@ -393,5 +394,7 @@ export const PRESETS: Record<string, Preset> = {
 				playDelay: { min: 2, max: 4 }
 			}
 		}
-	}
+	},
+
+	...GAMES
 };

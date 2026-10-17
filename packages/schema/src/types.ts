@@ -81,6 +81,8 @@ export interface SpriteDefinition {
 	/** Frame numbers by state; empty falls back to `idle`, then to frame 0. */
 	animations: Record<Animation, number[]>;
 	facing: Facing;
+	/** From above: turn the picture to where it goes (false: it stays upright and only mirrors). */
+	rotate: boolean;
 }
 
 /**

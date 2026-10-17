@@ -118,3 +118,15 @@ test('the live preview can be shown full screen and back', async ({ page }) => {
 		.poll(async () => (await frame.boundingBox())?.height ?? 0)
 		.toBeLessThanOrEqual((small?.height ?? 0) + 2);
 });
+
+test('loads a complete example game in the preview, with its pictures', async ({ page }) => {
+	const errors: string[] = [];
+	page.on('pageerror', (error) => errors.push(String(error)));
+	await page.goto(url);
+	const card = page.locator('li, div').filter({ hasText: 'Ememons (catch monsters)' }).last();
+	await card.getByRole('button', { name: 'Try it' }).click();
+	await expect(page.getByText(/Trying “Ememons \(catch monsters\)” in the preview/)).toBeVisible();
+	await page.getByRole('button', { name: 'Use this preset' }).click();
+	await expect.poll(async () => Object.keys((await json(page)).hideouts ?? {}).length).toBe(4);
+	expect(errors).toEqual([]);
+});

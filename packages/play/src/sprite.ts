@@ -268,6 +268,8 @@ export interface Picture {
 	image: HTMLImageElement;
 	size: number;
 	facing: Facing;
+	/** From above: turns to where it goes; otherwise upright and mirrored. */
+	rotate: boolean;
 	sheet: Sheet;
 }
 
@@ -306,11 +308,11 @@ export function loadPictures(sprites: PlayConfig['sprites']): Pictures {
 	return Object.fromEntries(
 		Object.entries(sprites)
 			.filter(([, { url }]) => url.trim() !== '')
-			.map(([id, { url, size, facing, columns, rows, fps, animations }]) => {
+			.map(([id, { url, size, facing, rotate, columns, rows, fps, animations }]) => {
 				const image = new Image();
 				image.decoding = 'async';
 				image.src = url;
-				return [id, { image, size, facing, sheet: { columns, rows, fps, animations } }];
+				return [id, { image, size, facing, rotate, sheet: { columns, rows, fps, animations } }];
 			})
 	);
 }
@@ -321,6 +323,16 @@ const FACING_ANGLE: Record<Facing, number> = {
 	left: Math.PI,
 	up: -Math.PI / 2
 };
+
+/** How to draw a picture of a body seen from above: turned to its heading, or upright and mirrored. */
+function topdownPose(picture: Picture, angle: number): { rotation: number; flip: boolean } {
+	if (picture.rotate) return { rotation: angle, flip: false };
+	const right = Math.cos(angle) >= 0;
+	return {
+		rotation: 0,
+		flip: (picture.facing === 'right' && !right) || (picture.facing === 'left' && right)
+	};
+}
 
 export interface Scene {
 	colors: SpriteColors;
@@ -335,7 +347,7 @@ export interface Scene {
 /** Draws a picture centered, turned from where it looks (`facing`) to `rotation` (0 = right). */
 function drawPicture(
 	ctx: CanvasRenderingContext2D,
-	{ image, size, facing, sheet }: Picture,
+	{ image, size, facing, rotate, sheet }: Picture,
 	x: number,
 	y: number,
 	rotation: number,
@@ -352,7 +364,8 @@ function drawPicture(
 	const cell = frame % (sheet.columns * sheet.rows);
 	ctx.save();
 	ctx.translate(x, y);
-	ctx.rotate(rotation - FACING_ANGLE[facing]);
+	// Pictures that stay upright (people and creatures seen from the front) are never turned.
+	ctx.rotate(rotate ? rotation - FACING_ANGLE[facing] : 0);
 	ctx.scale(flip ? -scale : scale, scale);
 	ctx.drawImage(
 		image,
@@ -472,7 +485,16 @@ export function drawBody(
 	if (definition.look === 'car') {
 		if (!(
 			picture &&
-			drawPicture(ctx, picture, x, y, body.angle, scale, false, frameOf(body, picture, scene))
+			drawPicture(
+				ctx,
+				picture,
+				x,
+				y,
+				topdownPose(picture, body.angle).rotation,
+				scale,
+				topdownPose(picture, body.angle).flip,
+				frameOf(body, picture, scene)
+			)
 		)) {
 			drawPixels(ctx, CAR_ROWS, x, y, body.angle, scale, colors);
 		}
@@ -484,7 +506,16 @@ export function drawBody(
 	const grow = scale * (1 + height * JUMP_SCALE);
 	if (!(
 		picture &&
-		drawPicture(ctx, picture, x, y, body.angle, grow, false, frameOf(body, picture, scene))
+		drawPicture(
+			ctx,
+			picture,
+			x,
+			y,
+			topdownPose(picture, body.angle).rotation,
+			grow,
+			topdownPose(picture, body.angle).flip,
+			frameOf(body, picture, scene)
+		)
 	)) {
 		// The sprite faces down (π/2); turn it to where the body goes.
 		drawPixels(

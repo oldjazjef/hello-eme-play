@@ -77,6 +77,23 @@ function possible(config: PlayConfig, actions: readonly { do: string }[]): Set<E
 		events.add('enterVehicle');
 		events.add('exitVehicle');
 	}
+	const entities = Object.values(config.entities);
+	if (Object.values(config.throwables).some((item) => item.catch > 0)) {
+		events.add('catch');
+		events.add('escape');
+		events.add('faint');
+	}
+	if (entities.some((entity) => entity.hideIn !== '')) events.add('encounter');
+	if (
+		entities.some(
+			(entity) => entity.evolve.every > 0 || entity.evolve.hits > 0 || entity.evolve.kills > 0
+		)
+	) {
+		events.add('evolve');
+	}
+	if (JSON.stringify([config.triggers, config.items, config.upgrades]).includes('"recruit"')) {
+		events.add('faint');
+	}
 	if (config.levels.length > 0) events.add('levelUp');
 	if (config.levels.some((level) => level.view !== '')) events.add('viewChange');
 	for (const action of actions) for (const name of EMITS[action.do] ?? []) events.add(name);

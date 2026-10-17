@@ -8,6 +8,8 @@ import type { Body, Hideout, PartyMember, World } from './types.js';
 
 /** Seconds a team member can't be hurt again after a hit. */
 const ALLY_HURT_SECONDS = 0.4;
+/** The share of the page all hideouts together may cover. */
+const MAX_COVER = 0.25;
 /** How far an ally looks for something to fight, px. */
 const ALLY_SIGHT = 450;
 /** How close an ally stays to the figure when nothing is going on, px. */
@@ -232,9 +234,13 @@ export function placeHideouts(world: World): Hideout[] {
 	const pg = world.host.page();
 	const vp = world.host.viewport();
 	const places: Hideout[] = [];
+	// On a small page there is room for fewer: all patches together cover at most a quarter of it.
+	let room = pg.width * pg.height * MAX_COVER;
 	for (const [def, hideout] of Object.entries(world.config.hideouts)) {
 		for (let i = 0; i < hideout.count; i++) {
 			const radius = between(world, hideout.radius);
+			room -= Math.PI * radius * radius;
+			if (room < 0) break;
 			const x =
 				HARD_EDGE + radius + world.random() * Math.max(0, pg.width - 2 * (HARD_EDGE + radius));
 			const top = vp.top + HARD_EDGE + radius;

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { createStaticHost } from './space.js';
 import { catchChance } from './team.js';
 import { createWorld } from './world.js';
 
@@ -352,5 +353,26 @@ describe('hideouts', () => {
 		});
 		run(world, 1.5);
 		expect(world.bodies.some((body) => body.def === 'critter' && !body.hidden)).toBe(true);
+	});
+});
+
+describe('hideouts on small pages', () => {
+	it('cover at most a quarter of the page, so a small page gets fewer', () => {
+		const make = (width: number, height: number) =>
+			createWorld(
+				{
+					spawns: [],
+					visits: { enabled: false },
+					hideouts: { grass: { count: 40, radius: { min: 100, max: 100 } } }
+				},
+				{ seed: 1, host: createStaticHost({ width, height, page: { width, height } }) }
+			);
+		const small = make(600, 500);
+		const large = make(2000, 3000);
+		expect(small.hideouts.length).toBeLessThan(10);
+		expect(small.hideouts.length).toBeGreaterThan(0);
+		expect(large.hideouts).toHaveLength(40);
+		const area = small.hideouts.length * Math.PI * 100 * 100;
+		expect(area).toBeLessThanOrEqual(600 * 500 * 0.25 + Math.PI * 100 * 100);
 	});
 });

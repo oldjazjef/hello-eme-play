@@ -329,7 +329,17 @@ const SPRITE = object(t('Bild', 'Picture'), {
 			left: t('Links', 'Left'),
 			up: t('Oben', 'Up')
 		}
-	})
+	}),
+	rotate: bool(
+		t('Dreht sich in Laufrichtung (Vogelperspektive)', 'Turns to where it goes (top-down)'),
+		true,
+		{
+			help: t(
+				'Aus: das Bild bleibt aufrecht und spiegelt sich nur nach links und rechts (für Figuren von vorn).',
+				'Off: the picture stays upright and only mirrors left and right (for characters seen from the front).'
+			)
+		}
+	)
 });
 
 /** How a vehicle handles; the defaults are the car's. */
@@ -894,7 +904,7 @@ const FIELDS: Record<string, Node> = {
 			0,
 			POINTS.max
 		),
-		partySize: int(t('Grösse des Teams', 'Team size'), 6, 1, 20)
+		partySize: int(t('Grösse des Teams', 'Team size'), 6, 1, 100)
 	}),
 	stats: {
 		type: 'record',

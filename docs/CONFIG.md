@@ -5,27 +5,28 @@ One JSON, every key optional. [REFERENCE.md](REFERENCE.md) lists every setting, 
 `@hello-eme/play-schema/play.schema.json` for autocompletion. The settings below are the top-level keys;
 the Payload form or the JSON Schema list every field with bounds.
 
-| Key                   | What it holds                                                                            |
-| --------------------- | ---------------------------------------------------------------------------------------- |
-| `view`                | `mode` (`topdown` / `side`), gravity, jump speed, platform selector                      |
-| `game`                | played entity, lives, page wrap, overrun speed, points per broken element                |
-| `stats`               | stat ids (`hp`, `attack`, `defense`, `dex`, `speed`, `luck` …) with label, min, max      |
-| `entities`            | figure, monsters, vehicles: `kind`, stats, `behavior`, `moves`, `reward`, `boss`, sprite |
-|                       | bosses also `phases`: `below` (% health), `label`, `stats`, `do` actions                 |
-|                       | vehicles also `drive` (handling), `ram` (damage to monsters), `absorbs` (takes the hits) |
-| `moves`               | attacks: keys, power, reach, cooldown, push, `breaks`, where usable                      |
-| `items`, `itemSpawns` | pickups and when they appear; `do` is a list of actions                                  |
-| `throwables`          | bombs, rocks, mines: keys, speed, fuse, radius, power, ammo, where usable                |
-| `upgrades`            | shop entries: cost, levels, stats added, optional actions                                |
-| `spawns`              | which monster, how often (`every`), how many (`count`), `max`, level range, scaling      |
-| `waves`               | timed scripts: level range, `after`, `steps` (`at`, `every`, `repeat`, `do` actions)     |
-| `triggers`            | `on` event, `only`, `keys` (for `key`), `conditions`, `do` actions                       |
-| `pages`               | `{ match, config }`: other settings for some pages (path pattern, partial JSON)          |
-| `levels`              | label, view, goal (`score`, `kills`, `survive`, `boss`)                                  |
-| `visits`              | a vehicle that drives in by itself                                                       |
-| `keys`, `hint`        | keyboard bindings, hint timeout                                                          |
-| `audio`, `progress`   | synth sounds by id, event → sound, high score storage                                    |
-| `texts`               | UI texts (empty: the default of `locale`)                                                |
+| Key                   | What it holds                                                                              |
+| --------------------- | ------------------------------------------------------------------------------------------ |
+| `view`                | `mode` (`topdown` / `side`), gravity, jump speed, platform selector                        |
+| `game`                | played entity, lives, page wrap, overrun speed, points per broken element                  |
+| `stats`               | stat ids (`hp`, `attack`, `defense`, `dex`, `speed`, `luck` …) with label, min, max        |
+| `entities`            | figure, monsters, vehicles: `kind`, stats, `behavior`, `moves`, `reward`, `boss`, sprite   |
+|                       | bosses also `phases`: `below` (% health), `label`, `stats`, `do` actions                   |
+|                       | vehicles also `drive` (handling), `ram` (damage to monsters), `absorbs` (takes the hits)   |
+| `moves`               | attacks: keys, power, reach, cooldown, push, `breaks`, where usable                        |
+| `items`, `itemSpawns` | pickups and when they appear; `do` is a list of actions                                    |
+| `throwables`          | bombs, rocks, mines, balls (`catch`): keys, speed, fuse, radius, power, ammo, where usable |
+| `hideouts`            | tall grass, bushes, a pond, rocks where monsters (`hideIn`) hide until you walk through    |
+| `upgrades`            | shop entries: cost, levels, stats added, optional actions                                  |
+| `spawns`              | which monster, how often (`every`), how many (`count`), `max`, level range, scaling        |
+| `waves`               | timed scripts: level range, `after`, `steps` (`at`, `every`, `repeat`, `do` actions)       |
+| `triggers`            | `on` event, `only`, `keys` (for `key`), `conditions`, `do` actions                         |
+| `pages`               | `{ match, config }`: other settings for some pages (path pattern, partial JSON)            |
+| `levels`              | label, view, goal (`score`, `kills`, `survive`, `boss`)                                    |
+| `visits`              | a vehicle that drives in by itself                                                         |
+| `keys`, `hint`        | keyboard bindings, hint timeout                                                            |
+| `audio`, `progress`   | synth sounds by id, event → sound, high score storage                                      |
+| `texts`               | UI texts (empty: the default of `locale`)                                                  |
 
 ## Sprite sheets and animations
 
@@ -86,6 +87,68 @@ defined in `throwables` and used with its `keys` (touch screens get a button wit
 	"itemSpawns": [{ "item": "bombs", "max": 2 }]
 }
 ```
+
+## Catching monsters, a team, hideouts (Ememons)
+
+You can play a Pokémon-style game with this:
+
+- **Balls**: a throwable with `catch` (1–100) hurts nothing, it tries to catch the monster it touches. The chance
+  is `catch × catchRate ÷ 100 × (1 − 0.6 × health share)`: weak monsters are easy, and an entity with
+  `catchRate: 0` (a boss) can't be caught at all. `game.partySize` limits the team. Item, trigger and upgrade
+  actions fill balls up (`ammo`).
+- **The team**: a caught monster joins the team. `keys.party` (R) sends out the next healthy member (and calls
+  the one that is out back); it follows the figure, fights the nearest monster and is fought back, so monsters near
+  it attack it instead of the figure. At 0 health it faints and goes back into the team (event `faint`). The
+  action `healParty` heals everyone by a percent (100 also revives); `recruit` adds a monster to the team
+  (a starter or a pet). Team members level up by beating monsters (`evolve.kills`) and can evolve into another
+  entity (`evolve.into`); the HUD lists the team.
+- **Hideouts**: `hideouts` are patches scattered over the page (`look`: tall grass, bush, pond, rocks; `count`,
+  `radius`). An entity with `hideIn` spawns hidden inside one of that kind: invisible, out of the fight, not
+  hit by blasts. While the figure walks through the patch it jumps out with the hideout's `encounter` chance per
+  second (event `encounter`). The patches sway when something moves in them or hides there.
+- **Trigger events** `catch`, `escape` (the monster broke free), `encounter`, `evolve` and `faint`, with `only` =
+  the entity, for messages, points or sounds (`audio.events`).
+- **Pictures**: a sprite with `"rotate": false` stays upright and only mirrors (people and creatures seen from the
+  front).
+
+```json
+{
+	"game": { "partySize": 6 },
+	"hideouts": {
+		"grass": { "look": "grass", "count": 22, "radius": { "min": 70, "max": 130 }, "encounter": 55 }
+	},
+	"throwables": {
+		"ball": { "keys": ["KeyG"], "catch": 40, "speed": 560, "fuse": 0, "radius": 0, "ammo": 8 }
+	},
+	"entities": {
+		"rattly": {
+			"kind": "monster",
+			"hideIn": "grass",
+			"catchRate": 90,
+			"evolve": { "kills": 3, "maxLevel": 1, "into": "ratking" }
+		}
+	},
+	"triggers": [{ "on": "catch", "do": [{ "do": "points", "amount": 100 }] }]
+}
+```
+
+### Ten example games
+
+The presets `game-*` are complete games with pictures (made as small SVGs inside the JSON, nothing to download),
+loadable in the editor with "Try it" and playable right away:
+
+| Preset           | What                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------- |
+| `game-ememons`   | Pokémon-style: wild Ememons hide in grass, bushes, pond and rocks; catch, team, evolve, gym boss  |
+| `game-bombastic` | Bomberman-style: drop, throw and mega bombs, robots that throw back, the Bomber King              |
+| `game-roadrage`  | five vehicles (banger, race car, moped, truck, tank) with different handling; run-overs and mines |
+| `game-zombies`   | spores breed and evolve into zombies, brutes and tyrants; fire bottles, three nights              |
+| `game-slimes`    | slimes breed and grow; salt bombs; the Slime King                                                 |
+| `game-pagio`     | side-scroller: platforms, coins, fireballs that bounce, koopas, the dragon king                   |
+| `game-dungeon`   | RPG: sword and shield bash, a wolf pup (team) that evolves, shop, four floors and a dragon        |
+| `game-laststand` | wave defense: scripted waves, mines, grenades, throwing monsters, the Overlord                    |
+| `game-safari`    | catching without fighting: critters hide and flee, nets, rare ones are worth more                 |
+| `game-derby`     | vehicle battle: four vehicles that take hits and get wrecked, bombs forward, mines backward       |
 
 **Monsters throw too**: list what a monster throws in its entity's `throws` (`throwable`, `range`: throws when the
 figure is closer than that, `cooldown`). It aims at the figure (or its vehicle) and the throwable lands on it when
