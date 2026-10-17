@@ -1,5 +1,7 @@
 /** Pieces the example games share: moves, sounds and a short way to write a monster. */
 
+import type { Behavior } from '../types.js';
+
 type Json = Record<string, unknown>;
 
 /** The moves the games pick from. A game that lists `moves` replaces the defaults, so it names them all. */
@@ -123,7 +125,7 @@ export interface MonsterOptions {
 	attack: number;
 	speed: number;
 	defense?: number;
-	behavior?: 'chase' | 'wander' | 'flee' | 'stand';
+	behavior?: Exclude<Behavior, 'arrive'>;
 	moves?: string[];
 	points?: number;
 	drops?: { item: string; chance: number }[];

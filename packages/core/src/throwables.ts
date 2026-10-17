@@ -2,7 +2,7 @@
 import type { ThrowableDefinition } from '@hello-eme/play-schema';
 import { hostile } from './bodies.js';
 import { direction, targetOf, victimOf } from './combat.js';
-import { advance, edgePoint, fall, floorY, HARD_EDGE, radiusOf, sizeOf } from './space.js';
+import { advance, arenaOf, edgePoint, fall, floorY, HARD_EDGE, radiusOf, sizeOf } from './space.js';
 import { attemptCatch, hurtAlly } from './team.js';
 import { stateOf } from './state.js';
 import { cooldownOf, distance, reduced, statOf } from './stats.js';
@@ -113,11 +113,15 @@ export function updateProjectiles(world: World, dt: number): void {
 /** Flies or slides for `dt` seconds. Returns whether it came to rest (landed, or stopped). */
 function move(world: World, p: Projectile, definition: ThrowableDefinition, dt: number): boolean {
 	if (world.view === 'topdown') {
+		const x = p.x + p.vx * dt;
+		const y = p.y + p.vy * dt;
 		advance(world, p, p.vx * dt, p.vy * dt, false);
+		// Against the edge of the arena a shot is spent.
+		const stopped = Math.abs(p.x - x) > 0.01 || Math.abs(p.y - y) > 0.01;
 		const slow = Math.exp(-DRAG * dt);
 		p.vx *= slow;
 		p.vy *= slow;
-		return Math.hypot(p.vx, p.vy) < REST_SPEED;
+		return Math.hypot(p.vx, p.vy) < REST_SPEED || (stopped && definition.speed > 0);
 	}
 	advance(world, p, p.vx * dt, 0, false);
 	const impact = p.fall;
@@ -261,10 +265,33 @@ export function monsterThrow(world: World, monster: Body, target: Body): void {
 	const facing = away > 0 ? { x: toX / away, y: toY / away } : { x: 1, y: 0 };
 	// Thrown to land on the figure when the throwable can fly that far.
 	const speed = definition.speed > 0 ? Math.min(definition.speed, Math.max(80, away * DRAG)) : 0;
+	launch(world, monster, choice.throwable, definition, facing, speed);
+}
+
+/** A monster fires `id` along `facing` (a unit vector) with the full speed of the throwable. */
+export function fireAt(world: World, monster: Body, id: string, angle: number): void {
+	const definition = world.config.throwables[id];
+	if (!definition || world.projectiles.length >= MAX_PROJECTILES) return;
+	const side = world.view === 'side';
+	const facing = side
+		? { x: Math.cos(angle) >= 0 ? 1 : -1, y: 0 }
+		: { x: Math.cos(angle), y: Math.sin(angle) };
+	launch(world, monster, id, definition, facing, definition.speed);
+}
+
+function launch(
+	world: World,
+	monster: Body,
+	id: string,
+	definition: ThrowableDefinition,
+	facing: { x: number; y: number },
+	speed: number
+): void {
+	const side = world.view === 'side';
 	const reach = sizeOf(world, monster);
 	const projectile: Projectile = {
 		id: stateOf(world).nextId++,
-		def: choice.throwable,
+		def: id,
 		x: monster.x + (speed > 0 ? facing.x * reach * 0.4 : 0),
 		y: side
 			? monster.y - (speed > 0 ? reach * 0.5 : 0)
@@ -280,7 +307,7 @@ export function monsterThrow(world: World, monster: Body, target: Body): void {
 		attack: statOf(world, monster, 'attack')
 	};
 	world.projectiles.push(projectile);
-	world.events.emit('throw', { id: choice.throwable, projectile });
+	world.events.emit('throw', { id, projectile });
 	if (definition.sound) world.events.emit('sound', { id: definition.sound });
 }
 
@@ -302,15 +329,15 @@ export function placeHazard(
 			const away = 120 + world.random() * 140;
 			spot = { x: leader.x + Math.cos(angle) * away, y: leader.y + Math.sin(angle) * away };
 		} else if (where === 'edge') spot = edgePoint(world);
-		const pg = world.host.page();
+		const arena = arenaOf(world);
 		const projectile: Projectile = {
 			id: state.nextId++,
 			def: id,
-			x: Math.min(Math.max(spot.x, HARD_EDGE), pg.width - HARD_EDGE),
+			x: Math.min(Math.max(spot.x, arena.left + HARD_EDGE), arena.right - HARD_EDGE),
 			y:
 				world.view === 'side'
 					? floorY(world)
-					: Math.min(Math.max(spot.y, HARD_EDGE), pg.height - HARD_EDGE),
+					: Math.min(Math.max(spot.y, arena.top + HARD_EDGE), arena.bottom - HARD_EDGE),
 			vx: 0,
 			vy: 0,
 			fall: 0,

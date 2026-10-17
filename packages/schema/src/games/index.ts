@@ -6,6 +6,7 @@ import { ememons } from './ememons.js';
 import { laststand } from './laststand.js';
 import { withObjects } from './objects.js';
 import { pagio } from './pagio.js';
+export { RETRO } from './retro/index.js';
 import { roadrage } from './roadrage.js';
 import { safari } from './safari.js';
 import { slimes } from './slimes.js';

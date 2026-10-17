@@ -17,8 +17,9 @@ describe('resolveConfig', () => {
 		expect(DEFAULT_CONFIG.version).toBe(SCHEMA_VERSION);
 	});
 
-	it('spawns blobs in waves by default', () => {
-		expect(DEFAULT_CONFIG.spawns).toEqual([
+	it('has no monsters by default: the game is a way to move around the page', () => {
+		expect(DEFAULT_CONFIG.spawns).toEqual([]);
+		expect(resolveConfig({ spawns: [{ entity: 'blob' }] }).spawns).toEqual([
 			{
 				entity: 'blob',
 				every: { min: 12, max: 30 },

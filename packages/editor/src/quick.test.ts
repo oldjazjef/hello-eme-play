@@ -8,10 +8,13 @@ const setting = (id: string) => {
 	return found;
 };
 
+/** Quick settings steer the monster rule, so the tests start from a game that has one. */
+const BLOBS = { spawns: [{ entity: 'blob' }] };
+
 describe('quick settings', () => {
 	it('read the classic defaults', () => {
 		const values = Object.fromEntries(
-			quickValues(resolveConfig({})).map(({ setting: s, value }) => [s.id, value])
+			quickValues(resolveConfig(BLOBS)).map(({ setting: s, value }) => [s.id, value])
 		);
 		expect(values).toMatchObject({
 			view: 'topdown',
@@ -29,17 +32,17 @@ describe('quick settings', () => {
 	});
 
 	it('write what the full form would store, and read back the same value', () => {
-		for (const { setting: s } of quickValues(resolveConfig({}))) {
+		for (const { setting: s } of quickValues(resolveConfig(BLOBS))) {
 			const value =
 				s.control.kind === 'boolean' ? false : s.control.kind === 'select' ? 'side' : s.control.min;
-			const stored = applyQuick({}, s, value);
+			const stored = applyQuick(BLOBS, s, value);
 			expect(configProblems(stored), s.id).toEqual([]);
 			expect(s.read(resolveConfig(stored)), s.id).toBe(value);
 		}
 	});
 
 	it('changing a monster stat keeps the other entities and their stats', () => {
-		const stored = applyQuick({}, setting('monsterHealth'), 9);
+		const stored = applyQuick(BLOBS, setting('monsterHealth'), 9);
 		const config = resolveConfig(stored);
 		expect(config.entities.blob?.stats.hp).toBe(9);
 		expect(config.entities.blob?.stats.attack).toBe(10);
@@ -48,7 +51,7 @@ describe('quick settings', () => {
 	});
 
 	it('a second change on top of a stored one keeps the first', () => {
-		let stored = applyQuick({}, setting('monsterHealth'), 9);
+		let stored = applyQuick(BLOBS, setting('monsterHealth'), 9);
 		stored = applyQuick(stored, setting('monsterSpeed'), 150);
 		const blob = resolveConfig(stored).entities.blob;
 		expect(blob?.stats).toMatchObject({ hp: 9, speed: 150 });
@@ -64,14 +67,14 @@ describe('quick settings', () => {
 	});
 
 	it('keeps a spread around the average spawn time', () => {
-		const config = resolveConfig(applyQuick({}, setting('spawnEvery'), 10));
+		const config = resolveConfig(applyQuick(BLOBS, setting('spawnEvery'), 10));
 		expect(config.spawns[0]?.every).toEqual({ min: 6, max: 14 });
 	});
 
 	it('clamps out-of-range values', () => {
-		expect(resolveConfig(applyQuick({}, setting('lives'), 99)).game.lives).toBe(9);
+		expect(resolveConfig(applyQuick(BLOBS, setting('lives'), 99)).game.lives).toBe(9);
 		expect(
-			resolveConfig(applyQuick({}, setting('monsterHealth'), -5)).entities.blob?.stats.hp
+			resolveConfig(applyQuick(BLOBS, setting('monsterHealth'), -5)).entities.blob?.stats.hp
 		).toBe(1);
 	});
 

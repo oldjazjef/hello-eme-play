@@ -26,6 +26,10 @@ import {
 	GOALS,
 	ITEM_LOOKS,
 	LOOKS,
+	ATTACK_KINDS,
+	CONTROLS,
+	PITS,
+	WEAK_SIDES,
 	HIDEOUT_LOOKS,
 	POSES,
 	THROWABLE_LOOKS,
@@ -107,10 +111,11 @@ export const ACTION: UnionNode = {
 			fields: {
 				entity: ref(t('Wer', 'Who'), 'entities'),
 				count: int(t('Anzahl', 'Count'), 3, 1, 50),
-				where: select(t('Wo', 'Where'), ['edge', 'near'], 'edge', {
+				where: select(t('Wo', 'Where'), ['edge', 'near', 'figure'], 'edge', {
 					optionLabels: {
 						edge: t('Am Rand', 'At the edge'),
-						near: t('Nahe der Figur', 'Near the figure')
+						near: t('Nahe der Figur', 'Near the figure'),
+						figure: t('Vor der Figur, in ihrer Blickrichtung', 'In front of the figure')
 					}
 				})
 			}
@@ -194,6 +199,29 @@ export const ACTION: UnionNode = {
 				}),
 				count: int(t('Anzahl', 'Count'), 1, 1, 20)
 			}
+		},
+		grow: {
+			label: t('Schwanz wachsen lassen', 'Grow the tail'),
+			fields: { amount: int(t('Glieder', 'Segments'), 1, 1, 100) }
+		},
+		toStart: {
+			label: t('Figur zurück zum Start', 'Send the figure back to the start'),
+			fields: {}
+		},
+		checkpoint: {
+			label: t('Hier ist der neue Startplatz', 'Make this the new starting place'),
+			fields: {}
+		},
+		launch: {
+			label: t('Figur hochschleudern (Sidescroller)', 'Launch the figure upwards (side-scroller)'),
+			fields: { speed: num(t('Geschwindigkeit (px/s)', 'Speed (px/s)'), 1100, 100, 5000) }
+		},
+		scare: {
+			label: t(
+				'Monster erschrecken (sie fliehen, man frisst sie)',
+				'Scare the monsters (they flee, you eat them)'
+			),
+			fields: { seconds: num(t('Sekunden', 'Seconds'), 8, 1, 120) }
 		},
 		nextLevel: { label: t('Nächstes Level', 'Next level'), fields: {} },
 		message: {
@@ -289,11 +317,18 @@ const TRIGGER = object(t('Auslöser', 'Trigger'), {
 			breed: t('Ein Monster Junge bekommt', 'A monster has young'),
 			wreck: t('Ein Fahrzeug zerstört wird', 'A vehicle is wrecked'),
 			summon: t('Ein Teammitglied gerufen wird', 'A team member is called'),
-			touch: t('Ein Objekt berührt wird', 'An object is touched')
+			touch: t('Ein Objekt berührt wird', 'An object is touched'),
+			lost: t('Ein Ball verloren geht', 'A ball is lost'),
+			split: t('Ein Monster zerfällt', 'A monster splits up'),
+			stomp: t('Die Figur auf ein Monster springt', 'The figure lands on a monster'),
+			attack: t('Ein Boss ein Muster ausführt', 'A boss uses a pattern')
 		}
 	}),
 	only: str(
-		t('Nur für (Monster, Gegenstand oder Upgrade)', 'Only for (monster, item or upgrade)'),
+		t(
+			'Nur für (Monster, Gegenstand, Upgrade; bei „Ball verloren“ auch left/right/top/bottom)',
+			'Only for (monster, item, upgrade; for “ball lost” also left/right/top/bottom)'
+		),
 		'',
 		{ help: t('Leer: für alle.', 'Empty: for all.') }
 	),
@@ -427,6 +462,46 @@ const RAM = object(t('Rammen (Fahrzeuge)', 'Ramming (vehicles)'), {
 	)
 });
 
+const BOSS_ATTACK = object(
+	t('Angriffsmuster', 'Attack pattern'),
+	{
+		kind: select(t('Art', 'Kind'), ATTACK_KINDS, 'fan', {
+			optionLabels: {
+				fan: t('Fächer von Schüssen (360° = Ring)', 'Fan of shots (360° = ring)'),
+				charge: t('Sturmangriff auf die Figur', 'Charge at the figure'),
+				rain: t('Regen von Wurfobjekten auf die Figur', 'Rain of throwables on the figure'),
+				summon: t('Ruft Monster', 'Calls monsters'),
+				teleport: t('Springt an einen anderen Ort', 'Jumps somewhere else')
+			}
+		}),
+		every: num(t('Pause (Sekunden)', 'Pause (seconds)'), 5, 0.2, 600),
+		windup: num(t('Vorwarnung (Sekunden)', 'Warning (seconds)'), 0.8, 0, 10),
+		fromPhase: int(t('Ab Phase (0 = von Anfang an)', 'From phase (0 = from the start)'), 0, 0, 20),
+		toPhase: int(t('Bis Phase (0 = bis zum Ende)', 'Until phase (0 = to the end)'), 0, 0, 20),
+		throwable: ref(t('Wurfobjekt (Fächer, Regen)', 'Throwable (fan, rain)'), 'throwables', true),
+		entity: ref(t('Monster (Ruft Monster)', 'Monster (calls monsters)'), 'entities', true),
+		count: int(
+			t('Anzahl (Schüsse, Objekte, Monster)', 'Count (shots, objects, monsters)'),
+			8,
+			1,
+			60
+		),
+		spread: num(t('Fächerwinkel (Grad)', 'Fan angle (degrees)'), 360, 1, 360),
+		range: num(
+			t('Nur näher als (px, 0 = überall)', 'Only closer than (px, 0 = anywhere)'),
+			0,
+			0,
+			5000
+		),
+		boost: num(t('Sturmangriff: Tempo (%)', 'Charge: speed (%)'), 300, 100, 2000),
+		seconds: num(t('Sturmangriff: Dauer (Sekunden)', 'Charge: duration (seconds)'), 0.9, 0.1, 10)
+	},
+	t(
+		'Der Boss wiederholt seine Muster der Reihe nach; vor jedem zeigt er kurz an, was kommt.',
+		'The boss repeats its patterns; before each one it shows what is coming.'
+	)
+);
+
 const ENTITY = object(t('Figur, Monster oder Fahrzeug', 'Figure, monster or vehicle'), {
 	kind: select(t('Art', 'Kind'), ENTITY_KINDS, 'monster', {
 		optionLabels: {
@@ -463,7 +538,12 @@ const ENTITY = object(t('Figur, Monster oder Fahrzeug', 'Figure, monster or vehi
 			wander: t('Streift umher', 'Wanders'),
 			flee: t('Flieht', 'Flees'),
 			stand: t('Steht still', 'Stands still'),
-			arrive: t('Fährt vor und parkt', 'Drives in and parks')
+			arrive: t('Fährt vor und parkt', 'Drives in and parks'),
+			drift: t('Fliegt geradeaus (am Rand weiter)', 'Flies straight (on at the edge)'),
+			bounce: t('Prallt ab (Ball)', 'Bounces off things (ball)'),
+			patrol: t('Läuft hin und her', 'Walks to and fro'),
+			ghost: t('Geist im Gitter (folgt an Kreuzungen)', 'Ghost on the grid (follows at corners)'),
+			paddle: t('Schläger (folgt dem Ball)', 'Paddle (follows the ball)')
 		}
 	}),
 	moves: {
@@ -623,7 +703,83 @@ const ENTITY = object(t('Figur, Monster oder Fahrzeug', 'Figure, monster or vehi
 				'While the figure sits inside, the vehicle loses health instead. At 0 it is wrecked and the figure gets out.'
 			)
 		}
-	)
+	),
+	heading: int(
+		t(
+			'Startrichtung (Grad, 0 = rechts, 90 = unten, -1 = beliebig)',
+			'Start direction (degrees, 0 = right, 90 = down, -1 = any)'
+		),
+		-1,
+		-1,
+		359,
+		{
+			help: t(
+				'Für „Fliegt geradeaus“, „Prallt ab“ und „Läuft hin und her“.',
+				'For “flies straight”, “bounces off things” and “walks to and fro”.'
+			)
+		}
+	),
+	shape: select(t('Form', 'Shape'), ['round', 'bar'], 'round', {
+		optionLabels: { round: t('Rund', 'Round'), bar: t('Balken (Schläger)', 'Bar (paddle)') },
+		help: t(
+			'Ein Balken ist so lang wie die Grösse und dünn: ein Ball prallt daran ab.',
+			'A bar is as long as the size and thin: a ball bounces off it.'
+		)
+	}),
+	split: object(
+		t('Zerfällt (Monster)', 'Splits up (monsters)'),
+		{
+			into: ref(t('In (leer: verschwindet einfach)', 'Into (empty: just goes)'), 'entities', true),
+			count: range(t('Anzahl', 'Count'), 2, 2, { min: 1, max: 12 }, { int: true }),
+			faster: num(t('Schneller als das Original (%)', 'Faster than the original (%)'), 20, 0, 500)
+		},
+		t(
+			'Wird das Monster besiegt, entstehen an seinem Ort kleinere (ein grosser Asteroid wird zu mittleren).',
+			'When the monster is beaten, smaller ones appear where it was (a big asteroid becomes medium ones).'
+		)
+	),
+	respawn: num(
+		t('Kommt zurück nach (Sekunden, 0 = nie)', 'Comes back after (seconds, 0 = never)'),
+		0,
+		0,
+		3600,
+		{
+			help: t(
+				'An seinem Startplatz (Geister im Labyrinth).',
+				'At its starting place (ghosts in a maze).'
+			)
+		}
+	),
+	weakSpot: object(
+		t('Schwachstelle (Boss)', 'Weak spot (boss)'),
+		{
+			side: select(t('Von wo getroffen', 'Hit from'), WEAK_SIDES, 'any', {
+				optionLabels: {
+					any: t('Überall (keine Schwachstelle)', 'Anywhere (no weak spot)'),
+					front: t('Von vorn', 'From the front'),
+					back: t('Von hinten', 'From behind'),
+					flank: t('Von der Seite', 'From the side')
+				}
+			}),
+			multiplier: num(t('Schaden von dort (mal)', 'Damage from there (×)'), 2, 0, 100),
+			other: num(t('Schaden von anderswo (mal)', 'Damage from elsewhere (×)'), 0.5, 0, 100)
+		},
+		t(
+			'Der Boss steht in Blickrichtung zur Figur: wer hinter ihn kommt, trifft die Schwachstelle.',
+			'The boss faces the figure: whoever gets behind it hits the weak spot.'
+		)
+	),
+	shieldedBy: ref(
+		t('Geschützt, solange dies lebt (Boss)', 'Shielded while this is alive (boss)'),
+		'entities',
+		true
+	),
+	attacks: {
+		type: 'list',
+		label: t('Angriffsmuster (Boss)', 'Attack patterns (boss)'),
+		of: BOSS_ATTACK,
+		maxItems: 12
+	}
 });
 
 const MOVE = object(t('Angriff', 'Move'), {
@@ -713,6 +869,38 @@ const ITEM = object(t('Gegenstand', 'Item'), {
 			all: t('Alle', 'Everyone')
 		}
 	}),
+	box: bool(t('Rechteckige Trefferfläche', 'Rectangular hit area'), false, {
+		help: t(
+			'Statt rund: ein Rechteck (Ziegel, Plattform). Es passt zum Bild, wenn die Breite stimmt: „Seitenverhältnis“ = Breite ÷ Höhe, „Grösse“ ist die längere Seite.',
+			'Instead of round: a rectangle (brick, platform). Match it to the picture with “aspect” = width ÷ height; “size” is the longer side.'
+		)
+	}),
+	aspect: num(t('Seitenverhältnis (Breite ÷ Höhe)', 'Aspect (width ÷ height)'), 1, 0.1, 20),
+	platform: bool(t('Zum Draufstehen (Sidescroller)', 'To stand on (side-scroller)'), false, {
+		help: t(
+			'Von oben betretbar, von unten durchspringbar; schwebt, statt zu fallen.',
+			'Can be stood on from above and jumped through from below; it floats instead of falling.'
+		)
+	}),
+	float: bool(t('Schwebt (Sidescroller)', 'Floats (side-scroller)'), false, {
+		help: t(
+			'Bleibt in der Luft stehen, statt zu Boden zu fallen (Münzen).',
+			'Stays in the air instead of falling to the ground (coins).'
+		)
+	}),
+	hp: int(
+		t('Treffer bis zum Zerbrechen (0 = unzerbrechlich)', 'Hits until it breaks (0 = unbreakable)'),
+		0,
+		0,
+		100,
+		{
+			help: t(
+				'Ein abprallender Ball trifft es; danach verschwindet es und die Wirkung läuft.',
+				'A bouncing ball hits it; then it goes and its effect runs.'
+			)
+		}
+	),
+	required: bool(t('Muss weg fürs Ziel „Aufräumen“', 'Must go for the “clear” goal'), false),
 	do: ACTIONS(t('Wirkung', 'Effect'))
 });
 
@@ -787,6 +975,12 @@ const THROWABLE = object(
 		ammo: int(t('Start-Vorrat', 'Starting supply'), 5, 0, 999),
 		maxAmmo: int(t('Höchstens tragbar', 'Most it can carry'), 20, 1, 999),
 		unlimited: bool(t('Unbegrenzt', 'Unlimited'), false),
+		auto: bool(t('Taste halten feuert weiter', 'Holding the key keeps firing'), false, {
+			help: t(
+				'Solange die Taste gedrückt ist, wird es so oft benutzt, wie die Pause erlaubt (Laser).',
+				'While the key is held it is used as often as the cooldown allows (a laser).'
+			)
+		}),
 		sound: ref(t('Ton beim Werfen', 'Sound when thrown'), 'audio.sounds', true),
 		explodeSound: ref(t('Ton bei der Explosion', 'Sound on the blast'), 'audio.sounds', true)
 	},
@@ -898,8 +1092,54 @@ const WAVE = object(
 	)
 );
 
+const MAP_SYMBOL = object(t('Zeichen', 'Symbol'), {
+	item: ref(t('Gegenstand', 'Item'), 'items', true),
+	entity: ref(t('Figur oder Monster', 'Figure or monster'), 'entities', true),
+	angle: int(
+		t('Startrichtung (Grad, -1 = eigene)', 'Start direction (degrees, -1 = its own)'),
+		-1,
+		-1,
+		359
+	),
+	start: bool(t('Hier startet die Figur', 'The figure starts here'), false)
+});
+
+const MAP = object(
+	t('Karte', 'Map'),
+	{
+		label: str(t('Name', 'Name')),
+		rows: {
+			type: 'list',
+			label: t('Zeilen (jedes Zeichen ist ein Feld)', 'Rows (every character is a cell)'),
+			of: str(t('Zeile', 'Row')),
+			default: [],
+			maxItems: 60
+		},
+		cell: num(t('Feldgrösse (px)', 'Cell size (px)'), 40, 12, 200),
+		align: select(t('Lage im Fenster', 'Place in the window'), ['center', 'bottom'], 'center', {
+			optionLabels: {
+				center: t('In der Mitte', 'In the middle'),
+				bottom: t('Am Boden (Sidescroller)', 'On the ground (side-scroller)')
+			}
+		}),
+		legend: {
+			type: 'record',
+			label: t('Zeichen', 'Symbols'),
+			idLabel: t('Zeichen', 'Character'),
+			of: MAP_SYMBOL,
+			default: {},
+			maxItems: 40
+		}
+	},
+	t(
+		'Ein Level als Text, in die Mitte des Fensters gesetzt: # Mauer, . Punkt … was jedes Zeichen bedeutet, steht in der Legende.',
+		'A level as text, put in the middle of the window: # wall, . dot … the legend says what each character means.'
+	)
+);
+
 const LEVEL = object(t('Level', 'Level'), {
 	label: str(t('Name', 'Name')),
+	map: ref(t('Karte (beim Start aufgebaut)', 'Map (built at the start)'), 'maps', true),
 	view: select(t('Ansicht (beim Start)', 'View (at start)'), ['', ...VIEW_MODES], '', {
 		optionLabels: {
 			'': t('Unverändert', 'Unchanged'),
@@ -914,7 +1154,8 @@ const LEVEL = object(t('Level', 'Level'), {
 				score: t('Punkte erreichen', 'Reach a score'),
 				kills: t('Monster besiegen', 'Beat monsters'),
 				survive: t('Überleben (Sekunden)', 'Survive (seconds)'),
-				boss: t('Boss besiegen', 'Beat the boss')
+				boss: t('Boss besiegen', 'Beat the boss'),
+				clear: t('Alles Nötige einsammeln oder zerbrechen', 'Collect or break everything required')
 			}
 		}),
 		amount: num(t('Menge', 'Amount'), 500, 0, 1_000_000)
@@ -980,6 +1221,12 @@ const FIELDS: Record<string, Node> = {
 		}),
 		gravity: num(t('Schwerkraft (px/s²)', 'Gravity (px/s²)'), 1800, 100, 10_000),
 		jumpSpeed: num(t('Sprungkraft (px/s)', 'Jump speed (px/s)'), 760, 100, 3000),
+		airJumps: int(
+			t('Sprünge in der Luft (Sidescroller)', 'Jumps in the air (side-scroller)'),
+			0,
+			0,
+			5
+		),
 		platforms: object(t('Plattformen (Sidescroller)', 'Platforms (side-scroller)'), {
 			selector: str(
 				t('Seitenelemente zum Draufstehen', 'Page elements to stand on'),
@@ -1002,7 +1249,72 @@ const FIELDS: Record<string, Node> = {
 			0,
 			POINTS.max
 		),
-		partySize: int(t('Grösse des Teams', 'Team size'), 6, 1, 100)
+		partySize: int(t('Grösse des Teams', 'Team size'), 6, 1, 100),
+		control: select(t('Steuerung', 'Controls'), CONTROLS, 'walk', {
+			optionLabels: {
+				walk: t('Laufen', 'Walk'),
+				ship: t('Raumschiff (drehen, Schub, Trägheit)', 'Spaceship (turn, thrust, inertia)'),
+				grid: t(
+					'Feld für Feld (Snake, Pac-Man, Frogger)',
+					'Cell by cell (snake, Pac-Man, Frogger)'
+				),
+				slide: t('Schläger (nur entlang einer Kante)', 'Paddle (only along one edge)')
+			}
+		}),
+		slideAxis: select(t('Schläger gleitet', 'Paddle slides'), ['x', 'y'], 'x', {
+			optionLabels: {
+				x: t('Waagrecht, unten', 'Sideways, at the bottom'),
+				y: t('Senkrecht, links', 'Up and down, at the left')
+			}
+		}),
+		arena: select(t('Spielfeld', 'Play area'), ['page', 'screen'], 'page', {
+			optionLabels: {
+				page: t('Ganze Seite', 'The whole page'),
+				screen: t('Das Fenster (die Seite bleibt stehen)', 'The window (the page stays put)')
+			}
+		}),
+		pit: select(t('Ball geht verloren am Rand', 'A ball is lost at the edge'), PITS, 'none', {
+			optionLabels: {
+				none: t('Nirgends', 'Nowhere'),
+				bottom: t('Unten', 'Bottom'),
+				top: t('Oben', 'Top'),
+				left: t('Links', 'Left'),
+				right: t('Rechts', 'Right'),
+				leftright: t('Links und rechts', 'Left and right'),
+				topbottom: t('Oben und unten', 'Top and bottom')
+			}
+		}),
+		respawn: select(t('Nach einem Treffer', 'After a hit'), ['stay', 'death', 'hit'], 'stay', {
+			optionLabels: {
+				stay: t('Weiter am Ort', 'Carry on where it is'),
+				death: t(
+					'Verlorenes Leben: zurück zum Startplatz',
+					'Life lost: back to the starting place'
+				),
+				hit: t(
+					'Jeder Treffer kostet ein Leben und schickt zurück zum Start',
+					'Every hit costs a life and sends back to the start'
+				)
+			}
+		}),
+		stomp: num(
+			t('Draufspringen (mal Angriff, 0 = aus)', 'Stomping (× attack, 0 = off)'),
+			0,
+			0,
+			100
+		),
+		ship: object(t('Raumschiff', 'Spaceship'), {
+			thrust: num(t('Schub (px/s²)', 'Thrust (px/s²)'), 520, 10, 10_000),
+			turn: num(t('Drehen (rad/s)', 'Turning (rad/s)'), 3.6, 0.2, 20),
+			maxSpeed: num(t('Höchsttempo (px/s)', 'Top speed (px/s)'), 480, 20, 5000),
+			drag: num(t('Bremsung ohne Schub (1/s)', 'Slowing without thrust (1/s)'), 0.35, 0, 20)
+		}),
+		grid: object(t('Feld für Feld', 'Cell by cell'), {
+			cell: num(t('Feldgrösse (px)', 'Cell size (px)'), 40, 12, 200),
+			auto: bool(t('Läuft von selbst weiter', 'Keeps moving by itself'), true),
+			crash: bool(t('Wand oder eigener Schwanz tut weh', 'A wall or its own tail hurts'), false),
+			tail: bool(t('Schwanz wächst (Snake)', 'A tail grows (snake)'), false)
+		})
 	}),
 	stats: {
 		type: 'record',
@@ -1114,7 +1426,7 @@ const FIELDS: Record<string, Node> = {
 		type: 'list',
 		label: t('Monster erscheinen', 'Monster spawns'),
 		of: SPAWN,
-		default: [{ entity: 'blob' }],
+		default: [],
 		maxItems: 50
 	},
 	itemSpawns: {
@@ -1152,6 +1464,14 @@ const FIELDS: Record<string, Node> = {
 			}
 		)
 	}),
+	maps: {
+		type: 'record',
+		label: t('Karten', 'Maps'),
+		idLabel: t('Karte', 'Map'),
+		of: MAP,
+		default: {},
+		maxItems: 30
+	},
 	waves: {
 		type: 'list',
 		label: t('Wellen (Drehbücher)', 'Waves (scripts)'),

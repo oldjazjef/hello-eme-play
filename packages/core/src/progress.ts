@@ -4,7 +4,9 @@ import { stateOf } from './state.js';
 import { between, countIn } from './stats.js';
 import { runActions } from './triggers.js';
 import type { World } from './types.js';
+import { initFigure } from './arcade.js';
 import { scatterItems } from './items.js';
+import { buildMap } from './maps.js';
 import { startWaves } from './waves.js';
 
 /** Monsters appear in waves, by the spawn rules of the current level. */
@@ -43,11 +45,20 @@ export function vehicleVisit(world: World): void {
 /** Resets the counters of a level and applies what the level asks for. */
 export function startLevel(world: World): void {
 	const state = stateOf(world);
-	state.level = { time: world.time, earned: world.stats.earned, kills: 0, boss: false };
-	startWaves(world);
-	scatterItems(world);
+	state.level = {
+		time: world.time,
+		earned: world.stats.earned,
+		kills: 0,
+		boss: false,
+		required: false
+	};
 	const level = world.config.levels[world.level - 1];
 	if (level?.view) world.setView(level.view);
+	if (level?.map) buildMap(world, level.map);
+	if (level?.map || world.level === 1) initFigure(world);
+	startWaves(world);
+	scatterItems(world);
+	state.level.required = world.pickups.some((pickup) => world.config.items[pickup.def]?.required);
 	if (level?.label) world.events.emit('message', { text: level.label });
 	world.events.emit('levelUp', { level: world.level });
 }
@@ -67,7 +78,10 @@ export function checkGoal(world: World): void {
 					? state.level.kills >= amount
 					: type === 'survive'
 						? world.time - state.level.time >= amount
-						: state.level.boss;
+						: type === 'clear'
+							? state.level.required &&
+								!world.pickups.some((pickup) => world.config.items[pickup.def]?.required)
+							: state.level.boss;
 	if (!reached) return;
 	if (world.level >= world.config.levels.length) world.end(true);
 	else world.nextLevel();

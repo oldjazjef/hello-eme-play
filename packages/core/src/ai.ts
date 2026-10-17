@@ -1,6 +1,10 @@
 /** What bodies do on their own: monsters chase, wander or flee and attack; vehicles park. */
 import { tickBody } from './bodies.js';
+import { eatScared } from './arcade.js';
+import { moveBall, moveDrift, movePaddle, movePatrol } from './bounce.js';
+import { tickBoss } from './boss.js';
 import { monsterAttack, targetOf } from './combat.js';
+import { moveGhost } from './grid.js';
 import { advance, fall, radiusOf, sizeOf, spotInView } from './space.js';
 import { distance, statOf } from './stats.js';
 import { tickLife } from './life.js';
@@ -41,15 +45,20 @@ export function think(world: World, dt: number): void {
 		tickLife(world, body, dt);
 		// A team member close by draws the monster's attention.
 		const foe = foeOf(world, body);
-		moveMonster(
-			world,
-			body,
-			foe ?? target,
-			dt,
-			!foe && target.covered && distance(body, target) > BLIND_RANGE
-		);
-		attack(world, body, foe ?? target, foe);
-		if (world.phase === 'playing' && !foe) monsterThrow(world, body, target);
+		// Scared monsters are eaten by the figure they touch; they don't fight.
+		if (!foe && eatScared(world, body, target)) continue;
+		if (!tickBoss(world, body, foe ?? target, dt)) {
+			moveMonster(
+				world,
+				body,
+				foe ?? target,
+				dt,
+				!foe && target.covered && distance(body, target) > BLIND_RANGE
+			);
+		}
+		if (!world.bodies.includes(body)) continue;
+		if (!world.scared) attack(world, body, foe ?? target, foe);
+		if (world.phase === 'playing' && !foe && !world.scared) monsterThrow(world, body, target);
 	}
 }
 
@@ -80,7 +89,7 @@ function driveAlone(world: World, vehicle: Body, dt: number): void {
 function moveMonster(world: World, monster: Body, target: Body, dt: number, blind = false): void {
 	const definition = world.config.entities[monster.def];
 	const side = world.view === 'side';
-	const speed = statOf(world, monster, 'speed');
+	const speed = statOf(world, monster, 'speed') * (world.scared ? 0.6 : 1);
 	const reach = firstReach(world, monster);
 	let dx = 0;
 	let dy = 0;
@@ -89,8 +98,19 @@ function moveMonster(world: World, monster: Body, target: Body, dt: number, blin
 	const toY = side ? 0 : target.y - monster.y;
 	const to = Math.hypot(toX, toY);
 	// A figure hidden in a bush is not seen from afar: the monster wanders instead.
-	const behavior = definition?.behavior ?? 'chase';
+	let behavior = definition?.behavior ?? 'chase';
+	if (world.scared && behavior === 'chase') behavior = 'flee';
 	switch (blind && behavior === 'chase' ? 'wander' : behavior) {
+		case 'drift':
+			return moveDrift(world, monster, dt);
+		case 'bounce':
+			return moveBall(world, monster, dt);
+		case 'paddle':
+			return movePaddle(world, monster, dt);
+		case 'patrol':
+			return movePatrol(world, monster, dt);
+		case 'ghost':
+			return moveGhost(world, monster, target, dt);
 		case 'chase':
 			// Close enough to hit: stop there instead of pushing into the target.
 			if (to > reach * 0.8 && to > 0) {

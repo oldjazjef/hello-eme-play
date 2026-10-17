@@ -10,7 +10,8 @@ around it). The host only passes the JSON in and takes it out again.
   They write the same JSON as the full form.
 - **Simple / Expert mode**: Simple shows quick settings and the guide; Expert shows every setting, flow and raw JSON.
 - **Presets** as cards with a verdict, and **Try it** in the preview before you use one. The ten example games
-  (`game-*`: Ememons, Bombastic, Road Rage …) are in there with their pictures.
+  (`game-*`: Ememons, Bombastic, Road Rage …) and the eight arcade classics (`retro-*`: Asteroids, Frogger, Snake,
+  Pac-Man, Breakout, Pong, a platformer, boss fights) are in there with their pictures.
 - **Live preview**: the game running next to the form, playing every change (needs a preview page, see below).
 - **Balance check**: a practice bot plays ten rounds in the editor ([`play-sim`](../sim)) and says easy / balanced / hard.
 - **The full form**, generated from the schema: a new setting in `schema.ts` shows up here without editor code.

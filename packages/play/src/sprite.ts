@@ -4,6 +4,8 @@
  * coordinates, so the scroll position is subtracted.
  */
 import {
+	isShielded,
+	itemBox,
 	jumpHeight,
 	walkFrame,
 	type Body,
@@ -244,6 +246,8 @@ export const ITEM_LOOK_PATHS: Record<ItemLook, string> = {
 	gem: 'M0 -50 L40 -10 L0 50 L-40 -10 Z',
 	bolt: 'M10 -50 L-30 5 L-2.5 5 L-10 50 L30 -10 L2.5 -10 Z',
 	wall: 'M-46 -38 L46 -38 L46 38 L-46 38 Z',
+	brick: 'M-48 -24 L48 -24 L48 24 L-48 24 Z',
+	pellet: 'M-12 0 A12 12 0 1 0 12 0 A12 12 0 1 0 -12 0 Z',
 	spikes: 'M-48 40 L-36 -30 L-24 40 L-12 -40 L0 40 L12 -40 L24 40 L36 -30 L48 40 Z',
 	bush: 'M-44 26 C-60 4 -40 -22 -18 -16 C-14 -42 18 -42 22 -16 C46 -22 60 6 44 26 Z',
 	puddle: 'M-50 0 C-50 -26 -10 -34 20 -28 C50 -22 52 10 30 24 C0 38 -50 28 -50 0 Z'
@@ -256,6 +260,8 @@ function itemFill(look: ItemLook, colors: SpriteColors): string {
 			return colors.itemAlt;
 		case 'wall':
 			return colors.rock;
+		case 'brick':
+			return colors.itemAlt;
 		case 'spikes':
 			return colors.itemAlt;
 		case 'bush':
@@ -272,7 +278,8 @@ export const THROWABLE_LOOK_PATHS: Record<ThrowableLook, string> = {
 	bomb: 'M-38 8 A38 38 0 1 0 38 8 A38 38 0 1 0 -38 8 Z M-4 -24 L14 -44 L22 -36 L6 -20 Z',
 	rock: 'M46.0 0.0 L22.4 28.1 L-10.2 44.8 L-32.4 15.6 L-41.4 -20.0 L-8.0 -35.1 L28.7 -36.0 Z',
 	mine: 'M-46 0 A46 46 0 1 0 46 0 A46 46 0 1 0 -46 0 Z',
-	ball: 'M-44 0 A44 44 0 1 0 44 0 A44 44 0 1 0 -44 0 Z'
+	ball: 'M-44 0 A44 44 0 1 0 44 0 A44 44 0 1 0 -44 0 Z',
+	bullet: 'M-46 -14 L30 -14 A14 14 0 0 1 30 14 L-46 14 Z'
 };
 
 const isPart = (char: string): char is SpritePart =>
@@ -698,7 +705,7 @@ export function drawProjectile(
 			? colors.b
 			: definition.look === 'mine'
 				? colors.e
-				: definition.look === 'ball'
+				: definition.look === 'ball' || definition.look === 'bullet'
 					? colors.itemAlt
 					: colors.shadow;
 	ctx.beginPath();
@@ -752,6 +759,116 @@ export function drawProjectile(
 		ctx.arc(0, 0, r * 0.3, 0, Math.PI * 2);
 		ctx.fill();
 	}
+	ctx.restore();
+}
+
+/** The tail of a grid figure: rounded segments, a little smaller towards the end. */
+export function drawTail(
+	ctx: CanvasRenderingContext2D,
+	tail: readonly { x: number; y: number }[],
+	size: number,
+	scene: Scene
+): void {
+	const { colors, scroll } = scene;
+	ctx.save();
+	ctx.lineWidth = 3;
+	ctx.strokeStyle = colors.outline;
+	ctx.fillStyle = colors.grass;
+	tail.forEach((point, index) => {
+		const fade = 0.55 + 0.3 * ((index + 1) / tail.length);
+		ctx.beginPath();
+		ctx.arc(point.x - scroll.x, point.y - scroll.y, size * 0.5 * fade, 0, Math.PI * 2);
+		ctx.stroke();
+		ctx.fill();
+	});
+	ctx.restore();
+}
+
+/** A ring that closes in on a boss that is about to use a pattern. */
+export function drawWindup(
+	ctx: CanvasRenderingContext2D,
+	body: Body,
+	size: number,
+	scene: Scene
+): void {
+	const windup = body.windup;
+	if (!windup) return;
+	const progress = 1 - windup.left / Math.max(0.01, windup.total);
+	const blink = scene.reducedMotion || Math.floor(progress * 12) % 2 === 0;
+	ctx.save();
+	ctx.globalAlpha = blink ? 0.9 : 0.4;
+	ctx.lineWidth = 4;
+	ctx.strokeStyle = scene.colors.itemAlt;
+	ctx.beginPath();
+	ctx.arc(
+		body.x - scene.scroll.x,
+		body.y - scene.scroll.y,
+		size * (1.5 - 0.6 * progress),
+		0,
+		Math.PI * 2
+	);
+	ctx.stroke();
+	ctx.restore();
+}
+
+/** A bubble around a boss nothing can hurt right now. */
+export function drawShield(
+	ctx: CanvasRenderingContext2D,
+	world: Parameters<typeof isShielded>[0],
+	body: Body,
+	size: number,
+	scene: Scene
+): void {
+	if (!isShielded(world, body)) return;
+	ctx.save();
+	ctx.globalAlpha = 0.35 + (scene.reducedMotion ? 0 : Math.sin(scene.time * 5) * 0.1);
+	ctx.fillStyle = scene.colors.water;
+	ctx.strokeStyle = scene.colors.outline;
+	ctx.lineWidth = 3;
+	ctx.beginPath();
+	ctx.arc(body.x - scene.scroll.x, body.y - scene.scroll.y, size * 0.7, 0, Math.PI * 2);
+	ctx.fill();
+	ctx.stroke();
+	ctx.restore();
+}
+
+/** A pale halo under a monster that is scared (and can be eaten). */
+export function drawScared(
+	ctx: CanvasRenderingContext2D,
+	body: Body,
+	size: number,
+	scene: Scene
+): void {
+	ctx.save();
+	ctx.globalAlpha = 0.5;
+	ctx.fillStyle = scene.colors.water;
+	ctx.beginPath();
+	ctx.arc(body.x - scene.scroll.x, body.y - scene.scroll.y, size * 0.55, 0, Math.PI * 2);
+	ctx.fill();
+	ctx.restore();
+}
+
+/** The flame behind a spaceship that is pushing. */
+export function drawFlame(
+	ctx: CanvasRenderingContext2D,
+	body: Body,
+	size: number,
+	scene: Scene
+): void {
+	const flicker = scene.reducedMotion ? 1 : 0.75 + Math.abs(Math.sin(scene.time * 40)) * 0.5;
+	ctx.save();
+	ctx.translate(body.x - scene.scroll.x, body.y - scene.scroll.y);
+	ctx.rotate(body.angle);
+	ctx.fillStyle = scene.colors.item;
+	ctx.strokeStyle = scene.colors.outline;
+	ctx.lineWidth = 2;
+	ctx.beginPath();
+	ctx.moveTo(-size * 0.4, -size * 0.14);
+	ctx.lineTo(-size * (0.55 + 0.45 * flicker), 0);
+	ctx.lineTo(-size * 0.4, size * 0.14);
+	ctx.closePath();
+	ctx.fill();
+	ctx.stroke();
 	ctx.restore();
 }
 
@@ -953,7 +1070,9 @@ export function drawPickup(
 	const bob =
 		scene.reducedMotion || definition.pickup === 'none' ? 0 : Math.sin(pickup.age * 4) * 3;
 	const x = pickup.x - scene.scroll.x;
-	const y = pickup.y - scene.scroll.y - (scene.side ? definition.size / 2 : 0) + bob;
+	// In the side view items stand on their feet; platforms are drawn around their middle.
+	const feet = scene.side && !definition.platform && !definition.float ? definition.size / 2 : 0;
+	const y = pickup.y - scene.scroll.y - feet + bob;
 	const picture = definition.sprite ? scene.pictures[definition.sprite] : undefined;
 	if (
 		picture &&
@@ -1006,6 +1125,14 @@ export function drawPickup(
 			break;
 		case 'wall':
 			ctx.roundRect(-r, -r * 0.8, r * 2, r * 1.6, r * 0.15);
+			break;
+		case 'brick': {
+			const { w, h } = itemBox(definition);
+			ctx.roundRect(-w / 2, -h / 2, w, h, Math.min(w, h) * 0.15);
+			break;
+		}
+		case 'pellet':
+			ctx.arc(0, 0, r * 0.45, 0, Math.PI * 2);
 			break;
 		case 'spikes':
 			for (let i = 0; i < 5; i++) {

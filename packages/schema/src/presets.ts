@@ -4,7 +4,7 @@
  */
 import { t, type Text } from './dsl.js';
 import { CLASSIC } from './schema.js';
-import { GAMES } from './games/index.js';
+import { GAMES, RETRO } from './games/index.js';
 
 export interface Preset {
 	label: Text;
@@ -48,10 +48,10 @@ export const PRESETS: Record<string, Preset> = {
 	classic: {
 		label: t('Klassisch', 'Classic'),
 		description: t(
-			'Wie der bisherige Spielmodus: Monster kommen in Wellen, ein Auto fährt vor.',
-			'Like the original game mode: monsters in waves, a car drives in.'
+			'Der Spielmodus mit Gegnern: Monster kommen in Wellen, ein Auto fährt vor.',
+			'The game mode with enemies: monsters in waves, a car drives in.'
 		),
-		config: {}
+		config: { spawns: [{ entity: 'blob' }] }
 	},
 	arcade: {
 		label: t('Arcade mit Upgrades', 'Arcade with upgrades'),
@@ -396,5 +396,6 @@ export const PRESETS: Record<string, Preset> = {
 		}
 	},
 
-	...GAMES
+	...GAMES,
+	...RETRO
 };

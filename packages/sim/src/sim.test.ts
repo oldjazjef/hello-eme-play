@@ -20,7 +20,7 @@ describe('simulate', () => {
 		};
 		const idle = simulate(deadly, { rounds: 5, seconds: 60, bot: 'idle' });
 		expect(idle.rate.died).toBe(1);
-		const easy = { visits: { enabled: false } };
+		const easy = { visits: { enabled: false }, spawns: [{ entity: 'blob' }] };
 		const brawler = simulate(easy, { rounds: 5, seconds: 60, bot: 'brawler' });
 		expect(brawler.rate.died).toBe(0);
 		expect(brawler.kills.mean).toBeGreaterThan(0);

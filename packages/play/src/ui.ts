@@ -47,7 +47,7 @@ export interface View {
 	/** The team: name, health, whether it is out, whether it is out of health. */
 	team: { label: string; hp: number; max: number; out: boolean }[];
 	/** Touch buttons for what can be thrown right now, with the ammo left (`∞` when unlimited). */
-	throwables: { id: string; label: string; ammo: string }[];
+	throwables: { id: string; label: string; ammo: string; auto: boolean }[];
 	upgrades: UpgradeRow[];
 	shopOpen: boolean;
 	stats: { label: string; value: string }[];
@@ -64,6 +64,8 @@ export interface UiActions {
 	move(id: string, held: boolean): void;
 	/** Throw or drop one. */
 	throwItem(id: string): void;
+	/** A throwable that keeps firing while its button is held (touch). */
+	holdThrow(id: string, held: boolean): void;
 	/** Send out the next team member. */
 	party(): void;
 	handbrake(held: boolean): void;
@@ -235,7 +237,7 @@ export class GameUi {
 			view.hud,
 			view.levels > 0,
 			view.moves.map((move) => move.id).join('+'),
-			view.throwables.map((item) => `${item.id}:${item.ammo}`).join('+'),
+			view.throwables.map((item) => `${item.id}:${item.ammo}:${item.auto}`).join('+'),
 			view.team.length > 0,
 			view.upgrades.length > 0,
 			view.shopOpen,
@@ -338,8 +340,14 @@ export class GameUi {
 				actions.append(pill);
 			}
 			if (view.team.length > 0) actions.append(button('play-pill', t.team, a.party));
-			for (const { id, label, ammo } of view.throwables) {
-				actions.append(button('play-pill', `${label} ${ammo}`, () => a.throwItem(id)));
+			for (const { id, label, ammo, auto } of view.throwables) {
+				if (!auto) {
+					actions.append(button('play-pill', `${label} ${ammo}`, () => a.throwItem(id)));
+					continue;
+				}
+				const pill = button('play-pill play-hold', `${label} ${ammo}`);
+				holdable(pill, (held) => a.holdThrow(id, held));
+				actions.append(pill);
 			}
 			if (!view.side) actions.append(button('play-button play-large play-hold', t.jump, a.jump));
 		}

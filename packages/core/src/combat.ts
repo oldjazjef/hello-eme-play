@@ -1,10 +1,13 @@
 /** Moves, damage, defeat, rewards. */
 import { hostile } from './bodies.js';
 import { noteHit, noteKill } from './life.js';
+import { toStart } from './arcade.js';
+import { isShielded, weakness } from './armor.js';
 import { hurtAlly } from './team.js';
 import { stateOf } from './state.js';
-import { cooldownOf, distance, distanceToSegment, hitOf, statOf } from './stats.js';
+import { cooldownOf, countIn, distance, distanceToSegment, hitOf, statOf } from './stats.js';
 import { radiusOf, sizeOf } from './space.js';
+import type { EntityDefinition } from '@hello-eme/play-schema';
 import type { Body, DefeatSource, World } from './types.js';
 
 /** Seconds a hurt figure blinks and can't be hit again. */
@@ -122,7 +125,8 @@ export function damage(
 	if (target === world.player) return hurtPlayer(world, amount, from);
 	if (target.kind === 'vehicle') return hurtVehicle(world, target, amount, from);
 	if (target.ally) return hurtAlly(world, target, amount);
-	target.hp -= amount;
+	if (isShielded(world, target)) return;
+	target.hp -= amount * weakness(world, target, from);
 	target.hurt = 0.25;
 	if (target.hp > 0) return;
 	defeat(world, target, source);
@@ -147,12 +151,15 @@ function hurtPlayer(world: World, amount: number, from: Body | undefined): void 
 	player.invulnerable = HURT_SECONDS;
 	player.hurt = HURT_SECONDS;
 	world.events.emit('hurt', { amount, from });
+	// With `respawn: hit` every hit costs a life.
+	if (world.config.game.respawn === 'hit') player.hp = 0;
 	if (player.hp > 0) return;
 	world.lives -= 1;
 	world.events.emit('death', { lives: world.lives });
 	if (world.lives > 0) {
 		player.hp = world.maxHp(player);
 		player.invulnerable = 2;
+		if (world.config.game.respawn !== 'stay') toStart(world);
 		return;
 	}
 	world.end(false);
@@ -189,6 +196,36 @@ export function defeat(world: World, monster: Body, source: DefeatSource): void 
 		}
 	}
 	world.events.emit('kill', { body: monster, source });
+	if (definition) splitUp(world, monster, definition);
+	if (definition && definition.respawn > 0 && world.phase === 'playing') {
+		state.respawns.push({
+			def: monster.def,
+			x: monster.home.x,
+			y: monster.home.y,
+			at: world.time + definition.respawn
+		});
+	}
+}
+
+/** A monster that splits up leaves smaller ones where it was. */
+function splitUp(world: World, monster: Body, definition: EntityDefinition): void {
+	const { into, count, faster } = definition.split;
+	if (!into || !world.config.entities[into]) return;
+	const children: Body[] = [];
+	const size = sizeOf(world, monster);
+	for (let i = 0; i < countIn(world, count); i++) {
+		const angle = world.random() * Math.PI * 2;
+		const child = world.spawn(
+			into,
+			monster.x + Math.cos(angle) * size * 0.25,
+			monster.y + Math.sin(angle) * size * 0.25
+		);
+		if (!child) continue;
+		child.angle = angle;
+		if (faster > 0) child.stats.speed = (child.stats.speed ?? 100) * (1 + faster / 100);
+		children.push(child);
+	}
+	if (children.length > 0) world.events.emit('split', { parent: monster, children });
 }
 
 /** A vehicle runs over monsters it touches: fast enough it hurts, slower it pushes them aside. */

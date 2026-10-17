@@ -36,6 +36,8 @@ export class Input {
 	readonly #pressed = new Set<'jump' | 'honk' | 'use' | 'party'>();
 	/** Throwables asked for since the last frame (a key or a touch button). */
 	readonly #throws = new Set<string>();
+	/** Throwables whose key is held down and keeps firing, by key code. */
+	readonly #autoThrows = new Map<string, string>();
 	readonly #hooks: InputHooks;
 	/** Touch driving controls: the wheel (-1..1) and the pedals (-1 gas, 1 brake). */
 	wheel = 0;
@@ -68,6 +70,12 @@ export class Input {
 		this.#pressed.add(action);
 	}
 
+	/** A throwable that keeps firing while its touch button is held. */
+	holdThrow(id: string, held: boolean): void {
+		if (held) this.#autoThrows.set(`pad-${id}`, id);
+		else this.#autoThrows.delete(`pad-${id}`);
+	}
+
 	/** Throw or drop one (an id of `config.throwables`). */
 	throwItem(id: string): void {
 		this.#throws.add(id);
@@ -82,6 +90,7 @@ export class Input {
 	}
 
 	clear(): void {
+		this.#autoThrows.clear();
 		this.#held.clear();
 		this.#moves.clear();
 		this.#tapped.clear();
@@ -114,6 +123,7 @@ export class Input {
 		this.#pressed.clear();
 		for (const id of this.#throws) controls.throws.add(id);
 		this.#throws.clear();
+		for (const id of this.#autoThrows.values()) controls.throws.add(id);
 	}
 
 	readonly keydown = (event: KeyboardEvent): void => {
@@ -166,7 +176,8 @@ export class Input {
 		if (thrown) {
 			if (inGameUi(event)) return;
 			event.preventDefault();
-			if (!event.repeat) this.throwItem(thrown[0]);
+			if (thrown[1].auto) this.#autoThrows.set(event.code, thrown[0]);
+			else if (!event.repeat) this.throwItem(thrown[0]);
 			return;
 		}
 		if (riding && keys.drift.includes(event.code)) {
@@ -198,6 +209,7 @@ export class Input {
 
 	readonly keyup = (event: KeyboardEvent): void => {
 		this.release(event.code);
+		this.#autoThrows.delete(event.code);
 		const config = this.#hooks.config();
 		if (config.keys.drift.includes(event.code)) this.handbrake.key = false;
 		for (const [move, sources] of this.#moves) {

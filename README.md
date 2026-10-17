@@ -1,9 +1,13 @@
 # hello-eme-play
 
-Turns **any website into a game**, configured by **one JSON**. The page itself is the playing field: the
-visitor walks over it, punches paragraphs until they break, fights monsters, jumps on cards and drives a car.
-It works with plain HTML, any framework and any CMS. An editor (one script, no framework) and a Payload plugin
-change the JSON; try it in the [live demo](https://oldjazjef.github.io/hello-eme-play/): guide, editor and live preview.
+Turns **any website into a game**, configured by **one JSON**. The page itself is the playing field.
+
+**The idea behind it is page navigation**: the default mode has no enemies. The visitor walks or jumps over the
+page, knocks on elements, hops onto links and buttons to click them and takes a car for a ride. Everything else
+(monsters, bombs, catching, arcade games) is switched on by the configuration: a game is a navigation mode with
+rules on top. It works with plain HTML, any framework and any CMS. An editor (one script, no framework) and a
+Payload plugin change the JSON; try it in the [live demo](https://oldjazjef.github.io/hello-eme-play/): guide,
+editor and live preview.
 
 ![Top-down view: the figure fights monsters on a web page](docs/images/topdown.png)
 
@@ -15,11 +19,12 @@ change the JSON; try it in the [live demo](https://oldjazjef.github.io/hello-eme
 - **Monsters that live:** they hide in tall grass, bushes, a pond or rocks until you walk through; they breed, level up and evolve into other monsters.
 - **Catch and team (Pokémon style):** balls catch monsters by their health; the team fights for you, levels up by beating monsters and evolves. Call it with R.
 - **Objects:** items that stay on the page and block the way, hide what stands in them, or hurt and heal by touch; each can have its own picture.
+- **Arcade controls and maps:** steer a spaceship with inertia, hop or glide cell by cell on a grid (snake, Pac-Man, Frogger), slide a paddle, balls that bounce off bricks, maps drawn as text, platformer jumps and stomping, and boss patterns with warnings, weak spots and shields.
 - **Levels and goals:** score, kills, survive for some time or defeat a boss.
 - **Wave scripts and boss phases:** "at 10 s three blobs, at 25 s a swarm, at 40 s the boss"; a boss enrages or summons help when its health falls below a share.
 - **Per-page settings:** `/blog` can be top-down and `/projects` a side-scroller, with other monsters; the game follows the visitor's navigation.
 - **Items, upgrades and a shop**, **triggers** ("when X happens, if Y holds, do Z" with events for throwing, blasts, catching, evolving, wrecks, touching objects …), sounds and a high score.
-- **Ten complete example games with pictures** (Pokémon-style Ememons, Bomberman, vehicle battles, survival, platformer, RPG …) that load in the editor and play at once.
+- **Eight arcade classics** (Asteroids, Frogger, Snake, Pac-Man, Breakout, Pong, a platformer, boss fights) and **ten complete example games with pictures** (Pokémon-style Ememons, Bomberman, vehicle battles, survival, platformer, RPG …) that load in the editor and play at once.
 - **Own pictures:** pixel art is built in; your own PNG or SVG sprite sheets with animations replace it.
 - **Touch controls:** d-pad, round action buttons, steering wheel and pedals for the car.
 - **Safe by design:** the JSON is always validated; wrong values are corrected, never crash the page.
