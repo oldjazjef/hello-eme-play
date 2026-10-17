@@ -14,6 +14,8 @@ export interface InputHooks {
 	/** Esc: get out of the vehicle, close the shop, or end the game. */
 	escape(): void;
 	toggleShop(): void;
+	/** The key that shows or hides the instructions. */
+	toggleHint(): void;
 	/** Any other key press (once per press, not for held-down repeats): `key` triggers listen. */
 	key(code: string): void;
 }
@@ -144,6 +146,11 @@ export class Input {
 		if (keys.party.includes(event.code) && !inGameUi(event)) {
 			event.preventDefault();
 			if (!event.repeat) this.request('party');
+			return;
+		}
+		if (keys.hint.includes(event.code) && !inGameUi(event)) {
+			event.preventDefault();
+			if (!event.repeat) hooks.toggleHint();
 			return;
 		}
 		if (keys.shop.includes(event.code) && !inGameUi(event)) {

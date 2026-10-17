@@ -1171,6 +1171,7 @@ const FIELDS: Record<string, Node> = {
 		honk: keys(t('Hupen', 'Honk'), ['Enter', 'KeyH']),
 		use: keys(t('Ein- und Aussteigen, Aufheben', 'Get in/out, pick up'), ['KeyF']),
 		shop: keys(t('Upgrades öffnen', 'Open upgrades'), ['KeyU']),
+		hint: keys(t('Anleitung ein- und ausblenden', 'Show and hide the instructions'), ['KeyI']),
 		party: keys(t('Nächstes Teammitglied rufen', 'Call the next team member'), ['KeyR'])
 	}),
 	hint: object(t('Anleitung', 'Instructions'), {

@@ -186,3 +186,29 @@ test('can pause while the instructions are open, and runs once they are folded a
 	await page.waitForTimeout(700);
 	expect(await time()).toBeGreaterThan(before + 0.3);
 });
+
+test('the instructions stay as the visitor left them: a key toggles them, and no X leaves the game', async ({
+	page
+}) => {
+	await start(page);
+	const hint = page.locator('.play-hint');
+	await expect(hint).toBeVisible();
+	// Only the button that folds it away; leaving the game is Esc (or the page's own button).
+	await expect(hint.getByRole('button')).toHaveCount(1);
+	await page.keyboard.press('KeyI');
+	await expect(hint).toHaveCount(0);
+	// Next to a vehicle it does not pop up again.
+	await page.evaluate(() => {
+		const world = window.Play?.world;
+		if (!world) return;
+		const car = world.spawn('car', world.player.x + 30, world.player.y);
+		if (car) car.pilot = undefined;
+	});
+	await page.waitForTimeout(800);
+	await expect(hint).toHaveCount(0);
+	await page.keyboard.press('KeyI');
+	await expect(hint).toBeVisible();
+	// Shown by hand it stays, however long it has been open.
+	await page.waitForTimeout(5000);
+	await expect(hint).toBeVisible();
+});

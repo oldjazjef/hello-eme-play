@@ -102,6 +102,10 @@ export class Session {
 
 	#phase: Phase = 'visit';
 	#hintHidden = false;
+	/** Whether the visitor has shown or hidden the instructions themselves (then they stay as left). */
+	#hintUser = false;
+	/** The hint about getting into a vehicle was shown once already. */
+	#nearHinted = false;
 	/** When the hint last changed or was opened (ms, like `now`); it folds away after a while. */
 	#hintSince = 0;
 	#colors: SpriteColors;
@@ -134,6 +138,7 @@ export class Session {
 			riding: () => this.#world.riding !== undefined,
 			escape: () => this.#escape(),
 			toggleShop: () => this.#toggleShop(),
+			toggleHint: () => this.#setHint(!this.#hintHidden),
 			key: (code) => this.#world.press(code)
 		});
 		this.#ui = new GameUi(textsFor(hooks.config), {
@@ -154,11 +159,7 @@ export class Session {
 				hooks.emit('visit-dismiss');
 			},
 			repair: () => this.#repair(),
-			hideHint: (hidden) => {
-				this.#hintHidden = hidden;
-				this.#hintSince = performance.now();
-				this.#render();
-			},
+			hideHint: (hidden) => this.#setHint(hidden),
 			restart: () => (this.#restart = true),
 			exit: () => this.#stop(),
 			toggleShop: () => this.#toggleShop(),
@@ -288,6 +289,17 @@ export class Session {
 		// Esc gets out of the vehicle first, and ends the game on foot.
 		else if (this.#world.riding) this.#input.request('use');
 		else this.#stop();
+	}
+
+	/**
+	 * The visitor shows or hides the instructions. From then on it stays as they left it: it neither
+	 * folds away by itself nor pops up again (next to a vehicle, say).
+	 */
+	#setHint(hidden: boolean): void {
+		this.#hintUser = true;
+		this.#hintHidden = hidden;
+		this.#hintSince = performance.now();
+		this.#render();
 	}
 
 	#toggleShop(): void {
@@ -473,7 +485,16 @@ export class Session {
 			this.#hintSince = now;
 			// Next to the vehicle the hint matters again: how to get in.
 			// (Not when the game pauses for the hint: it would stop the game at every vehicle.)
-			if (phase === 'near' && !this.#hooks.config.hint.pauseWhileOpen) this.#hintHidden = false;
+			// Once only, and never after the visitor took care of the hint themselves.
+			if (
+				phase === 'near' &&
+				!this.#nearHinted &&
+				!this.#hintUser &&
+				!this.#hooks.config.hint.pauseWhileOpen
+			) {
+				this.#nearHinted = true;
+				this.#hintHidden = false;
+			}
 		}
 		const hideAfter = this.#hooks.config.hint.hideAfter;
 		if (
@@ -481,6 +502,7 @@ export class Session {
 			phase !== 'visit' &&
 			world.phase === 'playing' &&
 			!this.#hintHidden &&
+			!this.#hintUser &&
 			now - this.#hintSince > hideAfter * 1000
 		) {
 			this.#hintHidden = true;

@@ -85,17 +85,18 @@ node examples/static/serve.mjs      # open the printed URL, press the game butto
 
 ### Controls
 
-| Action               | Keyboard                                          | Touch                    |
-| -------------------- | ------------------------------------------------- | ------------------------ |
-| Walk / steer the car | Arrow keys or WASD                                | d-pad / wheel and pedals |
-| Punch (drift in car) | Space                                             | "Boxen"                  |
-| Kick                 | Q                                                 | "Kicken"                 |
-| Jump (honk in car)   | E                                                 | "Springen"               |
-| Get in / out of car  | F                                                 | on the car               |
-| Shop                 | U                                                 | "Upgrades"               |
-| Throw / drop         | the key of the throwable (`throwables.<id>.keys`) | its button               |
-| Next team member     | R                                                 | "Team"                   |
-| Quit                 | Esc                                               | close button             |
+| Action               | Keyboard                                          | Touch                       |
+| -------------------- | ------------------------------------------------- | --------------------------- |
+| Walk / steer the car | Arrow keys or WASD                                | d-pad / wheel and pedals    |
+| Punch (drift in car) | Space                                             | "Boxen"                     |
+| Kick                 | Q                                                 | "Kicken"                    |
+| Jump (honk in car)   | E                                                 | "Springen"                  |
+| Get in / out of car  | F                                                 | on the car                  |
+| Shop                 | U                                                 | "Upgrades"                  |
+| Throw / drop         | the key of the throwable (`throwables.<id>.keys`) | its button                  |
+| Next team member     | R                                                 | "Team"                      |
+| Instructions on/off  | I                                                 | the panel's button          |
+| Quit                 | Esc                                               | the game button of the page |
 
 All keys can be changed in the JSON (`keys` for walking, jumping, using and the shop, `moves.<id>.keys` for punch and kick). Texts are German or English (`locale`) and can be overridden (`texts`).
 

@@ -77,6 +77,7 @@ describe('Input', () => {
 			riding: () => riding,
 			escape: () => void calls.escape++,
 			toggleShop: () => void calls.shop++,
+			toggleHint() {},
 			key: (code) => void calls.keys.push(code)
 		};
 		const controls: Controls = {
@@ -185,6 +186,30 @@ describe('Input', () => {
 		expect([...inCar.controls.throws].sort()).toEqual(['bomb', 'mine']);
 	});
 
+	it('shows and hides the instructions with their key, once per press', () => {
+		const calls: string[] = [];
+		const hooks: InputHooks = {
+			config: () => config,
+			active: () => true,
+			riding: () => false,
+			escape() {},
+			toggleShop() {},
+			toggleHint: () => void calls.push('hint'),
+			key() {}
+		};
+		const input = new Input(hooks);
+		input.keydown(key('KeyI'));
+		input.keydown(key('KeyI', { repeat: true }));
+		expect(calls).toEqual(['hint']);
+		const custom = new Input({
+			...hooks,
+			config: () => resolveConfig({ keys: { hint: ['KeyJ'] } })
+		});
+		custom.keydown(key('KeyI'));
+		custom.keydown(key('KeyJ'));
+		expect(calls).toEqual(['hint', 'hint']);
+	});
+
 	it('uses the touch wheel and pedals in a vehicle only', () => {
 		const { input, controls } = setup(true);
 		input.wheel = 0.5;
@@ -229,6 +254,7 @@ describe('Input', () => {
 			riding: () => false,
 			escape() {},
 			toggleShop() {},
+			toggleHint() {},
 			key() {}
 		};
 		const input = new Input(hooks);
