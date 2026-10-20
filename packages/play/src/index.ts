@@ -2,6 +2,7 @@
  * @hello-eme/play: turns any website into a game, configured by one JSON.
  */
 export { createPlay, type Play, type PlayOptions } from './play.js';
+export { connectPreview } from './preview.js';
 export type { GameEvent, GameState } from './session.js';
 export type { EventData, PlaySource } from './stats.js';
 export { textsFor } from './texts.js';
