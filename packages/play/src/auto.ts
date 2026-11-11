@@ -13,7 +13,7 @@
  * The game is available as `window.Play` afterwards.
  */
 import { createPlay, type Play } from './play.js';
-import { applyPreview, PREVIEW_READY } from './preview.js';
+import { connectPreview } from './preview.js';
 
 declare global {
 	interface Window {
@@ -42,7 +42,5 @@ readConfig()
 			toggleButton: preview ? false : html ? html.dataset.toggle !== 'off' : true
 		});
 		window.Play = play;
-		if (!preview) return;
-		addEventListener('message', (event) => applyPreview(event, preview, window.parent, play));
-		window.parent.postMessage({ type: PREVIEW_READY }, preview);
+		if (preview) connectPreview(play, preview);
 	});

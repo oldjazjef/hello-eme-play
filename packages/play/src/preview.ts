@@ -20,12 +20,30 @@ export function applyPreview(
 	message: PreviewMessage,
 	allowedOrigin: string,
 	parent: unknown,
-	play: Pick<Play, 'configure' | 'stop' | 'start'>
+	play: Pick<Play, 'configure' | 'stop' | 'start'>,
+	transform: (config: unknown) => unknown = (config) => config
 ): boolean {
 	if (message.origin !== allowedOrigin || message.source !== parent) return false;
 	if (!isObject(message.data) || message.data.type !== PREVIEW_CONFIG) return false;
-	play.configure(message.data.config);
+	play.configure(transform(message.data.config));
 	play.stop();
 	play.start();
 	return true;
+}
+
+/**
+ * Lets the CMS admin that frames this page play its configuration: listens for the admin's
+ * messages and says "ready". `transform` can add what the website itself owns (texts, language).
+ * Returns a function that stops listening.
+ */
+export function connectPreview(
+	play: Pick<Play, 'configure' | 'stop' | 'start'>,
+	allowedOrigin: string,
+	transform?: (config: unknown) => unknown
+): () => void {
+	const listener = (event: MessageEvent) =>
+		applyPreview(event, allowedOrigin, window.parent, play, transform);
+	addEventListener('message', listener);
+	window.parent.postMessage({ type: PREVIEW_READY }, allowedOrigin);
+	return () => removeEventListener('message', listener);
 }
